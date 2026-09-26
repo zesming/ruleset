@@ -1,0 +1,4 @@
+{
+  "global": ["api.github.com", "chatgpt.com", "claude.ai", "openai.com"],
+  "cn": ["kimi.com", "qwen.ai"]
+}

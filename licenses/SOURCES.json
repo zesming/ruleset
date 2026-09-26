@@ -1,0 +1,34 @@
+[
+  {
+    "repository": "MetaCubeX/meta-rules-dat",
+    "commit": "4178770badecb1b349fbcd62c737e0d7a2079729",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/4178770badecb1b349fbcd62c737e0d7a2079729/LICENSE",
+    "file": "MetaCubeX-GPL-3.0.txt",
+    "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
+  {
+    "repository": "v2fly/domain-list-community",
+    "commit": "bcea25493ed28c387660fe49ce1ceb242d2efca0",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/bcea25493ed28c387660fe49ce1ceb242d2efca0/LICENSE",
+    "file": "v2fly-MIT.txt",
+    "sha256": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2"
+  },
+  {
+    "repository": "SukkaW/Surge",
+    "commit": "39bb7409ad642ae6227d1145754e7a87537ea028",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/SukkaW/Surge/39bb7409ad642ae6227d1145754e7a87537ea028/LICENSE",
+    "file": "Sukka-AGPL-3.0.txt",
+    "sha256": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef"
+  },
+  {
+    "repository": "ACL4SSR/ACL4SSR",
+    "commit": "46ce840aa8cbfccce071558bfc1ad57704e32219",
+    "path": "LICENCE",
+    "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/46ce840aa8cbfccce071558bfc1ad57704e32219/LICENCE",
+    "file": "ACL4SSR-CC-BY-SA-4.0.txt",
+    "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297"
+  }
+]

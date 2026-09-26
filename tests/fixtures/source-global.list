@@ -1,0 +1,6 @@
+DOMAIN-SUFFIX,chatgpt.com
+DOMAIN-SUFFIX,openai.com
+DOMAIN-SUFFIX,claude.ai
+DOMAIN,cloudcode-pa.googleapis.com
+DOMAIN-REGEX,^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
+DOMAIN,api.example-global.com

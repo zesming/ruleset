@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "adds": [
+    {
+      "category": "global",
+      "type": "DOMAIN-SUFFIX",
+      "value": "ai.azure.com",
+      "reason": "Preserve the existing Azure AI service suffix route.",
+      "reference": "https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/Ruleset/AI.list",
+      "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN",
+      "value": "sydney.bing.com",
+      "reason": "Preserve the existing Bing AI endpoint route.",
+      "reference": "https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/Ruleset/AI.list",
+      "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN",
+      "value": "api.together.xyz",
+      "reason": "Preserve the existing Together API route.",
+      "reference": "https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/Ruleset/AI.list",
+      "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN",
+      "value": "api.github.com",
+      "reason": "Preserve the existing dedicated AI route for the GitHub API host.",
+      "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf",
+      "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN-SUFFIX",
+      "value": "ai.com",
+      "reason": "Preserve the existing AI service suffix route.",
+      "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf",
+      "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN-SUFFIX",
+      "value": "g.ai",
+      "reason": "Preserve the existing AI service suffix route.",
+      "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf",
+      "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN-SUFFIX",
+      "value": "cloudcode-pa.googleapis.com",
+      "reason": "Preserve the existing Google Cloud Code subdomain route.",
+      "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf; upstream currently includes the exact host",
+      "review_date": "2026-09-26"
+    }
+  ],
+  "moves": [],
+  "removes": [],
+  "regex_adapters": [
+    {
+      "source": "^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$",
+      "output_type": "DOMAIN-WILDCARD",
+      "output_value": "chatgpt-async-webps-prod-*-*.webpubsub.azure.com",
+      "reason": "Keep the previously reviewed ChatGPT Azure endpoint rule; the wildcard intentionally allows an empty or nonnumeric second segment.",
+      "review_date": "2026-09-26",
+      "samples": {
+        "source_matches": [
+          "chatgpt-async-webps-prod-a-1.webpubsub.azure.com",
+          "chatgpt-async-webps-prod-part.with.dot-42.webpubsub.azure.com"
+        ],
+        "source_rejects": [
+          "chatgpt-async-webps-prod--1.webpubsub.azure.com",
+          "other-async-webps-prod-a-1.webpubsub.azure.com",
+          "chatgpt-async-webps-prod-a-1.webpubsub.azure.com.evil.test"
+        ],
+        "wildcard_additionally_matches": [
+          "chatgpt-async-webps-prod--1.webpubsub.azure.com",
+          "chatgpt-async-webps-prod-a-anything.webpubsub.azure.com"
+        ]
+      }
+    }
+  ],
+  "limits": {
+    "minimum_rules_per_category": 1,
+    "maximum_rules_per_category": 1000,
+    "maximum_added_minimum": 10,
+    "maximum_added_ratio": 0.2,
+    "maximum_removed_minimum": 5,
+    "maximum_removed_ratio": 0.1
+  },
+  "route_assertions": [
+    {"host": "chatgpt.com", "category": "global"},
+    {"host": "openai.com", "category": "global"},
+    {"host": "claude.ai", "category": "global"},
+    {"host": "api.github.com", "category": "global"},
+    {"host": "qwen.ai", "category": "cn"},
+    {"host": "kimi.com", "category": "cn"}
+  ],
+  "quantity_approvals": [],
+  "publish_hold": {
+    "enabled": false,
+    "reason": "",
+    "rolled_back_release_id": ""
+  },
+  "license_sources": {
+    "MetaCubeX-GPL-3.0.txt": {
+      "spdx": "GPL-3.0-only",
+      "source": "MetaCubeX/meta-rules-dat",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/master/LICENSE"
+    },
+    "v2fly-MIT.txt": {
+      "spdx": "MIT",
+      "source": "v2fly/domain-list-community",
+      "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/LICENSE"
+    },
+    "Sukka-AGPL-3.0.txt": {
+      "spdx": "AGPL-3.0-only",
+      "source": "SukkaW/Surge",
+      "url": "https://raw.githubusercontent.com/SukkaW/Surge/master/LICENSE"
+    },
+    "ACL4SSR-CC-BY-SA-4.0.txt": {
+      "spdx": "CC-BY-SA-4.0",
+      "source": "ACL4SSR/ACL4SSR",
+      "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/LICENCE"
+    }
+  }
+}

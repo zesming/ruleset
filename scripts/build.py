@@ -1,0 +1,1603 @@
+#!/usr/bin/env python3
+"""Build and replay the public AI classical rule providers using only stdlib."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import hashlib
+import ipaddress
+import json
+import math
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Iterable
+
+
+SCHEMA = 1
+EMPTY_RELEASE = "EMPTY"
+REPORT_DIR = ".build-report"
+MAX_SOURCE_BYTES = 1024 * 1024
+HTTP_TIMEOUT_SECONDS = 20
+HTTP_RETRIES = 3
+META_REPOSITORY = "MetaCubeX/meta-rules-dat"
+META_BRANCH = "meta"
+META_SHA_API = "https://api.github.com/repos/MetaCubeX/meta-rules-dat/git/ref/heads/meta"
+SOURCE_PATHS = {
+    "global": "geo/geosite/classical/category-ai-!cn.list",
+    "cn": "geo/geosite/classical/category-ai-cn.list",
+}
+SOURCE_CATEGORIES = ("global", "cn")
+OUTPUT_PATHS = {"global": "rules/ai-global.list", "cn": "rules/ai-cn.list"}
+ARCHIVE_PATHS = {"global": "upstream/ai-global.list", "cn": "upstream/ai-cn.list"}
+LICENSE_FILES = (
+    "MetaCubeX-GPL-3.0.txt",
+    "v2fly-MIT.txt",
+    "Sukka-AGPL-3.0.txt",
+    "ACL4SSR-CC-BY-SA-4.0.txt",
+)
+REGISTERED_REGEX = r"^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$"
+REGISTERED_WILDCARD = "chatgpt-async-webps-prod-*-*.webpubsub.azure.com"
+DOMAIN_TYPES = {"DOMAIN", "DOMAIN-SUFFIX"}
+ALLOWED_OUTPUT_TYPES = DOMAIN_TYPES | {"DOMAIN-WILDCARD"}
+HEX_256 = re.compile(r"^[0-9a-f]{64}$")
+DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+TOOL_CONTENT_FILES = (
+    "scripts/build.py",
+    "tests/test_build.py",
+    "tests/fixtures/source-cn.list",
+    "tests/fixtures/source-global.list",
+    "tests/fixtures/routes.json",
+)
+
+
+class BuildError(Exception):
+    """An expected validation, fetch, or safe-write failure."""
+
+
+@dataclass
+class Rule:
+    type: str
+    value: str
+    category: str
+    origins: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def key(self) -> tuple[str, str]:
+        return (self.type, self.value)
+
+    def json_key(self) -> dict[str, str]:
+        return {"type": self.type, "value": self.value}
+
+
+@dataclass
+class Baseline:
+    release_id: str
+    source_rules: dict[str, list[tuple[str, str]]]
+    output_rules: dict[str, list[tuple[str, str]]]
+
+
+@dataclass
+class Candidate:
+    manifest: dict[str, Any]
+    provenance: dict[str, Any]
+    outputs: dict[str, bytes]
+    raw_sources: dict[str, bytes]
+    release_id: str
+    candidate_id: str
+    quantity_errors: list[str] = field(default_factory=list)
+
+
+def canonical_bytes(value: Any) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def pretty_json_bytes(value: Any) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def read_json(path: Path, label: str) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise BuildError(f"Missing {label}: {path}") from exc
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise BuildError(f"Cannot read {label} at {path}: {exc}") from exc
+
+
+def require_object(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise BuildError(f"{label} must be a JSON object")
+    return value
+
+
+def exact_keys(value: dict[str, Any], required: set[str], optional: set[str], label: str) -> None:
+    missing = required - value.keys()
+    unknown = value.keys() - required - optional
+    if missing:
+        raise BuildError(f"{label} is missing keys: {', '.join(sorted(missing))}")
+    if unknown:
+        raise BuildError(f"{label} has unknown keys: {', '.join(sorted(unknown))}")
+
+
+def canonical_domain(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise BuildError(f"{label} must be a non-empty domain name")
+    if not value.isascii():
+        raise BuildError(f"{label} must use ASCII or punycode: {value!r}")
+    normalized = value.lower()
+    if normalized.endswith("."):
+        normalized = normalized[:-1]
+    if not normalized or len(normalized) > 253:
+        raise BuildError(f"{label} is not a valid DNS name: {value!r}")
+    try:
+        ipaddress.ip_address(normalized)
+    except ValueError:
+        pass
+    else:
+        raise BuildError(f"{label} must be a DNS name, not an IP address: {value!r}")
+    labels = normalized.split(".")
+    if any(not DOMAIN_LABEL.fullmatch(item) for item in labels):
+        raise BuildError(f"{label} is not a valid DNS name: {value!r}")
+    return normalized
+
+
+def canonical_policy_domain(value: Any, label: str) -> str:
+    normalized = canonical_domain(value, label)
+    if normalized != value:
+        raise BuildError(f"{label} must already be lowercase and omit a trailing root dot")
+    return normalized
+
+
+def valid_category(value: Any, label: str) -> str:
+    if value not in ("cn", "global"):
+        raise BuildError(f"{label} must be 'cn' or 'global'")
+    return value
+
+
+def valid_rule_type(value: Any, label: str, *, output: bool = False) -> str:
+    allowed = ALLOWED_OUTPUT_TYPES if output else DOMAIN_TYPES
+    if value not in allowed:
+        raise BuildError(f"{label} has unsupported rule type: {value!r}")
+    return value
+
+
+def wildcard_value(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value or not value.isascii():
+        raise BuildError(f"{label} must be an ASCII wildcard domain")
+    normalized = value.lower()
+    if normalized != value or normalized.endswith(".") or len(normalized) > 253:
+        raise BuildError(f"{label} must be canonical lowercase without a trailing dot")
+    if any(ch not in "abcdefghijklmnopqrstuvwxyz0123456789-.*" for ch in normalized):
+        raise BuildError(f"{label} contains unsupported wildcard syntax")
+    labels = normalized.split(".")
+    if any(not part or not re.fullmatch(r"[a-z0-9*-]+", part) for part in labels):
+        raise BuildError(f"{label} is not a valid wildcard domain")
+    if "*" not in normalized:
+        raise BuildError(f"{label} must contain a wildcard")
+    return normalized
+
+
+def selector_from_values(rule_type: str, value: str) -> Rule:
+    return Rule(rule_type, value, "")
+
+
+def _is_subdomain_or_equal(host: str, suffix: str) -> bool:
+    return host == suffix or host.endswith("." + suffix)
+
+
+def _suffix_scopes_overlap(left: str, right: str) -> bool:
+    return _is_subdomain_or_equal(left, right) or _is_subdomain_or_equal(right, left)
+
+
+def _wildcard_regex(pattern: str) -> re.Pattern[str]:
+    return re.compile("^" + re.escape(pattern).replace(r"\*", ".*") + "$")
+
+
+def rule_matches_host(rule: Rule, host: str) -> bool:
+    if rule.type == "DOMAIN":
+        return host == rule.value
+    if rule.type == "DOMAIN-SUFFIX":
+        return _is_subdomain_or_equal(host, rule.value)
+    if rule.type == "DOMAIN-WILDCARD":
+        return bool(_wildcard_regex(rule.value).fullmatch(host))
+    return False
+
+
+def _wildcard_tail_domain(pattern: str) -> str:
+    tail = pattern.rsplit("*", 1)[1]
+    if not tail.startswith("."):
+        raise BuildError(f"Registered wildcard must have a fixed DNS suffix: {pattern}")
+    return tail[1:]
+
+
+def rules_overlap(left: Rule, right: Rule) -> bool:
+    if left.type == "DOMAIN-WILDCARD" and right.type == "DOMAIN-WILDCARD":
+        return left.value == right.value
+    if left.type == "DOMAIN-WILDCARD" or right.type == "DOMAIN-WILDCARD":
+        wildcard = left if left.type == "DOMAIN-WILDCARD" else right
+        other = right if wildcard is left else left
+        if other.type == "DOMAIN":
+            return rule_matches_host(wildcard, other.value)
+        tail_domain = _wildcard_tail_domain(wildcard.value)
+        return _suffix_scopes_overlap(tail_domain, other.value)
+    if left.type == "DOMAIN" and right.type == "DOMAIN":
+        return left.value == right.value
+    if left.type == "DOMAIN" and right.type == "DOMAIN-SUFFIX":
+        return _is_subdomain_or_equal(left.value, right.value)
+    if right.type == "DOMAIN" and left.type == "DOMAIN-SUFFIX":
+        return _is_subdomain_or_equal(right.value, left.value)
+    return _suffix_scopes_overlap(left.value, right.value)
+
+
+def rule_is_within_selector(rule: Rule, selector: Rule) -> bool:
+    """Return true only when the rule's complete match range is inside selector."""
+    if selector.type == "DOMAIN":
+        return rule.type == "DOMAIN" and rule.value == selector.value
+    if selector.type != "DOMAIN-SUFFIX":
+        return False
+    if rule.type == "DOMAIN":
+        return _is_subdomain_or_equal(rule.value, selector.value)
+    if rule.type == "DOMAIN-SUFFIX":
+        return _is_subdomain_or_equal(rule.value, selector.value)
+    if rule.type == "DOMAIN-WILDCARD":
+        return _is_subdomain_or_equal(_wildcard_tail_domain(rule.value), selector.value)
+    return False
+
+
+def selector_covers_selector(cover: Rule, selection: Rule) -> bool:
+    return rule_is_within_selector(selection, cover)
+
+
+def validate_wildcard_intersections(rules: Iterable[Rule], context: str) -> None:
+    items = list(rules)
+    for i, left in enumerate(items):
+        for right in items[i + 1 :]:
+            if left.category != right.category and rules_overlap(left, right):
+                raise BuildError(
+                    f"{context} has a cross-category semantic overlap: "
+                    f"{left.category} {left.type},{left.value} vs "
+                    f"{right.category} {right.type},{right.value}"
+                )
+
+
+def _nonempty_text(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise BuildError(f"{label} must be a non-empty string")
+    if value != value.strip() or "\n" in value or "\r" in value:
+        raise BuildError(f"{label} must be one trimmed line")
+    return value
+
+
+def validate_policy(root: Path) -> dict[str, Any]:
+    policy = require_object(read_json(root / "policy.json", "policy"), "policy")
+    exact_keys(
+        policy,
+        {
+            "schema",
+            "adds",
+            "moves",
+            "removes",
+            "regex_adapters",
+            "limits",
+            "route_assertions",
+            "quantity_approvals",
+            "publish_hold",
+            "license_sources",
+        },
+        set(),
+        "policy",
+    )
+    if policy["schema"] != SCHEMA:
+        raise BuildError(f"Unsupported policy schema: {policy['schema']!r}")
+
+    for index, item in enumerate(_require_list(policy["adds"], "policy.adds")):
+        label = f"policy.adds[{index}]"
+        obj = require_object(item, label)
+        exact_keys(obj, {"category", "type", "value", "reason", "reference", "review_date"}, set(), label)
+        valid_category(obj["category"], label + ".category")
+        valid_rule_type(obj["type"], label + ".type")
+        canonical_policy_domain(obj["value"], label + ".value")
+        _nonempty_text(obj["reason"], label + ".reason")
+        _nonempty_text(obj["reference"], label + ".reference")
+        _validate_date(obj["review_date"], label + ".review_date")
+
+    for index, item in enumerate(_require_list(policy["moves"], "policy.moves")):
+        label = f"policy.moves[{index}]"
+        obj = require_object(item, label)
+        exact_keys(obj, {"type", "value", "to", "reason"}, set(), label)
+        valid_rule_type(obj["type"], label + ".type")
+        canonical_policy_domain(obj["value"], label + ".value")
+        valid_category(obj["to"], label + ".to")
+        _nonempty_text(obj["reason"], label + ".reason")
+
+    for index, item in enumerate(_require_list(policy["removes"], "policy.removes")):
+        label = f"policy.removes[{index}]"
+        obj = require_object(item, label)
+        exact_keys(obj, {"type", "value", "reason"}, set(), label)
+        valid_rule_type(obj["type"], label + ".type")
+        canonical_policy_domain(obj["value"], label + ".value")
+        _nonempty_text(obj["reason"], label + ".reason")
+
+    adapters = _require_list(policy["regex_adapters"], "policy.regex_adapters")
+    if len(adapters) != 1:
+        raise BuildError("policy.regex_adapters must contain exactly the one reviewed Azure adapter")
+    adapter = require_object(adapters[0], "policy.regex_adapters[0]")
+    exact_keys(
+        adapter,
+        {"source", "output_type", "output_value", "reason", "review_date", "samples"},
+        set(),
+        "policy.regex_adapters[0]",
+    )
+    if adapter["source"] != REGISTERED_REGEX:
+        raise BuildError("The registered Azure source regex must exactly match the reviewed source line")
+    if adapter["output_type"] != "DOMAIN-WILDCARD" or adapter["output_value"] != REGISTERED_WILDCARD:
+        raise BuildError("The registered Azure regex must use the reviewed fixed-suffix wildcard mapping")
+    _nonempty_text(adapter["reason"], "policy.regex_adapters[0].reason")
+    _validate_date(adapter["review_date"], "policy.regex_adapters[0].review_date")
+    samples = require_object(adapter["samples"], "policy.regex_adapters[0].samples")
+    exact_keys(samples, {"source_matches", "source_rejects", "wildcard_additionally_matches"}, set(), "adapter samples")
+    for sample_key, sample_values in samples.items():
+        values = _require_list(sample_values, f"adapter.samples.{sample_key}")
+        if not values or any(not isinstance(value, str) or not value.isascii() for value in values):
+            raise BuildError(f"adapter.samples.{sample_key} must be a non-empty list of ASCII host names")
+        for value in values:
+            canonical_domain(value, f"adapter.samples.{sample_key}")
+
+    limits = require_object(policy["limits"], "policy.limits")
+    exact_keys(
+        limits,
+        {
+            "minimum_rules_per_category",
+            "maximum_rules_per_category",
+            "maximum_added_minimum",
+            "maximum_added_ratio",
+            "maximum_removed_minimum",
+            "maximum_removed_ratio",
+        },
+        set(),
+        "policy.limits",
+    )
+    for key in ("minimum_rules_per_category", "maximum_rules_per_category", "maximum_added_minimum", "maximum_removed_minimum"):
+        if not isinstance(limits[key], int) or isinstance(limits[key], bool) or limits[key] < 0:
+            raise BuildError(f"policy.limits.{key} must be a non-negative integer")
+    if limits["minimum_rules_per_category"] < 1:
+        raise BuildError("policy.limits.minimum_rules_per_category must be at least one")
+    if limits["maximum_rules_per_category"] < limits["minimum_rules_per_category"]:
+        raise BuildError("The maximum rules per category must be at least its minimum")
+    for key in ("maximum_added_ratio", "maximum_removed_ratio"):
+        if not isinstance(limits[key], (int, float)) or isinstance(limits[key], bool) or not 0 <= limits[key] <= 1:
+            raise BuildError(f"policy.limits.{key} must be between 0 and 1")
+
+    assertions = _require_list(policy["route_assertions"], "policy.route_assertions")
+    if not assertions:
+        raise BuildError("policy.route_assertions cannot be empty")
+    seen_assertions: set[tuple[str, str]] = set()
+    for index, item in enumerate(assertions):
+        label = f"policy.route_assertions[{index}]"
+        obj = require_object(item, label)
+        exact_keys(obj, {"host", "category"}, set(), label)
+        canonical_policy_domain(obj["host"], label + ".host")
+        valid_category(obj["category"], label + ".category")
+        key = (obj["host"], obj["category"])
+        if key in seen_assertions:
+            raise BuildError(f"Duplicate route assertion: {key[0]} -> {key[1]}")
+        seen_assertions.add(key)
+
+    approvals = _require_list(policy["quantity_approvals"], "policy.quantity_approvals")
+    seen_approvals: set[str] = set()
+    for index, item in enumerate(approvals):
+        label = f"policy.quantity_approvals[{index}]"
+        obj = require_object(item, label)
+        exact_keys(obj, {"candidate_id", "reason", "approved_on"}, set(), label)
+        candidate_id = obj["candidate_id"]
+        if not isinstance(candidate_id, str) or not HEX_256.fullmatch(candidate_id):
+            raise BuildError(f"{label}.candidate_id must be a 64-character SHA-256 hex digest")
+        if candidate_id in seen_approvals:
+            raise BuildError(f"Duplicate quantity approval for {candidate_id}")
+        seen_approvals.add(candidate_id)
+        _nonempty_text(obj["reason"], label + ".reason")
+        _validate_date(obj["approved_on"], label + ".approved_on")
+
+    hold = require_object(policy["publish_hold"], "policy.publish_hold")
+    exact_keys(hold, {"enabled", "reason", "rolled_back_release_id"}, set(), "policy.publish_hold")
+    if not isinstance(hold["enabled"], bool):
+        raise BuildError("policy.publish_hold.enabled must be boolean")
+    if not isinstance(hold["reason"], str) or not isinstance(hold["rolled_back_release_id"], str):
+        raise BuildError("policy.publish_hold reason and rolled_back_release_id must be strings")
+    if hold["enabled"]:
+        _nonempty_text(hold["reason"], "policy.publish_hold.reason")
+        if not (hold["rolled_back_release_id"] == EMPTY_RELEASE or HEX_256.fullmatch(hold["rolled_back_release_id"])):
+            raise BuildError("An enabled publish hold must name the restored release id")
+
+    license_sources = require_object(policy["license_sources"], "policy.license_sources")
+    if set(license_sources) != set(LICENSE_FILES):
+        raise BuildError("policy.license_sources must describe exactly the four included third-party license files")
+    for filename in LICENSE_FILES:
+        label = f"policy.license_sources.{filename}"
+        source = require_object(license_sources[filename], label)
+        exact_keys(source, {"spdx", "source", "url"}, set(), label)
+        _nonempty_text(source["spdx"], label + ".spdx")
+        _nonempty_text(source["source"], label + ".source")
+        url = _nonempty_text(source["url"], label + ".url")
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme != "https" or not parsed.netloc:
+            raise BuildError(f"{label}.url must be HTTPS")
+
+    validate_policy_operation_overlaps(policy)
+    return policy
+
+
+def _require_list(value: Any, label: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise BuildError(f"{label} must be a JSON array")
+    return value
+
+
+def _validate_date(value: Any, label: str) -> None:
+    if not isinstance(value, str):
+        raise BuildError(f"{label} must be an ISO date")
+    try:
+        parsed = dt.date.fromisoformat(value)
+    except ValueError as exc:
+        raise BuildError(f"{label} must be an ISO date") from exc
+    if parsed.isoformat() != value:
+        raise BuildError(f"{label} must use YYYY-MM-DD")
+
+
+def policy_selector(operation: dict[str, Any]) -> Rule:
+    return selector_from_values(operation["type"], operation["value"])
+
+
+def validate_policy_operation_overlaps(policy: dict[str, Any]) -> None:
+    operations: list[tuple[str, Rule]] = []
+    for name in ("adds", "moves", "removes"):
+        for operation in policy[name]:
+            selector = policy_selector(operation)
+            if name == "adds":
+                # An add selects the same semantic scope as its proposed rule.
+                selector.category = operation["category"]
+            operations.append((name, selector))
+    for index, (left_name, left) in enumerate(operations):
+        for right_name, right in operations[index + 1 :]:
+            if rules_overlap(left, right):
+                raise BuildError(
+                    "Overlapping policy intent is ambiguous: "
+                    f"{left_name} {left.type},{left.value} and {right_name} {right.type},{right.value}"
+                )
+
+
+def semantic_policy(policy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema": policy["schema"],
+        "adds": sorted(
+            ({"category": item["category"], "type": item["type"], "value": item["value"]} for item in policy["adds"]),
+            key=lambda item: (item["category"], item["type"], item["value"]),
+        ),
+        "moves": sorted(
+            ({"type": item["type"], "value": item["value"], "to": item["to"]} for item in policy["moves"]),
+            key=lambda item: (item["type"], item["value"], item["to"]),
+        ),
+        "removes": sorted(
+            ({"type": item["type"], "value": item["value"]} for item in policy["removes"]),
+            key=lambda item: (item["type"], item["value"]),
+        ),
+        "regex_adapters": [
+            {
+                "source": policy["regex_adapters"][0]["source"],
+                "output_type": policy["regex_adapters"][0]["output_type"],
+                "output_value": policy["regex_adapters"][0]["output_value"],
+                "samples": policy["regex_adapters"][0]["samples"],
+            }
+        ],
+        "limits": policy["limits"],
+        "route_assertions": sorted(policy["route_assertions"], key=lambda item: (item["host"], item["category"])),
+        "license_sources": {key: policy["license_sources"][key] for key in sorted(policy["license_sources"])},
+        "source": {
+            "repository": META_REPOSITORY,
+            "branch": META_BRANCH,
+            "sha_endpoint": META_SHA_API,
+            "paths": SOURCE_PATHS,
+            "maximum_source_bytes": MAX_SOURCE_BYTES,
+            "request_timeout_seconds": HTTP_TIMEOUT_SECONDS,
+            "maximum_request_attempts": HTTP_RETRIES,
+        },
+    }
+
+
+def tool_sha256(root: Path | None = None) -> str:
+    root = root or Path(__file__).resolve().parent.parent
+    files = []
+    for relative in TOOL_CONTENT_FILES:
+        path = root / relative
+        try:
+            content = path.read_bytes()
+        except OSError as exc:
+            raise BuildError(f"Missing fixed tool or validation input {relative}: {exc}") from exc
+        files.append({"path": relative, "sha256": sha256(content)})
+    return sha256(canonical_bytes({"schema": SCHEMA, "files": files}))
+
+
+def license_snapshot(root: Path, policy: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    entries: list[dict[str, str]] = []
+    for filename in sorted(LICENSE_FILES):
+        path = root / "licenses" / filename
+        try:
+            content = path.read_bytes()
+        except OSError as exc:
+            raise BuildError(f"Cannot read included license {path}: {exc}") from exc
+        if not content:
+            raise BuildError(f"Included license is empty: {path}")
+        metadata = policy["license_sources"][filename]
+        entries.append(
+            {
+                "file": filename,
+                "sha256": sha256(content),
+                "spdx": metadata["spdx"],
+                "source": metadata["source"],
+                "url": metadata["url"],
+            }
+        )
+    record = {"files": entries}
+    return record, sha256(canonical_bytes(record))
+
+
+def _response_bytes(url: str, maximum: int) -> bytes:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname not in {"api.github.com", "raw.githubusercontent.com"}:
+        raise BuildError(f"Refusing a non-approved upstream URL: {url}")
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "zesming-ruleset-builder/1", "Accept": "application/vnd.github+json"},
+    )
+    last_error: Exception | None = None
+    for attempt in range(HTTP_RETRIES):
+        try:
+            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+                status = getattr(response, "status", 200)
+                final = urllib.parse.urlparse(response.geturl())
+                if status != 200:
+                    raise BuildError(f"Upstream returned HTTP {status}: {url}")
+                if final.scheme != "https" or final.hostname not in {"api.github.com", "raw.githubusercontent.com"}:
+                    raise BuildError(f"Upstream redirected outside approved HTTPS hosts: {response.geturl()}")
+                length = response.headers.get("Content-Length")
+                if length and int(length) > maximum:
+                    raise BuildError(f"Upstream response exceeds the {maximum}-byte limit: {url}")
+                content = response.read(maximum + 1)
+                if len(content) > maximum:
+                    raise BuildError(f"Upstream response exceeds the {maximum}-byte limit: {url}")
+                return content
+        except BuildError:
+            raise
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code < 500 and exc.code != 429:
+                raise BuildError(f"Upstream returned HTTP {exc.code}: {url}") from exc
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            last_error = exc
+        if attempt + 1 < HTTP_RETRIES:
+            time.sleep(0.5 * (2**attempt))
+    raise BuildError(f"Upstream request failed after {HTTP_RETRIES} attempts: {url}: {last_error}")
+
+
+def fetch_upstream(
+    *,
+    on_meta_sha: Any | None = None,
+    on_source: Any | None = None,
+) -> tuple[str, dict[str, bytes]]:
+    metadata_bytes = _response_bytes(META_SHA_API, MAX_SOURCE_BYTES)
+    try:
+        metadata = json.loads(metadata_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise BuildError(f"Meta branch response is not valid UTF-8 JSON: {exc}") from exc
+    if not isinstance(metadata, dict):
+        raise BuildError("Meta branch response must be a JSON object")
+    ref_name = metadata.get("ref")
+    target = metadata.get("object")
+    if ref_name != "refs/heads/meta" or not isinstance(target, dict) or target.get("type") != "commit":
+        raise BuildError("Meta ref response did not identify the meta branch commit object")
+    meta_sha = target.get("sha")
+    if not isinstance(meta_sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", meta_sha):
+        raise BuildError("Meta branch response did not contain one full commit SHA")
+    meta_sha = meta_sha.lower()
+    if on_meta_sha is not None:
+        on_meta_sha(meta_sha)
+    sources: dict[str, bytes] = {}
+    for category in SOURCE_CATEGORIES:
+        path = SOURCE_PATHS[category]
+        url = f"https://raw.githubusercontent.com/{META_REPOSITORY}/{meta_sha}/{path}"
+        sources[category] = _response_bytes(url, MAX_SOURCE_BYTES)
+        if on_source is not None:
+            on_source(category, sources[category])
+    return meta_sha, sources
+
+
+def parse_source(data: bytes, category: str, meta_sha: str) -> list[Rule]:
+    if len(data) > MAX_SOURCE_BYTES:
+        raise BuildError(f"{category} source exceeds the {MAX_SOURCE_BYTES}-byte limit")
+    if not data:
+        raise BuildError(f"{category} source is empty")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise BuildError(f"{category} source is not valid UTF-8: {exc}") from exc
+    if "\x00" in text:
+        raise BuildError(f"{category} source contains a NUL byte")
+    stripped = text.lstrip().lower()
+    if stripped.startswith(("<!doctype html", "<html", "<?xml", "{")):
+        raise BuildError(f"{category} source looks like an error page or non-rule response")
+    lines = text.splitlines()
+    if not lines or not any(line.strip() for line in lines):
+        raise BuildError(f"{category} source has no rules")
+    parsed: list[Rule] = []
+    for line_number, line in enumerate(lines, 1):
+        if not line or line != line.strip() or line.startswith("#"):
+            raise BuildError(f"{category} source line {line_number} is blank, commented, or padded")
+        if line.count(",") != 1:
+            raise BuildError(f"{category} source line {line_number} must contain exactly one comma")
+        rule_type, value = line.split(",", 1)
+        if not rule_type or not value or any(ch.isspace() for ch in line):
+            raise BuildError(f"{category} source line {line_number} contains whitespace or an empty field")
+        if rule_type in DOMAIN_TYPES:
+            normalized = canonical_domain(value, f"{category} source line {line_number}")
+            rule = Rule(
+                rule_type,
+                normalized,
+                category,
+                [{"kind": "meta", "meta_sha": meta_sha, "path": SOURCE_PATHS[category], "line": line_number, "raw": line}],
+            )
+        elif rule_type == "DOMAIN-REGEX":
+            if value != REGISTERED_REGEX:
+                raise BuildError(f"{category} source line {line_number} contains an unknown or changed DOMAIN-REGEX")
+            rule = Rule(
+                "DOMAIN-WILDCARD",
+                REGISTERED_WILDCARD,
+                category,
+                [
+                    {
+                        "kind": "meta-regex-adapter",
+                        "meta_sha": meta_sha,
+                        "path": SOURCE_PATHS[category],
+                        "line": line_number,
+                        "raw": line,
+                        "adapter_source": REGISTERED_REGEX,
+                    }
+                ],
+            )
+        else:
+            raise BuildError(f"{category} source line {line_number} has unsupported rule type {rule_type!r}")
+        parsed.append(rule)
+    if not parsed:
+        raise BuildError(f"{category} source has no rules")
+    return deduplicate(parsed)
+
+
+def deduplicate(records: Iterable[Rule]) -> list[Rule]:
+    combined: dict[tuple[str, str, str], Rule] = {}
+    for record in records:
+        key = (record.category, record.type, record.value)
+        if key not in combined:
+            combined[key] = Rule(record.type, record.value, record.category, list(record.origins))
+        else:
+            combined[key].origins.extend(record.origins)
+    return sorted(combined.values(), key=lambda item: (item.category, item.type, item.value))
+
+
+def _records_by_category(records: Iterable[Rule]) -> dict[str, list[Rule]]:
+    result = {category: [] for category in SOURCE_CATEGORIES}
+    for record in records:
+        result[record.category].append(record)
+    for category in result:
+        result[category].sort(key=lambda item: (item.type, item.value))
+    return result
+
+
+def _serialize_records(records: Iterable[Rule]) -> dict[str, list[dict[str, str]]]:
+    by_category = _records_by_category(records)
+    return {category: [rule.json_key() for rule in by_category[category]] for category in SOURCE_CATEGORIES}
+
+
+def _tuples_by_category(raw: dict[str, Any], label: str) -> dict[str, list[tuple[str, str]]]:
+    if not isinstance(raw, dict) or set(raw) != set(SOURCE_CATEGORIES):
+        raise BuildError(f"{label} must contain exactly global and cn categories")
+    result: dict[str, list[tuple[str, str]]] = {}
+    for category in SOURCE_CATEGORIES:
+        values = _require_list(raw[category], f"{label}.{category}")
+        parsed: list[tuple[str, str]] = []
+        for index, item in enumerate(values):
+            obj = require_object(item, f"{label}.{category}[{index}]")
+            exact_keys(obj, {"type", "value"}, set(), f"{label}.{category}[{index}]")
+            typ = valid_rule_type(obj["type"], f"{label}.{category}[{index}].type", output=True)
+            value = wildcard_value(obj["value"], f"{label}.{category}[{index}].value") if typ == "DOMAIN-WILDCARD" else canonical_policy_domain(obj["value"], f"{label}.{category}[{index}].value")
+            parsed.append((typ, value))
+        if parsed != sorted(set(parsed)):
+            raise BuildError(f"{label}.{category} must be unique and sorted")
+        result[category] = parsed
+    return result
+
+
+def _scope_selector(operation: dict[str, Any]) -> Rule:
+    return Rule(operation["type"], operation["value"], "")
+
+
+def check_source_migrations(
+    old_source: dict[str, list[tuple[str, str]]],
+    new_source: dict[str, list[tuple[str, str]]],
+    moves: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    old_rules = [Rule(typ, value, category) for category in SOURCE_CATEGORIES for typ, value in old_source[category]]
+    new_rules = [Rule(typ, value, category) for category in SOURCE_CATEGORIES for typ, value in new_source[category]]
+    migrations: list[dict[str, Any]] = []
+    for new in new_rules:
+        prior_same_category = [
+            Rule(typ, value, new.category)
+            for typ, value in old_source[new.category]
+        ]
+        # A cross-class conflict already present in the accepted source snapshot is
+        # not a new upstream migration. Its accepted move/remove policy remains the
+        # user's standing resolution until the source coverage changes.
+        if any(rule_is_within_selector(new, prior) for prior in prior_same_category):
+            continue
+        for old in old_rules:
+            if old.category == new.category or not rules_overlap(old, new):
+                continue
+            matching = [
+                move
+                for move in moves
+                if move["to"] == new.category and rule_is_within_selector(new, _scope_selector(move))
+            ]
+            migration = {
+                "old_category": old.category,
+                "old_rule": old.json_key(),
+                "new_category": new.category,
+                "new_rule": new.json_key(),
+                "approved_by": [
+                    {"type": move["type"], "value": move["value"], "to": move["to"]}
+                    for move in matching
+                ],
+            }
+            migrations.append(migration)
+            if not matching:
+                raise BuildError(
+                    "Unapproved cross-category source migration: "
+                    f"{old.category} {old.type},{old.value} overlaps "
+                    f"{new.category} {new.type},{new.value}; add a matching move to {new.category}"
+                )
+    unique: dict[bytes, dict[str, Any]] = {}
+    for migration in migrations:
+        unique[canonical_bytes(migration)] = migration
+    return [unique[key] for key in sorted(unique)]
+
+
+def apply_policy(
+    source_records: list[Rule], policy: dict[str, Any]
+) -> tuple[list[Rule], dict[str, Any]]:
+    records = [Rule(item.type, item.value, item.category, list(item.origins)) for item in source_records]
+    effects: dict[str, Any] = {"adds": [], "moves": [], "removes": []}
+
+    # Adds are permanent; they are deliberately considered before source-present moves.
+    for index, add in enumerate(policy["adds"]):
+        proposed = Rule(add["type"], add["value"], add["category"])
+        same_category = [item for item in records if item.category == proposed.category]
+        if any(rule_is_within_selector(proposed, Rule(item.type, item.value, item.category, item.origins)) for item in same_category):
+            effects["adds"].append({"type": add["type"], "value": add["value"], "category": add["category"], "result": "redundant"})
+            continue
+        opposite = [item for item in records if item.category != proposed.category and rules_overlap(proposed, item)]
+        if opposite:
+            other = opposite[0]
+            raise BuildError(
+                f"Manual add {proposed.type},{proposed.value} conflicts with {other.category} {other.type},{other.value}; use a move or remove"
+            )
+        proposed.origins = [
+            {
+                "kind": "manual-add",
+                "type": add["type"],
+                "value": add["value"],
+                "category": add["category"],
+                "reason": add["reason"],
+                "reference": add["reference"],
+            }
+        ]
+        records.append(proposed)
+        effects["adds"].append({"type": add["type"], "value": add["value"], "category": add["category"], "result": "added"})
+
+    # A move can reassign only source records and never manufactures its selector.
+    for index, move in enumerate(policy["moves"]):
+        selector = _scope_selector(move)
+        selected: list[Rule] = []
+        for record in records:
+            is_source = any(origin.get("kind", "").startswith("meta") for origin in record.origins)
+            if not is_source or not rules_overlap(record, selector):
+                continue
+            if not rule_is_within_selector(record, selector):
+                raise BuildError(
+                    f"Move {selector.type},{selector.value} only partly overlaps source rule "
+                    f"{record.type},{record.value}; move or remove the full parent scope"
+                )
+            selected.append(record)
+        for record in selected:
+            record.category = move["to"]
+            record.origins.append(
+                {
+                    "kind": "manual-move",
+                    "type": move["type"],
+                    "value": move["value"],
+                    "to": move["to"],
+                    "reason": move["reason"],
+                }
+            )
+        effects["moves"].append(
+            {
+                "type": move["type"],
+                "value": move["value"],
+                "to": move["to"],
+                "state": "active" if selected else "inactive",
+                "selected_rules": [
+                    {"type": item.type, "value": item.value, "source_category": next(
+                        (origin.get("path") and ("global" if origin.get("path") == SOURCE_PATHS["global"] else "cn") for origin in item.origins if origin.get("kind", "").startswith("meta")),
+                        item.category,
+                    )}
+                    for item in selected
+                ],
+            }
+        )
+
+    # A remove is final and removes all rules fully covered by its selector.
+    for index, remove in enumerate(policy["removes"]):
+        selector = _scope_selector(remove)
+        selected: list[Rule] = []
+        for record in records:
+            if not rules_overlap(record, selector):
+                continue
+            if not rule_is_within_selector(record, selector):
+                raise BuildError(
+                    f"Remove {selector.type},{selector.value} only partly overlaps rule "
+                    f"{record.type},{record.value}; a wider suffix or wildcard still covers the requested range"
+                )
+            selected.append(record)
+        remove_ids = {id(item) for item in selected}
+        records = [item for item in records if id(item) not in remove_ids]
+        effects["removes"].append(
+            {
+                "type": remove["type"],
+                "value": remove["value"],
+                "removed_rules": [{"type": item.type, "value": item.value, "category": item.category} for item in selected],
+            }
+        )
+
+    effects["adds"].sort(key=lambda item: (item["category"], item["type"], item["value"]))
+    effects["moves"].sort(key=lambda item: (item["type"], item["value"], item["to"]))
+    for item in effects["moves"]:
+        item["selected_rules"].sort(key=lambda selected: (selected["source_category"], selected["type"], selected["value"]))
+    effects["removes"].sort(key=lambda item: (item["type"], item["value"]))
+    for item in effects["removes"]:
+        item["removed_rules"].sort(key=lambda removed: (removed["category"], removed["type"], removed["value"]))
+    records = deduplicate(records)
+    validate_wildcard_intersections(records, "Generated output")
+    return records, effects
+
+
+def _compare_category_sets(
+    before: dict[str, list[tuple[str, str]]], after: dict[str, list[tuple[str, str]]]
+) -> dict[str, dict[str, list[dict[str, str]]]]:
+    result: dict[str, dict[str, list[dict[str, str]]]] = {}
+    for category in SOURCE_CATEGORIES:
+        old = set(before[category])
+        new = set(after[category])
+        result[category] = {
+            "added": [{"type": typ, "value": value} for typ, value in sorted(new - old)],
+            "removed": [{"type": typ, "value": value} for typ, value in sorted(old - new)],
+        }
+    return result
+
+
+def _count_gate(
+    label: str,
+    changes: dict[str, dict[str, list[dict[str, str]]]],
+    before: dict[str, list[tuple[str, str]]],
+    limits: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    for category in SOURCE_CATEGORIES:
+        original_count = len(before[category])
+        added = len(changes[category]["added"])
+        removed = len(changes[category]["removed"])
+        max_added = max(limits["maximum_added_minimum"], math.ceil(limits["maximum_added_ratio"] * original_count))
+        max_removed = max(limits["maximum_removed_minimum"], math.ceil(limits["maximum_removed_ratio"] * original_count))
+        if added > max_added:
+            errors.append(f"{label} {category} adds {added}, above max({limits['maximum_added_minimum']}, ceil({limits['maximum_added_ratio']}*{original_count}))={max_added}")
+        if removed > max_removed:
+            errors.append(f"{label} {category} removes {removed}, above max({limits['maximum_removed_minimum']}, ceil({limits['maximum_removed_ratio']}*{original_count}))={max_removed}")
+    return errors
+
+
+def _assert_routes(records: list[Rule], policy: dict[str, Any]) -> None:
+    for assertion in policy["route_assertions"]:
+        matches = {record.category for record in records if rule_matches_host(record, assertion["host"])}
+        if matches != {assertion["category"]}:
+            found = ", ".join(sorted(matches)) if matches else "unmatched"
+            raise BuildError(
+                f"Core route assertion failed: {assertion['host']} expected {assertion['category']}, found {found}"
+            )
+
+
+def _make_provenance(meta_sha: str, raw_sources: dict[str, bytes], license_record: dict[str, Any], license_hash: str) -> dict[str, Any]:
+    sources = {}
+    for category in SOURCE_CATEGORIES:
+        path = SOURCE_PATHS[category]
+        sources[category] = {
+            "url": f"https://raw.githubusercontent.com/{META_REPOSITORY}/{meta_sha}/{path}",
+            "meta_sha": meta_sha,
+            "repository": META_REPOSITORY,
+            "branch": META_BRANCH,
+            "path": path,
+            "sha256": sha256(raw_sources[category]),
+        }
+    return {
+        "schema": SCHEMA,
+        "sources": sources,
+        "license_snapshot_sha256": license_hash,
+        "licenses": license_record["files"],
+    }
+
+
+def _rules_bytes(records: list[Rule], category: str) -> bytes:
+    lines = [f"{item.type},{item.value}" for item in sorted(records, key=lambda item: (item.type, item.value)) if item.category == category]
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
+def _origin_manifest(records: list[Rule]) -> list[dict[str, Any]]:
+    stable_origins = []
+    for record in records:
+        origins = []
+        for origin in record.origins:
+            if origin.get("kind") in {"manual-add", "manual-move"}:
+                origins.append({key: value for key, value in origin.items() if key not in {"reason", "reference"}})
+            else:
+                origins.append(origin)
+        stable_origins.append(
+            {
+                "category": record.category,
+                "type": record.type,
+                "value": record.value,
+                "origins": sorted(origins, key=canonical_bytes),
+            }
+        )
+    return [
+        item
+        for item in sorted(stable_origins, key=lambda item: (item["category"], item["type"], item["value"]))
+    ]
+
+
+def _release_identity_inputs(
+    meta_sha: str,
+    source_hashes: dict[str, str],
+    tool_hash: str,
+    policy_hash: str,
+    output_hashes: dict[str, str],
+    license_hash: str,
+) -> dict[str, Any]:
+    return {
+        "schema": SCHEMA,
+        "meta_sha": meta_sha,
+        "source_sha256": source_hashes,
+        "tool_sha256": tool_hash,
+        "semantic_policy_sha256": policy_hash,
+        "output_sha256": output_hashes,
+        "license_snapshot_sha256": license_hash,
+    }
+
+
+def build_candidate(
+    *,
+    raw_sources: dict[str, bytes],
+    meta_sha: str,
+    policy: dict[str, Any],
+    license_record: dict[str, Any],
+    license_hash: str,
+    baseline: Baseline | None,
+    current_tool_hash: str | None = None,
+) -> Candidate:
+    if not re.fullmatch(r"[0-9a-f]{40}", meta_sha):
+        raise BuildError("Meta source identifier must be one lowercase 40-character SHA")
+    if set(raw_sources) != set(SOURCE_CATEGORIES):
+        raise BuildError("A candidate requires both category source files")
+    for category in SOURCE_CATEGORIES:
+        if not raw_sources[category]:
+            raise BuildError(f"{category} source is empty")
+        if len(raw_sources[category]) > MAX_SOURCE_BYTES:
+            raise BuildError(f"{category} source exceeds the size limit")
+
+    source_records = deduplicate(
+        record
+        for category in SOURCE_CATEGORIES
+        for record in parse_source(raw_sources[category], category, meta_sha)
+    )
+    source_json = _serialize_records(source_records)
+    source_tuples = _tuples_by_category(source_json, "normalized source rules")
+    if baseline is None:
+        baseline = Baseline(EMPTY_RELEASE, {category: [] for category in SOURCE_CATEGORIES}, {category: [] for category in SOURCE_CATEGORIES})
+    if baseline.release_id != EMPTY_RELEASE:
+        migrations = check_source_migrations(baseline.source_rules, source_tuples, policy["moves"])
+    else:
+        migrations = []
+
+    output_records, effects = apply_policy(source_records, policy)
+    _assert_routes(output_records, policy)
+    output_json = _serialize_records(output_records)
+    output_tuples = _tuples_by_category(output_json, "normalized output rules")
+    for category in SOURCE_CATEGORIES:
+        source_count = len(source_tuples[category])
+        output_count = len(output_tuples[category])
+        if source_count < policy["limits"]["minimum_rules_per_category"]:
+            raise BuildError(f"{category} source has only {source_count} rules")
+        if output_count < policy["limits"]["minimum_rules_per_category"]:
+            raise BuildError(f"{category} output has only {output_count} rules")
+        if source_count > policy["limits"]["maximum_rules_per_category"]:
+            raise BuildError(f"{category} source exceeds the hard rule-count limit")
+        if output_count > policy["limits"]["maximum_rules_per_category"]:
+            raise BuildError(f"{category} output exceeds the hard rule-count limit")
+
+    output_bytes = {category: _rules_bytes(output_records, category) for category in SOURCE_CATEGORIES}
+    source_hashes = {category: sha256(raw_sources[category]) for category in SOURCE_CATEGORIES}
+    output_hashes = {category: sha256(output_bytes[category]) for category in SOURCE_CATEGORIES}
+    semantic_hash = sha256(canonical_bytes(semantic_policy(policy)))
+    tool_hash = current_tool_hash or tool_sha256()
+    release_inputs = _release_identity_inputs(meta_sha, source_hashes, tool_hash, semantic_hash, output_hashes, license_hash)
+    release_id = sha256(canonical_bytes(release_inputs))
+    candidate_inputs = {"schema": SCHEMA, "baseline_release_id": baseline.release_id, **release_inputs}
+    candidate_id = sha256(canonical_bytes(candidate_inputs))
+
+    source_diff = _compare_category_sets(baseline.source_rules, source_tuples)
+    output_diff = _compare_category_sets(baseline.output_rules, output_tuples)
+    quantity_errors: list[str] = []
+    if baseline.release_id != EMPTY_RELEASE:
+        quantity_errors.extend(_count_gate("source", source_diff, baseline.source_rules, policy["limits"]))
+        quantity_errors.extend(_count_gate("output", output_diff, baseline.output_rules, policy["limits"]))
+    provenance = _make_provenance(meta_sha, raw_sources, license_record, license_hash)
+    manifest = {
+        "schema": SCHEMA,
+        "baseline_release_id": baseline.release_id,
+        "candidate_id": candidate_id,
+        "release_id": release_id,
+        "meta_sha": meta_sha,
+        "sources": {
+            category: {"path": SOURCE_PATHS[category], "sha256": source_hashes[category]}
+            for category in SOURCE_CATEGORIES
+        },
+        "tool_sha256": tool_hash,
+        "semantic_policy_sha256": semantic_hash,
+        "license_snapshot_sha256": license_hash,
+        "license_files": license_record["files"],
+        "outputs": {
+            category: {
+                "path": OUTPUT_PATHS[category],
+                "sha256": output_hashes[category],
+                "rules": output_json[category],
+            }
+            for category in SOURCE_CATEGORIES
+        },
+        "normalized_source": source_json,
+        "counts": {
+            "source": {category: len(source_tuples[category]) for category in SOURCE_CATEGORIES},
+            "output": {category: len(output_tuples[category]) for category in SOURCE_CATEGORIES},
+            "adapted_regex_rules": sum(1 for item in source_records if item.type == "DOMAIN-WILDCARD"),
+            "manual_adds": effects["adds"],
+            "moves": effects["moves"],
+            "removes": effects["removes"],
+        },
+        "diffs": {
+            "source": source_diff,
+            "output": output_diff,
+            "source_migrations": migrations,
+        },
+        "rule_origins": _origin_manifest(output_records),
+    }
+    return Candidate(manifest, provenance, output_bytes, raw_sources, release_id, candidate_id, quantity_errors)
+
+
+def enforce_quantity_gate(candidate: Candidate, policy: dict[str, Any]) -> None:
+    approved = {item["candidate_id"] for item in policy["quantity_approvals"]}
+    if candidate.quantity_errors and candidate.candidate_id not in approved:
+        raise BuildError(
+            "Quantity gate rejected candidate "
+            + candidate.candidate_id
+            + ": "
+            + "; ".join(candidate.quantity_errors)
+        )
+
+
+def _baseline_from_manifest(manifest: Any, label: str) -> Baseline:
+    obj = require_object(manifest, label)
+    required = {"release_id", "normalized_source", "outputs"}
+    if required - obj.keys():
+        raise BuildError(f"{label} is missing required baseline information")
+    release_id = obj["release_id"]
+    if not isinstance(release_id, str) or not HEX_256.fullmatch(release_id):
+        raise BuildError(f"{label}.release_id is invalid")
+    source_rules = _tuples_by_category(obj["normalized_source"], f"{label}.normalized_source")
+    raw_output = {category: obj["outputs"].get(category, {}).get("rules") for category in SOURCE_CATEGORIES}
+    output_rules = _tuples_by_category(raw_output, f"{label}.outputs.rules")
+    return Baseline(release_id, source_rules, output_rules)
+
+
+def _read_current_baseline(root: Path) -> Baseline | None:
+    manifest_path = root / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    manifest = read_json(manifest_path, "last accepted manifest")
+    baseline = _baseline_from_manifest(manifest, "last accepted manifest")
+    for category in SOURCE_CATEGORIES:
+        archive = root / ARCHIVE_PATHS[category]
+        output = root / OUTPUT_PATHS[category]
+        try:
+            source_data = archive.read_bytes()
+            output_data = output.read_bytes()
+        except OSError as exc:
+            raise BuildError(f"Last accepted bundle is incomplete: {exc}") from exc
+        source_meta = manifest.get("sources", {}).get(category, {})
+        output_meta = manifest.get("outputs", {}).get(category, {})
+        if sha256(source_data) != source_meta.get("sha256"):
+            raise BuildError(f"Last accepted {category} source snapshot does not match its manifest")
+        if sha256(output_data) != output_meta.get("sha256"):
+            raise BuildError(f"Last accepted {category} output does not match its manifest")
+    return baseline
+
+
+def _git_output(root: Path, args: list[str]) -> bytes:
+    result = subprocess.run(["git", *args], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        raise BuildError(result.stderr.decode("utf-8", errors="replace").strip() or "git command failed")
+    return result.stdout
+
+
+def _find_historical_baseline(root: Path, release_id: str) -> Baseline:
+    revisions_raw = _git_output(root, ["log", "--all", "--format=%H", "--", "manifest.json"])
+    revisions = revisions_raw.decode("ascii", errors="strict").splitlines()
+    for revision in revisions:
+        try:
+            raw = _git_output(root, ["show", f"{revision}:manifest.json"])
+            historical = json.loads(raw.decode("utf-8"))
+        except (BuildError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(historical, dict) and historical.get("release_id") == release_id:
+            return _baseline_from_manifest(historical, f"historical release {release_id}")
+    raise BuildError(f"Could not find baseline release {release_id} in local Git history; fetch full history or pass --baseline")
+
+
+def _baseline_from_directory(path: Path) -> Baseline:
+    return _baseline_from_manifest(read_json(path / "manifest.json", "baseline manifest"), "baseline manifest")
+
+
+def _checked_at_value(root: Path) -> dict[str, Any] | None:
+    path = root / "CHECKED_AT.json"
+    if not path.exists():
+        return None
+    value = require_object(read_json(path, "CHECKED_AT"), "CHECKED_AT")
+    exact_keys(value, {"checked_at", "source_sha", "candidate_id", "live_release_id", "result"}, set(), "CHECKED_AT")
+    return value
+
+
+def _parse_checked_at(root: Path) -> dt.datetime | None:
+    value = _checked_at_value(root)
+    if value is None:
+        return None
+    timestamp = value["checked_at"]
+    if not isinstance(timestamp, str):
+        raise BuildError("CHECKED_AT.checked_at must be an RFC 3339 timestamp")
+    try:
+        parsed = dt.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise BuildError("CHECKED_AT.checked_at must be an RFC 3339 timestamp") from exc
+    if parsed.tzinfo is None:
+        raise BuildError("CHECKED_AT.checked_at must include a timezone")
+    return parsed.astimezone(dt.timezone.utc)
+
+
+def _now(value: str | None) -> dt.datetime:
+    if value is None:
+        return dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    try:
+        parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise BuildError("--now must be an RFC 3339 timestamp") from exc
+    if parsed.tzinfo is None:
+        raise BuildError("--now must include a timezone")
+    return parsed.astimezone(dt.timezone.utc).replace(microsecond=0)
+
+
+def _format_time(value: dt.datetime) -> str:
+    return value.astimezone(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _audit_due(root: Path, now: dt.datetime, force: bool = False) -> bool:
+    if force:
+        return True
+    previous = _parse_checked_at(root)
+    return previous is None or (now - previous) >= dt.timedelta(days=30)
+
+
+def _checked_at_record(candidate: Candidate, source_sha: str, live_release_id: str, result: str, now: dt.datetime) -> dict[str, str]:
+    return {
+        "checked_at": _format_time(now),
+        "source_sha": source_sha,
+        "candidate_id": candidate.candidate_id,
+        "live_release_id": live_release_id,
+        "result": result,
+    }
+
+
+def _clear_report(root: Path) -> Path:
+    report = root / REPORT_DIR
+    if report.exists():
+        shutil.rmtree(report)
+    (report / "evidence").mkdir(parents=True, exist_ok=True)
+    return report
+
+
+def _write_report(report_dir: Path, value: dict[str, Any]) -> None:
+    report_dir.mkdir(parents=True, exist_ok=True)
+    temporary = report_dir / ".result.json.tmp"
+    temporary.write_bytes(pretty_json_bytes(value))
+    os.replace(temporary, report_dir / "result.json")
+
+
+def _report_candidate(candidate: Candidate, status: str, **extra: Any) -> dict[str, Any]:
+    return {
+        "schema": SCHEMA,
+        "status": status,
+        "candidate_id": candidate.candidate_id,
+        "release_id": candidate.release_id,
+        "baseline_release_id": candidate.manifest["baseline_release_id"],
+        "meta_sha": candidate.manifest["meta_sha"],
+        "diffs": candidate.manifest["diffs"],
+        **extra,
+    }
+
+
+def _write_evidence_source(report: Path, category: str, content: bytes) -> None:
+    evidence = report / "evidence" / f"source-{category}.list"
+    evidence.write_bytes(content)
+
+
+def _ensure_allowed_paths(files: dict[str, bytes]) -> None:
+    allowed = set(OUTPUT_PATHS.values()) | set(ARCHIVE_PATHS.values()) | {
+        "upstream/provenance.json",
+        "manifest.json",
+        "CHECKED_AT.json",
+    }
+    unexpected = set(files) - allowed
+    if unexpected:
+        raise BuildError("Refusing to write unexpected bundle paths: " + ", ".join(sorted(unexpected)))
+
+
+def _atomic_file(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temp_path = Path(name)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def write_bundle_transactionally(root: Path, files: dict[str, bytes]) -> None:
+    _ensure_allowed_paths(files)
+    old: dict[str, bytes | None] = {}
+    created_dirs: list[Path] = []
+    try:
+        for relative in sorted(files):
+            target = root / relative
+            parent_chain: list[Path] = []
+            parent = target.parent
+            while parent != root and not parent.exists():
+                parent_chain.append(parent)
+                parent = parent.parent
+            for directory in reversed(parent_chain):
+                directory.mkdir(exist_ok=True)
+                created_dirs.append(directory)
+            old[relative] = target.read_bytes() if target.exists() else None
+        for relative in sorted(files):
+            _atomic_file(root / relative, files[relative])
+    except Exception as exc:
+        restore_errors = []
+        for relative, content in reversed(list(old.items())):
+            target = root / relative
+            try:
+                if content is None:
+                    if target.exists():
+                        target.unlink()
+                else:
+                    _atomic_file(target, content)
+            except Exception as restore_exc:  # pragma: no cover - only an OS failure during recovery
+                restore_errors.append(f"{target}: {restore_exc}")
+        for directory in reversed(created_dirs):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
+        suffix = f"; rollback errors: {'; '.join(restore_errors)}" if restore_errors else ""
+        raise BuildError(f"Atomic bundle write failed and previous files were restored: {exc}{suffix}") from exc
+
+
+def _bundle_files(candidate: Candidate, checked_at: dict[str, Any]) -> dict[str, bytes]:
+    files = {
+        OUTPUT_PATHS[category]: candidate.outputs[category]
+        for category in SOURCE_CATEGORIES
+    }
+    files.update({ARCHIVE_PATHS[category]: candidate.raw_sources[category] for category in SOURCE_CATEGORIES})
+    files["upstream/provenance.json"] = pretty_json_bytes(candidate.provenance)
+    files["manifest.json"] = pretty_json_bytes(candidate.manifest)
+    files["CHECKED_AT.json"] = pretty_json_bytes(checked_at)
+    return files
+
+
+def run_update(root: Path, now_arg: str | None = None) -> dict[str, Any]:
+    report_dir = _clear_report(root)
+    report: dict[str, Any] = {"schema": SCHEMA, "status": "failed", "candidate_id": None, "release_id": None}
+    candidate: Candidate | None = None
+    try:
+        policy = validate_policy(root)
+        license_record, license_hash = license_snapshot(root, policy)
+        baseline = _read_current_baseline(root)
+        live_release_id = baseline.release_id if baseline else EMPTY_RELEASE
+        current_tool_hash = tool_sha256(root)
+
+        def retain_meta_sha(value: str) -> None:
+            report["meta_sha"] = value
+            (report_dir / "evidence" / "source-meta.json").write_bytes(
+                pretty_json_bytes(
+                    {
+                        "repository": META_REPOSITORY,
+                        "branch": META_BRANCH,
+                        "meta_sha": value,
+                        "sources": {
+                            category: {
+                                "path": SOURCE_PATHS[category],
+                                "url": f"https://raw.githubusercontent.com/{META_REPOSITORY}/{value}/{SOURCE_PATHS[category]}",
+                            }
+                            for category in SOURCE_CATEGORIES
+                        },
+                    }
+                )
+            )
+
+        def retain_source(category: str, content: bytes) -> None:
+            _write_evidence_source(report_dir, category, content)
+
+        meta_sha, raw_sources = fetch_upstream(on_meta_sha=retain_meta_sha, on_source=retain_source)
+        candidate = build_candidate(
+            raw_sources=raw_sources,
+            meta_sha=meta_sha,
+            policy=policy,
+            license_record=license_record,
+            license_hash=license_hash,
+            baseline=baseline,
+            current_tool_hash=current_tool_hash,
+        )
+        enforce_quantity_gate(candidate, policy)
+        now = _now(now_arg)
+        held = policy["publish_hold"]["enabled"]
+        previous_checked = _checked_at_value(root)
+        force_recheck_after_hold = bool(previous_checked and previous_checked.get("result") == "validated_not_published_hold" and not held)
+        due = _audit_due(root, now, force=force_recheck_after_hold)
+        if held:
+            status = "validated_not_published_hold"
+            if due:
+                checked = _checked_at_record(candidate, meta_sha, live_release_id, status, now)
+                write_bundle_transactionally(root, {"CHECKED_AT.json": pretty_json_bytes(checked)})
+            report = _report_candidate(
+                candidate,
+                status,
+                live_release_id=live_release_id,
+                checked_at_written=bool(due),
+                reason=policy["publish_hold"]["reason"],
+            )
+        elif candidate.release_id == live_release_id:
+            status = "unchanged"
+            if due:
+                checked = _checked_at_record(candidate, meta_sha, live_release_id, status, now)
+                write_bundle_transactionally(root, {"CHECKED_AT.json": pretty_json_bytes(checked)})
+            report = _report_candidate(candidate, status, live_release_id=live_release_id, checked_at_written=bool(due))
+        else:
+            checked = _checked_at_record(candidate, meta_sha, candidate.release_id, "released", now)
+            write_bundle_transactionally(root, _bundle_files(candidate, checked))
+            report = _report_candidate(candidate, "released", live_release_id=candidate.release_id, checked_at_written=True)
+        _write_report(report_dir, report)
+        return report
+    except Exception as exc:
+        report["error"] = {"type": type(exc).__name__, "message": str(exc)}
+        if candidate is not None:
+            report.update(
+                {
+                    "candidate_id": candidate.candidate_id,
+                    "release_id": candidate.release_id,
+                    "baseline_release_id": candidate.manifest["baseline_release_id"],
+                    "meta_sha": candidate.manifest["meta_sha"],
+                    "diffs": candidate.manifest["diffs"],
+                    "quantity_gate_errors": candidate.quantity_errors,
+                }
+            )
+        _write_report(report_dir, report)
+        if isinstance(exc, BuildError):
+            raise
+        raise BuildError(f"Unexpected build failure: {exc}") from exc
+
+
+def _read_archived_sources(root: Path, manifest: dict[str, Any]) -> tuple[str, dict[str, bytes]]:
+    meta_sha = manifest.get("meta_sha")
+    if not isinstance(meta_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", meta_sha):
+        raise BuildError("manifest.meta_sha is invalid")
+    raw_sources: dict[str, bytes] = {}
+    for category in SOURCE_CATEGORIES:
+        path = root / ARCHIVE_PATHS[category]
+        try:
+            content = path.read_bytes()
+        except OSError as exc:
+            raise BuildError(f"Missing archived {category} source: {exc}") from exc
+        expected = manifest.get("sources", {}).get(category, {}).get("sha256")
+        if sha256(content) != expected:
+            raise BuildError(f"Archived {category} source does not match manifest SHA-256")
+        raw_sources[category] = content
+    return meta_sha, raw_sources
+
+
+def _validate_provenance(root: Path, candidate: Candidate) -> None:
+    actual = read_json(root / "upstream" / "provenance.json", "upstream provenance")
+    if pretty_json_bytes(actual) != pretty_json_bytes(candidate.provenance):
+        raise BuildError("upstream/provenance.json does not match the archived sources and license snapshot")
+
+
+def run_offline_validation(root: Path, baseline_path: Path | None = None) -> dict[str, Any]:
+    report_dir = _clear_report(root)
+    report: dict[str, Any] = {"schema": SCHEMA, "status": "failed", "candidate_id": None, "release_id": None}
+    candidate: Candidate | None = None
+    try:
+        policy = validate_policy(root)
+        license_record, license_hash = license_snapshot(root, policy)
+        current_tool_hash = tool_sha256(root)
+        manifest = require_object(read_json(root / "manifest.json", "manifest"), "manifest")
+        baseline_id = manifest.get("baseline_release_id")
+        if baseline_id == EMPTY_RELEASE:
+            baseline = None
+        elif baseline_path is not None:
+            baseline = _baseline_from_directory(baseline_path)
+            if baseline.release_id != baseline_id:
+                raise BuildError("Explicit baseline release id does not match manifest.baseline_release_id")
+        else:
+            baseline = _find_historical_baseline(root, baseline_id)
+        meta_sha, raw_sources = _read_archived_sources(root, manifest)
+        for category in SOURCE_CATEGORIES:
+            _write_evidence_source(report_dir, category, raw_sources[category])
+        candidate = build_candidate(
+            raw_sources=raw_sources,
+            meta_sha=meta_sha,
+            policy=policy,
+            license_record=license_record,
+            license_hash=license_hash,
+            baseline=baseline,
+            current_tool_hash=current_tool_hash,
+        )
+        if candidate.candidate_id != manifest.get("candidate_id"):
+            raise BuildError("Replayed candidate_id differs from manifest")
+        if candidate.release_id != manifest.get("release_id"):
+            raise BuildError("Replayed release_id differs from manifest")
+        if pretty_json_bytes(candidate.manifest) != pretty_json_bytes(manifest):
+            raise BuildError("manifest.json differs from the deterministic offline replay")
+        for category in SOURCE_CATEGORIES:
+            try:
+                actual = (root / OUTPUT_PATHS[category]).read_bytes()
+            except OSError as exc:
+                raise BuildError(f"Missing generated {category} output: {exc}") from exc
+            if actual != candidate.outputs[category]:
+                raise BuildError(f"{OUTPUT_PATHS[category]} differs from offline replay")
+        _validate_provenance(root, candidate)
+        checked = require_object(read_json(root / "CHECKED_AT.json", "CHECKED_AT"), "CHECKED_AT")
+        _parse_checked_at(root)
+        if checked.get("live_release_id") != candidate.release_id:
+            raise BuildError("CHECKED_AT.live_release_id differs from the live manifest release")
+        checked_result = checked.get("result")
+        if checked_result == "validated_not_published_hold":
+            # The successful held candidate is intentionally not copied into the live
+            # bundle, so only validate its identity fields and the checked live id.
+            if not isinstance(checked.get("candidate_id"), str) or not HEX_256.fullmatch(checked["candidate_id"]):
+                raise BuildError("Held CHECKED_AT.candidate_id must be a SHA-256 digest")
+            if not isinstance(checked.get("source_sha"), str) or not re.fullmatch(r"[0-9a-f]{40}", checked["source_sha"]):
+                raise BuildError("Held CHECKED_AT.source_sha must be a full Meta commit SHA")
+            expected_checked_id = checked["candidate_id"]
+        elif checked_result == "released":
+            if checked.get("source_sha") != meta_sha:
+                raise BuildError("CHECKED_AT.source_sha differs from the archived source SHA")
+            expected_checked_id = candidate.candidate_id
+        elif checked_result == "unchanged":
+            if checked.get("source_sha") != meta_sha:
+                raise BuildError("CHECKED_AT.source_sha differs from the archived source SHA")
+            # An unchanged audit is bound to the now-live release as its baseline.
+            unchanged_baseline = _baseline_from_manifest(manifest, "live manifest")
+            audit_candidate = build_candidate(
+                raw_sources=raw_sources,
+                meta_sha=meta_sha,
+                policy=policy,
+                license_record=license_record,
+                license_hash=license_hash,
+                baseline=unchanged_baseline,
+                current_tool_hash=current_tool_hash,
+            )
+            expected_checked_id = audit_candidate.candidate_id
+        else:
+            raise BuildError(f"CHECKED_AT.result is not recognized: {checked_result!r}")
+        if checked.get("candidate_id") != expected_checked_id:
+            raise BuildError("CHECKED_AT.candidate_id does not identify the verified candidate")
+        report = _report_candidate(candidate, "validated", live_release_id=candidate.release_id)
+        report["offline_replay"] = "passed"
+        if checked_result == "validated_not_published_hold":
+            report["held_audit_candidate"] = "identity-recorded-but-not-archived"
+        _write_report(report_dir, report)
+        return report
+    except Exception as exc:
+        report["error"] = {"type": type(exc).__name__, "message": str(exc)}
+        if candidate is not None:
+            report.update(
+                {
+                    "candidate_id": candidate.candidate_id,
+                    "release_id": candidate.release_id,
+                    "baseline_release_id": candidate.manifest["baseline_release_id"],
+                    "meta_sha": candidate.manifest["meta_sha"],
+                    "diffs": candidate.manifest["diffs"],
+                }
+            )
+        _write_report(report_dir, report)
+        if isinstance(exc, BuildError):
+            raise
+        raise BuildError(f"Unexpected offline validation failure: {exc}") from exc
+
+
+def _resolve_root(cli_root: str | None) -> Path:
+    return Path(cli_root).resolve() if cli_root else Path(__file__).resolve().parent.parent
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--root", help="repository root (defaults to this script's repository)")
+    commands = parser.add_subparsers(dest="command", required=True)
+    update = commands.add_parser("update", help="fetch, validate, and safely write a complete accepted bundle")
+    update.add_argument("--now", help="RFC 3339 time override for deterministic local maintenance checks")
+    validate = commands.add_parser("validate", help="validate archived inputs without network access")
+    validate.add_argument("--offline", action="store_true", required=True, help="replay only repository snapshots")
+    validate.add_argument("--baseline", type=Path, help="explicit directory containing a prior accepted release")
+    args = parser.parse_args(argv)
+    root = _resolve_root(args.root)
+    try:
+        if args.command == "update":
+            result = run_update(root, args.now)
+        else:
+            result = run_offline_validation(root, args.baseline.resolve() if args.baseline else None)
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0
+    except BuildError as exc:
+        print(f"build failed: {exc}", file=sys.stderr)
+        print(f"diagnostics: {root / REPORT_DIR / 'result.json'}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

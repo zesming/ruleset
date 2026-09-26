@@ -1,0 +1,4 @@
+# Keep archived third-party bytes exactly as fetched, including line endings.
+upstream/*.list -text
+licenses/*.txt -text
+rules/*.list text eol=lf

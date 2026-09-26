@@ -1,0 +1,24 @@
+# Merge these snippets into an existing Mihomo / Smart configuration.
+# DIRECT and PROXY below are examples. Bind ai-global to your AI proxy group.
+rule-providers:
+  ai-cn:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/zesming/ruleset/main/rules/ai-cn.list
+    path: ./ruleset/zesming-ai-cn.list
+    interval: 43200
+    proxy: PROXY
+  ai-global:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/zesming/ruleset/main/rules/ai-global.list
+    path: ./ruleset/zesming-ai-global.list
+    interval: 43200
+    proxy: PROXY
+rules:
+  # After local/infrastructure exceptions; before broad ad, Apple, Microsoft,
+  # CDN, China and IP rules. Replace the previous AI DOMAIN provider.
+  - RULE-SET,ai-cn,DIRECT
+  - RULE-SET,ai-global,PROXY

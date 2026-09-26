@@ -1,0 +1,101 @@
+name: Update ruleset
+on:
+  schedule:
+    - cron: '0 0 * * *' # 08:00 Asia/Shanghai
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - 'policy.json'
+      - 'licenses/**'
+      - '.github/workflows/**'
+permissions:
+  contents: read
+concurrency:
+  group: ruleset-publish
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      base: ${{ steps.base.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+          fetch-depth: 0
+      - id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - run: python3 -m unittest discover -s tests -v
+  publish:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.check.outputs.base }}
+          fetch-depth: 0
+      - name: Ensure checked main is still current
+        env:
+          BASE_SHA: ${{ needs.check.outputs.base }}
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+      - name: Build and validate current upstream candidate
+        run: python3 scripts/build.py update
+      - name: Check release bundle or held audit
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          held = json.loads(Path('policy.json').read_text())['publish_hold']['enabled']
+          if held:
+              changed = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+              if set(changed) - {'CHECKED_AT.json'}:
+                  raise SystemExit('Publishing is on hold: live bundle must not change')
+          else:
+              subprocess.run(['python3', 'scripts/build.py', 'validate', '--offline'], check=True)
+          PY
+      - name: Publish one complete bundle without overwriting newer work
+        env:
+          BASE_SHA: ${{ needs.check.outputs.base }}
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          allowed = ['rules', 'upstream', 'licenses', 'manifest.json', 'CHECKED_AT.json']
+          subprocess.run(['git', 'add', '--', *[p for p in allowed if Path(p).exists()]], check=True)
+          paths = subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines()
+          held = json.loads(Path('policy.json').read_text())['publish_hold']['enabled']
+          if held and set(paths) - {'CHECKED_AT.json'}:
+              raise SystemExit('Publishing is on hold: only a successful audit may be committed')
+          for p in paths:
+              if p not in {'manifest.json', 'CHECKED_AT.json'} and not p.startswith(('rules/', 'upstream/', 'licenses/')):
+                  raise SystemExit('Unexpected staged path: ' + p)
+          PY
+          if git diff --cached --quiet; then
+            echo 'No new accepted bundle or due audit record.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update accepted ruleset snapshot'
+          git push origin HEAD:main
+      - name: Retain update diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: update-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .build-report/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
