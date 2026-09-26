@@ -750,7 +750,7 @@ def check_source_migrations(
         # A cross-class conflict already present in the accepted source snapshot is
         # not a new upstream migration. Its accepted move/remove policy remains the
         # user's standing resolution until the source coverage changes.
-        if any(rule_is_within_selector(new, prior) for prior in prior_same_category):
+        if any(new.key == prior.key or rule_is_within_selector(new, prior) for prior in prior_same_category):
             continue
         for old in old_rules:
             if old.category == new.category or not rules_overlap(old, new):

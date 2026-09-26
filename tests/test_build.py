@@ -309,6 +309,35 @@ class PolicyAndBuildTests(unittest.TestCase):
         second_removed = candidate(sources, policy=remove_policy, baseline=baseline_from(first_removed), meta_sha=META_SHA_B)
         self.assertEqual(second_removed.manifest["diffs"]["source_migrations"], [])
 
+    def test_unchanged_registered_wildcard_conflict_stays_resolved(self) -> None:
+        sources = fixture_sources()
+        regex_line = "DOMAIN-REGEX," + build.REGISTERED_REGEX
+        sources["cn"] = append_rules(sources["cn"], regex_line)
+        for operation in ("moves", "removes"):
+            with self.subTest(operation=operation):
+                policy = policy_value()
+                selector = {
+                    "type": "DOMAIN-SUFFIX",
+                    "value": "webpubsub.azure.com",
+                    "reason": "Resolve the already accepted wildcard overlap.",
+                }
+                if operation == "moves":
+                    selector["to"] = "cn"
+                policy[operation] = [selector]
+                first = candidate(sources, policy=policy)
+                second = candidate(sources, policy=policy, baseline=baseline_from(first), meta_sha=META_SHA_B)
+                self.assertEqual(second.manifest["diffs"]["source_migrations"], [])
+                self.assertEqual(second.outputs, first.outputs)
+
+        original = fixture_sources()
+        baseline = candidate(original)
+        migrated = {
+            "global": remove_rule(original["global"], regex_line),
+            "cn": append_rules(original["cn"], regex_line),
+        }
+        with self.assertRaisesRegex(build.BuildError, "Unapproved cross-category source migration"):
+            candidate(migrated, baseline=baseline_from(baseline), meta_sha=META_SHA_B)
+
     def test_route_assertion_fixture_matches_policy(self) -> None:
         fixture = json.loads((ROOT / "tests/fixtures/routes.json").read_text(encoding="utf-8"))
         assertions = {category: sorted(item["host"] for item in policy_value()["route_assertions"] if item["category"] == category) for category in build.SOURCE_CATEGORIES}
