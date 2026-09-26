@@ -1,0 +1,52 @@
+{
+  "license_snapshot_sha256": "f00591b7b53fc7a7583634c7ee889dd5b4d0f1fb8aaf68ce203d997d1ebbc22b",
+  "licenses": [
+    {
+      "file": "ACL4SSR-CC-BY-SA-4.0.txt",
+      "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297",
+      "source": "ACL4SSR/ACL4SSR",
+      "spdx": "CC-BY-SA-4.0",
+      "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/LICENCE"
+    },
+    {
+      "file": "MetaCubeX-GPL-3.0.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "source": "MetaCubeX/meta-rules-dat",
+      "spdx": "GPL-3.0-only",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/master/LICENSE"
+    },
+    {
+      "file": "Sukka-AGPL-3.0.txt",
+      "sha256": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef",
+      "source": "SukkaW/Surge",
+      "spdx": "AGPL-3.0-only",
+      "url": "https://raw.githubusercontent.com/SukkaW/Surge/master/LICENSE"
+    },
+    {
+      "file": "v2fly-MIT.txt",
+      "sha256": "b9d84a22870d3f21c91a4c6e410c9cc51d00902f5233ad0c84011479244bf7d2",
+      "source": "v2fly/domain-list-community",
+      "spdx": "MIT",
+      "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/LICENSE"
+    }
+  ],
+  "schema": 1,
+  "sources": {
+    "cn": {
+      "branch": "meta",
+      "meta_sha": "8191d5205a7dc3605365f86460422a975a2cf8e6",
+      "path": "geo/geosite/classical/category-ai-cn.list",
+      "repository": "MetaCubeX/meta-rules-dat",
+      "sha256": "34d57659c8fdb151abc872d8537dfc3608c0bfe690f9cdf7dd7f2d6eeb9efba9",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/8191d5205a7dc3605365f86460422a975a2cf8e6/geo/geosite/classical/category-ai-cn.list"
+    },
+    "global": {
+      "branch": "meta",
+      "meta_sha": "8191d5205a7dc3605365f86460422a975a2cf8e6",
+      "path": "geo/geosite/classical/category-ai-!cn.list",
+      "repository": "MetaCubeX/meta-rules-dat",
+      "sha256": "1d68a07bcda16fa1cc5db9f8b03ea4d81c677726fbbf0c812821450f67445337",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/8191d5205a7dc3605365f86460422a975a2cf8e6/geo/geosite/classical/category-ai-!cn.list"
+    }
+  }
+}
