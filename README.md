@@ -10,24 +10,28 @@
 |---|---|---|
 | [ai-cn.list](https://raw.githubusercontent.com/zesming/ruleset/main/rules/ai-cn.list) | 国内 AI，通常绑定直连组 | MetaCubeX `category-ai-cn` |
 | [ai-global.list](https://raw.githubusercontent.com/zesming/ruleset/main/rules/ai-global.list) | 国外 AI，通常绑定 AI 代理组 | MetaCubeX `category-ai-!cn` + 人工补充 |
+| [network-test.list](https://raw.githubusercontent.com/zesming/ruleset/main/rules/network-test.list) | 网络诊断、测速、出口 IP 查询，绑定测试组 | MetaCubeX `category-ip-geo-detect` + `category-speedtest` |
 
-两份文件均为不含策略名的 classical text。主要上游是 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 的 `meta` 分支；每次更新固定到同一提交，再生成并校验两份输出。
+classical text 输出不含策略名。Surge 纯域名分类额外提供 domain-set 格式（`.set`），内部使用优化的域名查找结构：`rules/surge/ai-cn.set`、`rules/surge/network-test.set`。`ai-global` 含 `DOMAIN-WILDCARD`，仅提供 classical `RULE-SET`。
+
+主要上游是 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 的 `meta` 分支；每次更新固定到同一提交，再生成并校验全部输出。
 
 ## 接入
 
-- Mihomo / OpenClash Smart：参考 [examples/mihomo.yaml](examples/mihomo.yaml)。
-- Surge：参考 [examples/surge.conf](examples/surge.conf)。
-- 将 `ai-cn.list` 绑定直连组，`ai-global.list` 绑定 AI 代理组。
-- AI 规则应放在广告、Apple、Microsoft、CDN 等通用规则之前。
-- 示例每 12 小时检查更新；客户端需分别下载和缓存两份规则。
+- Mihomo / OpenClash Smart：参考 [examples/mihomo.yaml](examples/mihomo.yaml)，使用 `behavior: classical, format: text` 的 `rule-providers`。
+- Surge：参考 [examples/surge.conf](examples/surge.conf)，纯域名分类用 `DOMAIN-SET` 引用 `.set` 文件，含通配符的分类用 `RULE-SET` 引用 `.list`。
+- 将 `ai-cn` 绑定直连组，`ai-global` 绑定 AI 代理组，`network-test` 绑定测试选择组（默认 US，可选 JP 和直连）。
+- 规则顺序：network-test → AI → 广告/Apple/Microsoft/CDN 等通用规则。
+- 示例每 12 小时检查更新；客户端需分别下载和缓存各规则文件。
 
 ## 维护
 
 只编辑 [policy.json](policy.json)，不要手改 `rules/` 生成文件。
 
 - `adds`：永久人工补充，包括兼容入口和 `anthropic.services`。
-- `removes`：从两个 AI 集合排除指定范围。
+- `removes`：从对应集合排除指定范围。
 - `moves`：调整仍存在于上游的规则分类。
+- `route_assertions`：构建时校验指定域名落入预期分类，新增分类需同步补充。
 
 人工操作若与上游或另一分类冲突，构建会停止。规则命中只决定路由，不保证账号、地区或出口 IP 符合服务要求。
 

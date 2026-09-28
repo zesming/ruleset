@@ -1,4 +1,20 @@
 {
-  "global": ["api.github.com", "api.anthropic.services", "anthropic.services", "chatgpt.com", "claude.ai", "openai.com"],
-  "cn": ["kimi.com", "qwen.ai"]
+  "global": [
+    "api.github.com",
+    "api.anthropic.services",
+    "anthropic.services",
+    "chatgpt.com",
+    "claude.ai",
+    "openai.com"
+  ],
+  "cn": [
+    "kimi.com",
+    "qwen.ai"
+  ],
+  "network-test": [
+    "ipinfo.io",
+    "speedtest.net",
+    "whatismyip.akamai.com",
+    "whatismyip.com"
+  ]
 }

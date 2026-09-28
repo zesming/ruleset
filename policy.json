@@ -101,14 +101,54 @@
     "maximum_removed_ratio": 0.1
   },
   "route_assertions": [
-    {"host": "chatgpt.com", "category": "global"},
-    {"host": "openai.com", "category": "global"},
-    {"host": "claude.ai", "category": "global"},
-    {"host": "api.github.com", "category": "global"},
-    {"host": "anthropic.services", "category": "global"},
-    {"host": "api.anthropic.services", "category": "global"},
-    {"host": "qwen.ai", "category": "cn"},
-    {"host": "kimi.com", "category": "cn"}
+    {
+      "host": "chatgpt.com",
+      "category": "global"
+    },
+    {
+      "host": "openai.com",
+      "category": "global"
+    },
+    {
+      "host": "claude.ai",
+      "category": "global"
+    },
+    {
+      "host": "api.github.com",
+      "category": "global"
+    },
+    {
+      "host": "anthropic.services",
+      "category": "global"
+    },
+    {
+      "host": "api.anthropic.services",
+      "category": "global"
+    },
+    {
+      "host": "qwen.ai",
+      "category": "cn"
+    },
+    {
+      "host": "kimi.com",
+      "category": "cn"
+    },
+    {
+      "host": "whatismyip.com",
+      "category": "network-test"
+    },
+    {
+      "host": "speedtest.net",
+      "category": "network-test"
+    },
+    {
+      "host": "ipinfo.io",
+      "category": "network-test"
+    },
+    {
+      "host": "whatismyip.akamai.com",
+      "category": "network-test"
+    }
   ],
   "quantity_approvals": [],
   "publish_hold": {

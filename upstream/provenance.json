@@ -35,18 +35,40 @@
     "cn": {
       "branch": "meta",
       "meta_sha": "61fd90847a78311ac89422e5f128f5d903e5fdb8",
-      "path": "geo/geosite/classical/category-ai-cn.list",
+      "paths": [
+        "geo/geosite/classical/category-ai-cn.list"
+      ],
       "repository": "MetaCubeX/meta-rules-dat",
       "sha256": "34d57659c8fdb151abc872d8537dfc3608c0bfe690f9cdf7dd7f2d6eeb9efba9",
-      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-cn.list"
+      "urls": [
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-cn.list"
+      ]
     },
     "global": {
       "branch": "meta",
       "meta_sha": "61fd90847a78311ac89422e5f128f5d903e5fdb8",
-      "path": "geo/geosite/classical/category-ai-!cn.list",
+      "paths": [
+        "geo/geosite/classical/category-ai-!cn.list"
+      ],
       "repository": "MetaCubeX/meta-rules-dat",
       "sha256": "80c93e119514dba0593e0cf2c90ae5a2deeb47afda95d7bdd745a3c6a3c395fe",
-      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-!cn.list"
+      "urls": [
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-!cn.list"
+      ]
+    },
+    "network-test": {
+      "branch": "meta",
+      "meta_sha": "61fd90847a78311ac89422e5f128f5d903e5fdb8",
+      "paths": [
+        "geo/geosite/classical/category-ip-geo-detect.list",
+        "geo/geosite/classical/category-speedtest.list"
+      ],
+      "repository": "MetaCubeX/meta-rules-dat",
+      "sha256": "f0850eb2634a3d1a6fc11f5b3bada79b8e621936f78f595123b5f05c80d68271",
+      "urls": [
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ip-geo-detect.list",
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-speedtest.list"
+      ]
     }
   }
 }

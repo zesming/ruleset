@@ -25,6 +25,7 @@ def fixture_sources() -> dict[str, bytes]:
     return {
         "global": (ROOT / "tests/fixtures/source-global.list").read_bytes(),
         "cn": (ROOT / "tests/fixtures/source-cn.list").read_bytes(),
+        "network-test": (ROOT / "tests/fixtures/source-network-test.list").read_bytes(),
     }
 
 
@@ -96,7 +97,7 @@ def prepare_temp_root(root: Path) -> None:
     shutil.copy2(ROOT / "policy.json", root / "policy.json")
     shutil.copy2(ROOT / "scripts/build.py", root / "scripts/build.py")
     shutil.copy2(ROOT / "tests/test_build.py", root / "tests/test_build.py")
-    for name in ("source-cn.list", "source-global.list", "routes.json"):
+    for name in ("source-cn.list", "source-global.list", "source-network-test.list", "routes.json"):
         shutil.copy2(ROOT / "tests/fixtures" / name, root / "tests/fixtures" / name)
     for name in build.LICENSE_FILES:
         shutil.copy2(ROOT / "licenses" / name, root / "licenses" / name)
@@ -271,6 +272,7 @@ class PolicyAndBuildTests(unittest.TestCase):
         moved_sources = {
             "global": remove_rule(first_sources["global"], "DOMAIN,api.example-global.com"),
             "cn": append_rules(first_sources["cn"], "DOMAIN,api.example-global.com"),
+            "network-test": first_sources["network-test"],
         }
         policy = policy_value()
         policy["moves"] = [{"type": "DOMAIN", "value": "api.example-global.com", "to": "cn", "reason": "Route with current domestic source classification."}]
@@ -282,6 +284,7 @@ class PolicyAndBuildTests(unittest.TestCase):
         deleted_sources = {
             "global": moved_sources["global"],
             "cn": remove_rule(moved_sources["cn"], "DOMAIN,api.example-global.com"),
+            "network-test": moved_sources["network-test"],
         }
         third = candidate(deleted_sources, policy=policy, baseline=baseline_from(second), meta_sha="c" * 40)
         self.assertEqual(third.manifest["counts"]["moves"][0]["state"], "inactive")
@@ -295,6 +298,7 @@ class PolicyAndBuildTests(unittest.TestCase):
         moved_sources = {
             "global": remove_rule(first_sources["global"], "DOMAIN,api.example-global.com"),
             "cn": append_rules(first_sources["cn"], "DOMAIN,api.example-global.com"),
+            "network-test": first_sources["network-test"],
         }
         with self.assertRaisesRegex(build.BuildError, "Unapproved cross-category source migration"):
             candidate(moved_sources, baseline=baseline_from(first), meta_sha=META_SHA_B)
@@ -356,6 +360,7 @@ class PolicyAndBuildTests(unittest.TestCase):
         migrated = {
             "global": remove_rule(original["global"], regex_line),
             "cn": append_rules(original["cn"], regex_line),
+            "network-test": original["network-test"],
         }
         with self.assertRaisesRegex(build.BuildError, "Unapproved cross-category source migration"):
             candidate(migrated, baseline=baseline_from(baseline), meta_sha=META_SHA_B)
@@ -436,6 +441,71 @@ class PolicyAndBuildTests(unittest.TestCase):
         self.assertNotEqual(base.release_id, with_changed_tool.release_id)
 
 
+class NetworkTestCategoryTests(unittest.TestCase):
+    def test_combine_source_chunks_filters_unregistered_regex(self) -> None:
+        chunks = [
+            b"DOMAIN,foo.example\nDOMAIN-REGEX,^speed.*\\.ooklaserver\\.net$\n",
+            b"DOMAIN-SUFFIX,bar.example\n",
+        ]
+        combined = build._combine_source_chunks(chunks, "network-test")
+        lines = combined.decode("utf-8").splitlines()
+        self.assertEqual(lines, ["DOMAIN,foo.example", "DOMAIN-SUFFIX,bar.example"])
+        self.assertNotIn("DOMAIN-REGEX", combined.decode("utf-8"))
+
+    def test_network_test_upstream_rules_are_emitted(self) -> None:
+        result = candidate()
+        nt_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["network-test"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "whatismyip.com"), nt_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "speedtest.net"), nt_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "ipinfo.io"), nt_rules)
+        self.assertIn(("DOMAIN", "whatismyip.akamai.com"), nt_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "fast.com"), nt_rules)
+
+    def test_surge_domain_set_conversion_matches_classical_semantics(self) -> None:
+        rules = [
+            {"type": "DOMAIN", "value": "whatismyip.akamai.com"},
+            {"type": "DOMAIN-SUFFIX", "value": "whatismyip.com"},
+            {"type": "DOMAIN-SUFFIX", "value": "speedtest.net"},
+        ]
+        result = build._to_surge_domain_set(rules).decode("utf-8")
+        lines = result.splitlines()
+        # DOMAIN (exact) -> no leading dot; DOMAIN-SUFFIX -> leading dot
+        self.assertIn("whatismyip.akamai.com", lines)
+        self.assertIn(".whatismyip.com", lines)
+        self.assertIn(".speedtest.net", lines)
+        self.assertNotIn("DOMAIN-", result)
+        self.assertTrue(result.endswith("\n"))
+
+    def test_surge_domain_set_rejects_non_domain_rules(self) -> None:
+        with self.assertRaises(build.BuildError):
+            build._to_surge_domain_set([{"type": "DOMAIN-WILDCARD", "value": "*.example.com"}])
+
+    def test_combine_preserves_registered_regex_for_global(self) -> None:
+        # The registered Azure ChatGPT regex must survive _combine so parse_source
+        # can emit the reviewed DOMAIN-WILDCARD. Unregistered regexes are still dropped.
+        registered_line = f"DOMAIN-REGEX,{build.REGISTERED_REGEX}"
+        unregistered = r"DOMAIN-REGEX,^speed\..*\.ooklaserver\.net$"
+        chunk = f"DOMAIN-SUFFIX,example.com\n{registered_line}\n{unregistered}\n".encode("utf-8")
+        combined = build._combine_source_chunks([chunk], "global").decode("utf-8")
+        self.assertIn(registered_line, combined)
+        self.assertNotIn(unregistered, combined)
+        # parse_source should still emit the wildcard from the preserved regex
+        rules = build.parse_source(combined.encode("utf-8"), "global", "test-sha")
+        wildcards = [r for r in rules if r.type == "DOMAIN-WILDCARD"]
+        self.assertEqual(len(wildcards), 1)
+        self.assertEqual(wildcards[0].value, build.REGISTERED_WILDCARD)
+
+    def test_network_test_route_assertions_isolate_category(self) -> None:
+        result = candidate()
+        records = [
+            build.Rule(item["type"], item["value"], category)
+            for category in build.SOURCE_CATEGORIES
+            for item in result.manifest["outputs"][category]["rules"]
+        ]
+        for host in ("whatismyip.com", "speedtest.net", "ipinfo.io"):
+            self.assertEqual({r.category for r in records if build.rule_matches_host(r, host)}, {"network-test"})
+
+
 class FetchAndUpdateTests(unittest.TestCase):
     def test_ref_fetch_pins_both_paths_to_one_full_commit_sha(self) -> None:
         sha = META_SHA_A
@@ -450,8 +520,8 @@ class FetchAndUpdateTests(unittest.TestCase):
         with mock.patch.object(build, "_response_bytes", side_effect=response):
             got_sha, sources = build.fetch_upstream()
         self.assertEqual(got_sha, sha)
-        self.assertEqual(set(sources), {"global", "cn"})
-        self.assertEqual(len(calls), 3)
+        self.assertEqual(set(sources), {"global", "cn", "network-test"})
+        self.assertEqual(len(calls), 5)
         self.assertTrue(all(f"/{sha}/" in url for url in calls[1:]))
 
     def test_ref_fetch_rejects_a_non_commit_or_wrong_branch(self) -> None:

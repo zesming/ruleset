@@ -33,13 +33,29 @@ HTTP_RETRIES = 3
 META_REPOSITORY = "MetaCubeX/meta-rules-dat"
 META_BRANCH = "meta"
 META_SHA_API = "https://api.github.com/repos/MetaCubeX/meta-rules-dat/git/ref/heads/meta"
-SOURCE_PATHS = {
+SOURCE_PATHS: dict[str, str | list[str]] = {
     "global": "geo/geosite/classical/category-ai-!cn.list",
     "cn": "geo/geosite/classical/category-ai-cn.list",
+    "network-test": [
+        "geo/geosite/classical/category-ip-geo-detect.list",
+        "geo/geosite/classical/category-speedtest.list",
+    ],
 }
-SOURCE_CATEGORIES = ("global", "cn")
-OUTPUT_PATHS = {"global": "rules/ai-global.list", "cn": "rules/ai-cn.list"}
-ARCHIVE_PATHS = {"global": "upstream/ai-global.list", "cn": "upstream/ai-cn.list"}
+SOURCE_CATEGORIES = ("global", "cn", "network-test")
+OUTPUT_PATHS = {
+    "global": "rules/ai-global.list",
+    "cn": "rules/ai-cn.list",
+    "network-test": "rules/network-test.list",
+}
+ARCHIVE_PATHS = {
+    "global": "upstream/ai-global.list",
+    "cn": "upstream/ai-cn.list",
+    "network-test": "upstream/network-test.list",
+}
+SURGE_DOMAIN_SET_PATHS = {
+    "cn": "rules/surge/ai-cn.set",
+    "network-test": "rules/surge/network-test.set",
+}
 LICENSE_FILES = (
     "MetaCubeX-GPL-3.0.txt",
     "v2fly-MIT.txt",
@@ -50,6 +66,28 @@ REGISTERED_REGEX = r"^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$"
 REGISTERED_WILDCARD = "chatgpt-async-webps-prod-*-*.webpubsub.azure.com"
 DOMAIN_TYPES = {"DOMAIN", "DOMAIN-SUFFIX"}
 ALLOWED_OUTPUT_TYPES = DOMAIN_TYPES | {"DOMAIN-WILDCARD"}
+
+
+def _to_surge_domain_set(rules: list[dict[str, str]]) -> bytes:
+    """Convert classical DOMAIN/DOMAIN-SUFFIX rules to Surge domain-set format.
+
+    Surge DOMAIN-SET semantics (manual.nssurge.com/rules/domain.html):
+    - `.foo.com` (leading dot) matches foo.com and all subdomains = DOMAIN-SUFFIX
+    - `foo.com` (no dot) matches exactly foo.com = DOMAIN
+    The file must contain only domain lines; any DOMAIN-WILDCARD or other type
+    makes the category ineligible for this format.
+    """
+    lines: list[str] = []
+    for rule in rules:
+        rtype = rule["type"]
+        value = rule["value"]
+        if rtype == "DOMAIN-SUFFIX":
+            lines.append("." + value)
+        elif rtype == "DOMAIN":
+            lines.append(value)
+        else:
+            raise BuildError(f"Cannot convert {rtype} to Surge domain-set: {value}")
+    return ("\n".join(lines) + "\n").encode("utf-8")
 HEX_256 = re.compile(r"^[0-9a-f]{64}$")
 DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 TOOL_CONTENT_FILES = (
@@ -57,6 +95,7 @@ TOOL_CONTENT_FILES = (
     "tests/test_build.py",
     "tests/fixtures/source-cn.list",
     "tests/fixtures/source-global.list",
+    "tests/fixtures/source-network-test.list",
     "tests/fixtures/routes.json",
 )
 
@@ -164,8 +203,8 @@ def canonical_policy_domain(value: Any, label: str) -> str:
 
 
 def valid_category(value: Any, label: str) -> str:
-    if value not in ("cn", "global"):
-        raise BuildError(f"{label} must be 'cn' or 'global'")
+    if value not in SOURCE_CATEGORIES:
+        raise BuildError(f"{label} must be one of {SOURCE_CATEGORIES}")
     return value
 
 
@@ -594,6 +633,31 @@ def _response_bytes(url: str, maximum: int) -> bytes:
     raise BuildError(f"Upstream request failed after {HTTP_RETRIES} attempts: {url}: {last_error}")
 
 
+def _source_path_list(category: str) -> list[str]:
+    paths = SOURCE_PATHS[category]
+    return [paths] if isinstance(paths, str) else list(paths)
+
+
+def _combine_source_chunks(chunks: list[bytes], category: str) -> bytes:
+    """Concatenate upstream source chunks, dropping unregistered DOMAIN-REGEX lines.
+
+    The registered Azure ChatGPT regex is adapted via policy.regex_adapters and only
+    appears in the AI global source; it must be preserved so parse_source can emit
+    the reviewed DOMAIN-WILDCARD. Other upstreams (e.g. Ookla speedtest) ship
+    DOMAIN-REGEX lines that are redundant with co-located DOMAIN-SUFFIX rules and
+    are not reviewed adapters, so they are filtered before parsing.
+    """
+    registered_regex_line = f"DOMAIN-REGEX,{REGISTERED_REGEX}"
+    lines: list[str] = []
+    for chunk in chunks:
+        text = chunk.decode("utf-8")
+        for line in text.splitlines():
+            if line.startswith("DOMAIN-REGEX,") and line != registered_regex_line:
+                continue
+            lines.append(line)
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
 def fetch_upstream(
     *,
     on_meta_sha: Any | None = None,
@@ -618,9 +682,11 @@ def fetch_upstream(
         on_meta_sha(meta_sha)
     sources: dict[str, bytes] = {}
     for category in SOURCE_CATEGORIES:
-        path = SOURCE_PATHS[category]
-        url = f"https://raw.githubusercontent.com/{META_REPOSITORY}/{meta_sha}/{path}"
-        sources[category] = _response_bytes(url, MAX_SOURCE_BYTES)
+        chunks: list[bytes] = []
+        for path in _source_path_list(category):
+            url = f"https://raw.githubusercontent.com/{META_REPOSITORY}/{meta_sha}/{path}"
+            chunks.append(_response_bytes(url, MAX_SOURCE_BYTES))
+        sources[category] = _combine_source_chunks(chunks, category)
         if on_source is not None:
             on_source(category, sources[category])
     return meta_sha, sources
@@ -658,7 +724,7 @@ def parse_source(data: bytes, category: str, meta_sha: str) -> list[Rule]:
                 rule_type,
                 normalized,
                 category,
-                [{"kind": "meta", "meta_sha": meta_sha, "path": SOURCE_PATHS[category], "line": line_number, "raw": line}],
+                [{"kind": "meta", "meta_sha": meta_sha, "path": _source_path_list(category)[0], "line": line_number, "raw": line}],
             )
         elif rule_type == "DOMAIN-REGEX":
             if value != REGISTERED_REGEX:
@@ -671,7 +737,7 @@ def parse_source(data: bytes, category: str, meta_sha: str) -> list[Rule]:
                     {
                         "kind": "meta-regex-adapter",
                         "meta_sha": meta_sha,
-                        "path": SOURCE_PATHS[category],
+                        "path": _source_path_list(category)[0],
                         "line": line_number,
                         "raw": line,
                         "adapter_source": REGISTERED_REGEX,
@@ -848,7 +914,7 @@ def apply_policy(
                 "state": "active" if selected else "inactive",
                 "selected_rules": [
                     {"type": item.type, "value": item.value, "source_category": next(
-                        (origin.get("path") and ("global" if origin.get("path") == SOURCE_PATHS["global"] else "cn") for origin in item.origins if origin.get("kind", "").startswith("meta")),
+                        ("global" if origin.get("path") in _source_path_list("global") else ("cn" if origin.get("path") in _source_path_list("cn") else "network-test") for origin in item.origins if origin.get("kind", "").startswith("meta")),
                         item.category,
                     )}
                     for item in selected
@@ -938,13 +1004,13 @@ def _assert_routes(records: list[Rule], policy: dict[str, Any]) -> None:
 def _make_provenance(meta_sha: str, raw_sources: dict[str, bytes], license_record: dict[str, Any], license_hash: str) -> dict[str, Any]:
     sources = {}
     for category in SOURCE_CATEGORIES:
-        path = SOURCE_PATHS[category]
+        paths = _source_path_list(category)
         sources[category] = {
-            "url": f"https://raw.githubusercontent.com/{META_REPOSITORY}/{meta_sha}/{path}",
+            "urls": [f"https://raw.githubusercontent.com/{META_REPOSITORY}/{meta_sha}/{p}" for p in paths],
             "meta_sha": meta_sha,
             "repository": META_REPOSITORY,
             "branch": META_BRANCH,
-            "path": path,
+            "paths": paths,
             "sha256": sha256(raw_sources[category]),
         }
     return {
@@ -1076,7 +1142,7 @@ def build_candidate(
         "release_id": release_id,
         "meta_sha": meta_sha,
         "sources": {
-            category: {"path": SOURCE_PATHS[category], "sha256": source_hashes[category]}
+            category: {"paths": _source_path_list(category), "sha256": source_hashes[category]}
             for category in SOURCE_CATEGORIES
         },
         "tool_sha256": tool_hash,
@@ -1275,7 +1341,7 @@ def _write_evidence_source(report: Path, category: str, content: bytes) -> None:
 
 
 def _ensure_allowed_paths(files: dict[str, bytes]) -> None:
-    allowed = set(OUTPUT_PATHS.values()) | set(ARCHIVE_PATHS.values()) | {
+    allowed = set(OUTPUT_PATHS.values()) | set(ARCHIVE_PATHS.values()) | set(SURGE_DOMAIN_SET_PATHS.values()) | {
         "upstream/provenance.json",
         "manifest.json",
         "CHECKED_AT.json",
@@ -1345,6 +1411,8 @@ def _bundle_files(candidate: Candidate, checked_at: dict[str, Any]) -> dict[str,
         for category in SOURCE_CATEGORIES
     }
     files.update({ARCHIVE_PATHS[category]: candidate.raw_sources[category] for category in SOURCE_CATEGORIES})
+    for category, surge_path in SURGE_DOMAIN_SET_PATHS.items():
+        files[surge_path] = _to_surge_domain_set(candidate.manifest["outputs"][category]["rules"])
     files["upstream/provenance.json"] = pretty_json_bytes(candidate.provenance)
     files["manifest.json"] = pretty_json_bytes(candidate.manifest)
     files["CHECKED_AT.json"] = pretty_json_bytes(checked_at)
@@ -1372,8 +1440,8 @@ def run_update(root: Path, now_arg: str | None = None) -> dict[str, Any]:
                         "meta_sha": value,
                         "sources": {
                             category: {
-                                "path": SOURCE_PATHS[category],
-                                "url": f"https://raw.githubusercontent.com/{META_REPOSITORY}/{value}/{SOURCE_PATHS[category]}",
+                                "paths": _source_path_list(category),
+                                "urls": [f"https://raw.githubusercontent.com/{META_REPOSITORY}/{value}/{p}" for p in _source_path_list(category)],
                             }
                             for category in SOURCE_CATEGORIES
                         },
@@ -1510,6 +1578,14 @@ def run_offline_validation(root: Path, baseline_path: Path | None = None) -> dic
                 raise BuildError(f"Missing generated {category} output: {exc}") from exc
             if actual != candidate.outputs[category]:
                 raise BuildError(f"{OUTPUT_PATHS[category]} differs from offline replay")
+        for category, surge_path in SURGE_DOMAIN_SET_PATHS.items():
+            try:
+                actual = (root / surge_path).read_bytes()
+            except OSError as exc:
+                raise BuildError(f"Missing generated Surge domain-set for {category}: {exc}") from exc
+            expected = _to_surge_domain_set(candidate.manifest["outputs"][category]["rules"])
+            if actual != expected:
+                raise BuildError(f"{surge_path} differs from offline replay")
         _validate_provenance(root, candidate)
         checked = require_object(read_json(root / "CHECKED_AT.json", "CHECKED_AT"), "CHECKED_AT")
         _parse_checked_at(root)
