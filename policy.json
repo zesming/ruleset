@@ -56,6 +56,14 @@
       "reason": "Preserve the existing Google Cloud Code subdomain route.",
       "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf; upstream currently includes the exact host",
       "review_date": "2026-09-26"
+    },
+    {
+      "category": "global",
+      "type": "DOMAIN-SUFFIX",
+      "value": "anthropic.services",
+      "reason": "Add the requested Anthropic service suffix route.",
+      "reference": "User-requested supplemental domain",
+      "review_date": "2026-09-28"
     }
   ],
   "moves": [],
@@ -97,6 +105,8 @@
     {"host": "openai.com", "category": "global"},
     {"host": "claude.ai", "category": "global"},
     {"host": "api.github.com", "category": "global"},
+    {"host": "anthropic.services", "category": "global"},
+    {"host": "api.anthropic.services", "category": "global"},
     {"host": "qwen.ai", "category": "cn"},
     {"host": "kimi.com", "category": "cn"}
   ],

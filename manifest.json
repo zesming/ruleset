@@ -1,6 +1,6 @@
 {
-  "baseline_release_id": "4e63862e118a87b1598223e3f72a5775a97733a7577d431dee5340fa8877ca09",
-  "candidate_id": "e490ba8e9f301375c28a44531a08256e1e64a82671a594975b64f487744a736f",
+  "baseline_release_id": "801e99a65972b90443e4c19a2d940bcf990d5a21e36a270877fa6d21c58ab66e",
+  "candidate_id": "f64ca6fafda385d26c1dcc1a91e518108b3692afa41dc7d1e73b0795a3791eed",
   "counts": {
     "adapted_regex_rules": 1,
     "manual_adds": [
@@ -38,6 +38,12 @@
         "category": "global",
         "result": "added",
         "type": "DOMAIN-SUFFIX",
+        "value": "anthropic.services"
+      },
+      {
+        "category": "global",
+        "result": "added",
+        "type": "DOMAIN-SUFFIX",
         "value": "cloudcode-pa.googleapis.com"
       },
       {
@@ -50,7 +56,7 @@
     "moves": [],
     "output": {
       "cn": 115,
-      "global": 189
+      "global": 190
     },
     "removes": [],
     "source": {
@@ -65,7 +71,12 @@
         "removed": []
       },
       "global": {
-        "added": [],
+        "added": [
+          {
+            "type": "DOMAIN-SUFFIX",
+            "value": "anthropic.services"
+          }
+        ],
         "removed": []
       }
     },
@@ -1939,6 +1950,10 @@
         },
         {
           "type": "DOMAIN-SUFFIX",
+          "value": "anthropic.services"
+        },
+        {
+          "type": "DOMAIN-SUFFIX",
           "value": "antigravity-unleash.goog"
         },
         {
@@ -2534,10 +2549,10 @@
           "value": "chatgpt-async-webps-prod-*-*.webpubsub.azure.com"
         }
       ],
-      "sha256": "f6c202e0d5c437c1824e575d063efb6d066099e6755f6c736b15256f761ff96c"
+      "sha256": "b95d7906adf398c41f69124edcbe3b62b5833646a0a933f83295bb97aa21372e"
     }
   },
-  "release_id": "801e99a65972b90443e4c19a2d940bcf990d5a21e36a270877fa6d21c58ab66e",
+  "release_id": "1845ad4985feb6fdce493bad3562ac67f2b724cb58fd3c5bd664ec249a8b4684",
   "rule_origins": [
     {
       "category": "cn",
@@ -4708,6 +4723,19 @@
       "category": "global",
       "origins": [
         {
+          "category": "global",
+          "kind": "manual-add",
+          "type": "DOMAIN-SUFFIX",
+          "value": "anthropic.services"
+        }
+      ],
+      "type": "DOMAIN-SUFFIX",
+      "value": "anthropic.services"
+    },
+    {
+      "category": "global",
+      "origins": [
+        {
           "kind": "meta",
           "line": 111,
           "meta_sha": "61fd90847a78311ac89422e5f128f5d903e5fdb8",
@@ -6791,7 +6819,7 @@
     }
   ],
   "schema": 1,
-  "semantic_policy_sha256": "c2d11189a473f7d110be7ab09d56ffe3bc166904cf13b42cf798ab42abf50c96",
+  "semantic_policy_sha256": "288eca75ad85e1e4965cc6c99ebd40469d3474032532a5fa76b8b221818ce142",
   "sources": {
     "cn": {
       "path": "geo/geosite/classical/category-ai-cn.list",
@@ -6802,5 +6830,5 @@
       "sha256": "80c93e119514dba0593e0cf2c90ae5a2deeb47afda95d7bdd745a3c6a3c395fe"
     }
   },
-  "tool_sha256": "ca65ea6f839b0503ab093c59809ec3516f03099e70c700715a2ff7cb30938cb0"
+  "tool_sha256": "a249502d094ee2500e43a1ebe953e98be4403fef4f6cdea63f18cd1f8529a0d1"
 }

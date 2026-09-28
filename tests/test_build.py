@@ -173,7 +173,7 @@ class RuleParsingTests(unittest.TestCase):
 
 
 class PolicyAndBuildTests(unittest.TestCase):
-    def test_seven_manual_entries_and_regex_adapter_are_emitted(self) -> None:
+    def test_eight_manual_entries_and_regex_adapter_are_emitted(self) -> None:
         result = candidate()
         global_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["global"]["rules"]}
         self.assertTrue({
@@ -184,11 +184,33 @@ class PolicyAndBuildTests(unittest.TestCase):
             ("DOMAIN-SUFFIX", "ai.com"),
             ("DOMAIN-SUFFIX", "g.ai"),
             ("DOMAIN-SUFFIX", "cloudcode-pa.googleapis.com"),
+            ("DOMAIN-SUFFIX", "anthropic.services"),
             ("DOMAIN-WILDCARD", build.REGISTERED_WILDCARD),
         }.issubset(global_rules))
         effects = result.manifest["counts"]["manual_adds"]
-        self.assertEqual(len(effects), 7)
+        self.assertEqual(len(effects), 8)
         self.assertEqual(result.manifest["counts"]["adapted_regex_rules"], 1)
+
+    def test_anthropic_services_add_is_bounded_and_persistent(self) -> None:
+        original_sources = fixture_sources()
+        original = candidate(original_sources)
+        with_upstream = dict(original_sources)
+        with_upstream["global"] = append_rules(with_upstream["global"], "DOMAIN-SUFFIX,anthropic.services")
+        added = candidate(with_upstream, baseline=baseline_from(original), meta_sha=META_SHA_B)
+        removed = candidate(original_sources, baseline=baseline_from(added), meta_sha="c" * 40)
+        self.assertEqual(original.outputs, added.outputs)
+        self.assertEqual(original.outputs, removed.outputs)
+        effect = next(item for item in added.manifest["counts"]["manual_adds"] if item["value"] == "anthropic.services")
+        self.assertEqual(effect["result"], "redundant")
+        records = [
+            build.Rule(item["type"], item["value"], category)
+            for category in build.SOURCE_CATEGORIES
+            for item in original.manifest["outputs"][category]["rules"]
+        ]
+        for host in ("anthropic.services", "api.anthropic.services"):
+            self.assertEqual({item.category for item in records if build.rule_matches_host(item, host)}, {"global"})
+        for host in ("notanthropic.services", "anthropic.services.evil.test", "services"):
+            self.assertFalse(any(build.rule_matches_host(item, host) for item in records))
 
     def test_add_already_covered_by_same_category_is_redundant(self) -> None:
         policy = policy_value()
