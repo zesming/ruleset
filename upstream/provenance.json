@@ -39,7 +39,7 @@
         "geo/geosite/classical/category-ai-cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "34d57659c8fdb151abc872d8537dfc3608c0bfe690f9cdf7dd7f2d6eeb9efba9",
+      "sha256": "eb1f7f09eb8482e6f349adce8014ea7f8b5b500368f3124f6a66758a1d405e6d",
       "urls": [
         "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-cn.list"
       ]
@@ -51,7 +51,7 @@
         "geo/geosite/classical/category-ai-!cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "80c93e119514dba0593e0cf2c90ae5a2deeb47afda95d7bdd745a3c6a3c395fe",
+      "sha256": "036ca8843540b3c3b2f11b44be087449af5c3de52e59a1c685f6b2e080306f9f",
       "urls": [
         "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-!cn.list"
       ]
