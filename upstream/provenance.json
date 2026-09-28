@@ -34,19 +34,19 @@
   "sources": {
     "cn": {
       "branch": "meta",
-      "meta_sha": "f77c0e1442146059a2c6357721f43d19542d1734",
+      "meta_sha": "61fd90847a78311ac89422e5f128f5d903e5fdb8",
       "path": "geo/geosite/classical/category-ai-cn.list",
       "repository": "MetaCubeX/meta-rules-dat",
       "sha256": "34d57659c8fdb151abc872d8537dfc3608c0bfe690f9cdf7dd7f2d6eeb9efba9",
-      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/f77c0e1442146059a2c6357721f43d19542d1734/geo/geosite/classical/category-ai-cn.list"
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-cn.list"
     },
     "global": {
       "branch": "meta",
-      "meta_sha": "f77c0e1442146059a2c6357721f43d19542d1734",
+      "meta_sha": "61fd90847a78311ac89422e5f128f5d903e5fdb8",
       "path": "geo/geosite/classical/category-ai-!cn.list",
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "5de23ed67f082335ced649033fb88576270ae7d4cf05f0dcce04e800ab94474f",
-      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/f77c0e1442146059a2c6357721f43d19542d1734/geo/geosite/classical/category-ai-!cn.list"
+      "sha256": "80c93e119514dba0593e0cf2c90ae5a2deeb47afda95d7bdd745a3c6a3c395fe",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/61fd90847a78311ac89422e5f128f5d903e5fdb8/geo/geosite/classical/category-ai-!cn.list"
     }
   }
 }
