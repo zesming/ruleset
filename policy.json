@@ -151,6 +151,66 @@
     }
   ],
   "quantity_approvals": [],
+  "surge_process_rules": [
+    {
+      "value": "/Applications/ChatGPT.app/",
+      "forms": [
+        "ChatGPT 桌面端（含 Codex (Service) 网络进程、内置 codex-cli、包内 helper）"
+      ],
+      "tier": "conservative",
+      "enabled": true,
+      "reason": "App bundle prefix covers the ChatGPT desktop app and its network-service helper in one rule.",
+      "reference": "https://manual.nssurge.com/rules/process.html; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
+      "review_date": "2026-09-29"
+    },
+    {
+      "value": "/Applications/Claude.app/",
+      "forms": [
+        "Claude 桌面端（网络出口为无后缀 Claude Helper）"
+      ],
+      "tier": "conservative",
+      "enabled": true,
+      "reason": "App bundle prefix covers the Claude desktop app; its network traffic exits via the unsuffixed Claude Helper.",
+      "reference": "https://manual.nssurge.com/rules/process.html; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
+      "review_date": "2026-09-29"
+    },
+    {
+      "value": "claude",
+      "forms": [
+        "Claude Code CLI（~/.local 原生二进制）",
+        "VS Code 扩展打包的同名原生二进制",
+        "Claude Code URL Handler"
+      ],
+      "tier": "conservative",
+      "enabled": true,
+      "reason": "Filename match covers the native Claude Code binary regardless of install path; case-sensitive lowercase.",
+      "reference": "https://code.claude.com/docs/en/whats-new/2026-w16.md; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
+      "review_date": "2026-09-29"
+    },
+    {
+      "value": "codex",
+      "forms": [
+        "VS Code 扩展打包的原生 codex",
+        "未来独立安装的 Codex CLI"
+      ],
+      "tier": "conservative",
+      "enabled": true,
+      "reason": "Filename match is a backup alongside the ChatGPT.app bundle prefix for the native Rust codex binary.",
+      "reference": "https://github.com/openai/codex/releases/tag/rust-v0.158.0; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
+      "review_date": "2026-09-29"
+    },
+    {
+      "value": "SkyComputerUseService",
+      "forms": [
+        "Codex Computer Use（~/.codex，位于 ChatGPT.app 包外）"
+      ],
+      "tier": "optional",
+      "enabled": false,
+      "reason": "Optional: its OpenAI traffic is normally already covered by the ai-global domain set; keep disabled until Requests view shows an uncovered endpoint.",
+      "reference": "https://manual.nssurge.com/rules/process.html; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
+      "review_date": "2026-09-29"
+    }
+  ],
   "publish_hold": {
     "enabled": false,
     "reason": "",

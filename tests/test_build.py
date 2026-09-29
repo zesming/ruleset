@@ -708,5 +708,120 @@ class FetchAndUpdateTests(unittest.TestCase):
                 self.assertEqual(build.run_offline_validation(root)["offline_replay"], "passed")
 
 
+class SurgeProcessRuleTests(unittest.TestCase):
+    EXPECTED_ENABLED = [
+        "/Applications/ChatGPT.app/",
+        "/Applications/Claude.app/",
+        "claude",
+        "codex",
+    ]
+    DOMAIN_ARTIFACTS = (
+        "rules/ai-cn.list",
+        "rules/ai-global.list",
+        "rules/network-test.list",
+        "rules/surge/ai-cn.set",
+        "rules/surge/network-test.set",
+    )
+
+    def _policy_with(self, **over):
+        policy = policy_value()
+        entry = copy.deepcopy(policy["surge_process_rules"][0])
+        entry.update(over)
+        policy["surge_process_rules"] = [entry]
+        return policy
+
+    def test_render_outputs_header_and_enabled_rules_in_policy_order(self) -> None:
+        result = candidate()
+        content = result.manual_files[build.SURGE_PROCESS_RULES_PATH].decode("utf-8")
+        lines = content.splitlines()
+        self.assertTrue(lines[0].startswith("# Surge macOS only"))
+        self.assertIn("no upstream", "\n".join(lines))
+        rule_lines = [line for line in lines if not line.startswith("#")]
+        self.assertEqual(rule_lines, [f"PROCESS-NAME,{value}" for value in self.EXPECTED_ENABLED])
+        # The optional disabled rule must not be rendered.
+        self.assertNotIn("SkyComputerUseService", content)
+        self.assertTrue(content.endswith("\n"))
+
+    def test_manifest_records_manual_artifact(self) -> None:
+        result = candidate()
+        entry = result.manifest["manual_artifacts"][build.SURGE_PROCESS_RULES_PATH]
+        self.assertEqual(entry["rules"], 4)
+        self.assertEqual(entry["source"], build.SURGE_PROCESS_RULE_SOURCE)
+        self.assertEqual(entry["review_date"], "2026-09-29")
+        self.assertEqual(entry["path"], build.SURGE_PROCESS_RULES_PATH)
+        self.assertEqual(entry["sha256"], build.sha256(result.manual_files[build.SURGE_PROCESS_RULES_PATH]))
+
+    def test_conservative_tier_values_are_the_four_reviewed_forms(self) -> None:
+        policy = policy_value()
+        conservative = [item["value"] for item in policy["surge_process_rules"] if item["tier"] == "conservative" and item["enabled"]]
+        self.assertEqual(conservative, self.EXPECTED_ENABLED)
+
+    def test_invalid_values_are_rejected(self) -> None:
+        # Bundle prefix starts with '/' but must also end with '/'.
+        with self.assertRaisesRegex(build.BuildError, "does not end with '/'"):
+            build.validate_surge_process_rules(self._policy_with(value="/Applications/ChatGPT.app"))
+        # Filename mode must not contain a path separator.
+        with self.assertRaisesRegex(build.BuildError, "contains '/'"):
+            build.validate_surge_process_rules(self._policy_with(value="local/bin/claude"))
+        # Filename mode is restricted to a tight ASCII charset.
+        for bad in ("bad;name", "bad$name", "x\\y"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(build.BuildError):
+                    build.validate_surge_process_rules(self._policy_with(value=bad))
+        # Missing required field.
+        missing = self._policy_with(value="okname")
+        del missing["surge_process_rules"][0]["reference"]
+        with self.assertRaises(build.BuildError):
+            build.validate_surge_process_rules(missing)
+        # Illegal tier and non-boolean enabled.
+        with self.assertRaises(build.BuildError):
+            build.validate_surge_process_rules(self._policy_with(value="okname", tier="nope"))
+        with self.assertRaises(build.BuildError):
+            build.validate_surge_process_rules(self._policy_with(value="okname", enabled="yes"))
+
+    def test_domain_artifacts_never_contain_process_rules_and_vice_versa(self) -> None:
+        for relative in self.DOMAIN_ARTIFACTS:
+            content = (ROOT / relative).read_text(encoding="utf-8")
+            for line in content.splitlines():
+                self.assertFalse(line.startswith("PROCESS-NAME,"), relative)
+        process = candidate().manual_files[build.SURGE_PROCESS_RULES_PATH].decode("utf-8")
+        for token in ("DOMAIN,", "DOMAIN-SUFFIX,", "DOMAIN-WILDCARD,"):
+            self.assertNotIn(token, process)
+
+    def test_case_sensitive_filename_and_bundle_prefix_exactness(self) -> None:
+        process = candidate().manual_files[build.SURGE_PROCESS_RULES_PATH].decode("utf-8")
+        self.assertIn("PROCESS-NAME,claude\n", process)
+        self.assertIn("PROCESS-NAME,codex\n", process)
+        self.assertNotIn("PROCESS-NAME,Claude", process)
+        self.assertNotIn(".exe", process)
+        self.assertIn("PROCESS-NAME,/Applications/ChatGPT.app/", process)
+        self.assertIn("PROCESS-NAME,/Applications/Claude.app/", process)
+
+    def test_offline_replay_writes_and_rechecks_ai_process_list(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prepare_temp_root(root)
+            with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(fixture_sources(), META_SHA_A)):
+                result = build.run_update(root, "2026-09-26T00:00:00Z")
+            self.assertEqual(result["status"], "released")
+            written = (root / build.SURGE_PROCESS_RULES_PATH).read_bytes()
+            self.assertIn("PROCESS-NAME,claude", written.decode("utf-8"))
+            self.assertNotIn("SkyComputerUseService", written.decode("utf-8"))
+            with mock.patch.object(build, "fetch_upstream", side_effect=AssertionError("offline validation must not fetch")):
+                replay = build.run_offline_validation(root)
+            self.assertEqual(replay["offline_replay"], "passed")
+
+    def test_tampering_ai_process_list_breaks_offline_replay(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prepare_temp_root(root)
+            with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(fixture_sources(), META_SHA_A)):
+                build.run_update(root, "2026-09-26T00:00:00Z")
+            target = root / build.SURGE_PROCESS_RULES_PATH
+            target.write_bytes(target.read_bytes() + b"PROCESS-NAME,node\n")
+            with self.assertRaisesRegex(build.BuildError, "ai-process.list differs"):
+                build.run_offline_validation(root)
+
+
 if __name__ == "__main__":
     unittest.main()

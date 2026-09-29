@@ -1,6 +1,6 @@
 {
-  "baseline_release_id": "47865f2c3f240f5e26fa75376f60a4382c1ffa72ae1c0b25d8ea37e771a37916",
-  "candidate_id": "c8551fcc99b84e7e5ff59d0a1a166d3b55eac36466df3efee7dd31a37dab329b",
+  "baseline_release_id": "05f3446700a21deabaaaefe372f4ffdc2ac0b5e4afc7c8b6375e5500da9eb09e",
+  "candidate_id": "c385682a6487509bdb256c9f4d5653e08afbe981e03438c669d397afc413902e",
   "counts": {
     "adapted_regex_rules": 1,
     "manual_adds": [
@@ -128,6 +128,15 @@
     }
   ],
   "license_snapshot_sha256": "f00591b7b53fc7a7583634c7ee889dd5b4d0f1fb8aaf68ce203d997d1ebbc22b",
+  "manual_artifacts": {
+    "rules/surge/ai-process.list": {
+      "path": "rules/surge/ai-process.list",
+      "review_date": "2026-09-29",
+      "rules": 4,
+      "sha256": "c863895f2701400a326e930fc13d8bbc162bc91eb61eda2c7a75b29b7f55e610",
+      "source": "manual:policy.surge_process_rules"
+    }
+  },
   "meta_sha": "a7d10203472fbc84f6a10906f53c9f39b7c951da",
   "normalized_source": {
     "cn": [
@@ -5077,7 +5086,7 @@
       "sha256": "947096d4b6d21126a0bc676c6afb82c81d7a41450d2e398a04237930e1e11ff1"
     }
   },
-  "release_id": "05f3446700a21deabaaaefe372f4ffdc2ac0b5e4afc7c8b6375e5500da9eb09e",
+  "release_id": "df17a0b6d0e0cf96cd876f59311ae087628097f6f679e235c800ee134f62c5d5",
   "rule_origins": [
     {
       "category": "cn",
@@ -13762,5 +13771,5 @@
       "sha256": "f0850eb2634a3d1a6fc11f5b3bada79b8e621936f78f595123b5f05c80d68271"
     }
   },
-  "tool_sha256": "0718a7473be41784fb52ba758b619f0e4825be42491d87427302db8ad4e159f2"
+  "tool_sha256": "13806ecad40567890a9e7f7686516bf793a1e42e4422298da1caed4487a83ddd"
 }
