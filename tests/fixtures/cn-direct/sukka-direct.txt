@@ -1,0 +1,3 @@
+DOMAIN-SUFFIX,direct.example
+DOMAIN-KEYWORD,direct-keyword
+PROCESS-NAME,DirectApp

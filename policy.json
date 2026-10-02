@@ -1,76 +1,630 @@
 {
-  "schema": 1,
   "adds": [
     {
       "category": "global",
-      "type": "DOMAIN-SUFFIX",
-      "value": "ai.azure.com",
       "reason": "Preserve the existing Azure AI service suffix route.",
       "reference": "https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/Ruleset/AI.list",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN-SUFFIX",
+      "value": "ai.azure.com"
     },
     {
       "category": "global",
-      "type": "DOMAIN",
-      "value": "sydney.bing.com",
       "reason": "Preserve the existing Bing AI endpoint route.",
       "reference": "https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/Ruleset/AI.list",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN",
+      "value": "sydney.bing.com"
     },
     {
       "category": "global",
-      "type": "DOMAIN",
-      "value": "api.together.xyz",
       "reason": "Preserve the existing Together API route.",
       "reference": "https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/Ruleset/AI.list",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN",
+      "value": "api.together.xyz"
     },
     {
       "category": "global",
-      "type": "DOMAIN",
-      "value": "api.github.com",
       "reason": "Preserve the existing dedicated AI route for the GitHub API host.",
       "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN",
+      "value": "api.github.com"
     },
     {
       "category": "global",
-      "type": "DOMAIN-SUFFIX",
-      "value": "ai.com",
       "reason": "Preserve the existing AI service suffix route.",
       "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN-SUFFIX",
+      "value": "ai.com"
     },
     {
       "category": "global",
-      "type": "DOMAIN-SUFFIX",
-      "value": "g.ai",
       "reason": "Preserve the existing AI service suffix route.",
       "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN-SUFFIX",
+      "value": "g.ai"
     },
     {
       "category": "global",
-      "type": "DOMAIN-SUFFIX",
-      "value": "cloudcode-pa.googleapis.com",
       "reason": "Preserve the existing Google Cloud Code subdomain route.",
       "reference": "https://github.com/SukkaW/Surge/blob/master/Rules/non_ip/ai.conf; upstream currently includes the exact host",
-      "review_date": "2026-09-26"
+      "review_date": "2026-09-26",
+      "type": "DOMAIN-SUFFIX",
+      "value": "cloudcode-pa.googleapis.com"
     },
     {
       "category": "global",
-      "type": "DOMAIN-SUFFIX",
-      "value": "anthropic.services",
       "reason": "Add the requested Anthropic service suffix route.",
       "reference": "User-requested supplemental domain",
-      "review_date": "2026-09-28"
+      "review_date": "2026-09-28",
+      "type": "DOMAIN-SUFFIX",
+      "value": "anthropic.services"
     }
   ],
+  "cn_direct": {
+    "acl_review": {
+      "audit_sha256": "22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f",
+      "bootstrap_candidate_id": "46492c4f636ce70525c2b677ea456ab8401ec2d83ede6a757e57555f7aeb7678",
+      "decisions": [
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"71.am\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"71.am\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.msg.71.am\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"msga.71.am\",\"scope\":\"host\"},{\"provider\":\"reject_domains\",\"rule\":\"api.ts.feedback.71.am\",\"scope\":\"host\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":266,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Iqiyi\",\"text\":\"DOMAIN-SUFFIX,71.am\"},\"source_rule_sha256\":\"f982ca1003480b3c70e6715f6bcd6f9fc21e6fbe84372f9a311017269a8705b2\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "71.am"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"algocasts.io\",\"ttl\":300,\"type\":1,\"value\":\"172.67.155.160\"},{\"name\":\"algocasts.io\",\"ttl\":300,\"type\":1,\"value\":\"104.21.72.218\"}],\"domain\":\"algocasts.io\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"algocasts.io\",\"ttl\":300,\"type\":1,\"value\":\"172.67.155.160\"},{\"name\":\"algocasts.io\",\"ttl\":300,\"type\":1,\"value\":\"104.21.72.218\"}],\"domain\":\"algocasts.io\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":502,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,algocasts.io\"},\"source_rule_sha256\":\"b5a018947ef801a87b1ffdcffdef8d3e5ca8e39f83cdb8dff59b83d13adf4e1f\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "algocasts.io"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"biquge.com\",\"ttl\":300,\"type\":1,\"value\":\"103.135.33.179\"}],\"domain\":\"biquge.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"biquge.com\",\"ttl\":300,\"type\":1,\"value\":\"103.135.33.179\"}],\"domain\":\"biquge.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":510,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,biquge.com\"},\"source_rule_sha256\":\"b6af27bf0444e8acfe3ec33d8ab5878b1b3ddf64446274b935da9a34e62cd73e\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "biquge.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"bootcss.com\",\"ttl\":600,\"type\":5,\"value\":\"bootcss.com.d48437e9.cdnhwcvix16.com\"},{\"name\":\"bootcss.com.d48437e9.cdnhwcvix16.com\",\"ttl\":50,\"type\":5,\"value\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\"},{\"name\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\",\"ttl\":14,\"type\":1,\"value\":\"106.9.244.31\"},{\"name\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\",\"ttl\":14,\"type\":1,\"value\":\"27.159.90.81\"},{\"name\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\",\"ttl\":14,\"type\":1,\"value\":\"183.60.255.102\"}],\"domain\":\"bootcss.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"bootcss.com\",\"ttl\":600,\"type\":5,\"value\":\"bootcss.com.d48437e9.cdnhwcvix16.com\"},{\"name\":\"bootcss.com.d48437e9.cdnhwcvix16.com\",\"ttl\":60,\"type\":5,\"value\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\"},{\"name\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\",\"ttl\":60,\"type\":1,\"value\":\"27.159.90.81\"},{\"name\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\",\"ttl\":60,\"type\":1,\"value\":\"106.9.244.31\"},{\"name\":\"hcdnw101.sme.foreign.cdnhwcaoc115.cn\",\"ttl\":60,\"type\":1,\"value\":\"183.60.255.102\"}],\"domain\":\"bootcss.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.bootcss.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":470,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Public Direct CDN 公共直连\",\"text\":\"DOMAIN-SUFFIX,bootcss.com\"},\"source_rule_sha256\":\"fc36d31aa7a93000bae937b651276cc71f8c22ba770bcaae0f1b1c7d06eeb6ff\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier reject_domains; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "bootcss.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"chaipip.com\",\"ttl\":300,\"type\":1,\"value\":\"149.104.29.235\"}],\"domain\":\"chaipip.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"chaipip.com\",\"ttl\":300,\"type\":1,\"value\":\"149.104.29.235\"}],\"domain\":\"chaipip.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":7,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,chaipip.com\"},\"source_rule_sha256\":\"be0b642c9357e0f7704e1177d6d9157f4055c47569866ad40906377513f9dc07\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "chaipip.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"chinaplay.store\",\"ttl\":1,\"type\":1,\"value\":\"20.205.43.132\"}],\"domain\":\"chinaplay.store\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"chinaplay.store\",\"ttl\":60,\"type\":1,\"value\":\"20.205.43.132\"}],\"domain\":\"chinaplay.store\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":8,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,chinaplay.store\"},\"source_rule_sha256\":\"8b26b5adfbe529ece60317e0ad2c220a49269bbf96c876bf670df9c5ba4d177d\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "chinaplay.store"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"cn163.net\",\"ttl\":300,\"type\":1,\"value\":\"154.26.176.253\"}],\"domain\":\"cn163.net\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"cn163.net\",\"ttl\":300,\"type\":1,\"value\":\"154.26.176.253\"}],\"domain\":\"cn163.net\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":526,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,cn163.net\"},\"source_rule_sha256\":\"cae81bd100f08110eb2b6ed36d99f651dcacc371154594d70c8d20b49d328caa\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "cn163.net"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"easou.com\",\"ttl\":1,\"type\":1,\"value\":\"182.40.114.70\"}],\"domain\":\"easou.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"easou.com\",\"ttl\":600,\"type\":1,\"value\":\"182.40.114.70\"}],\"domain\":\"easou.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":544,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,easou.com\"},\"source_rule_sha256\":\"2ce70c385bfb5db3cd13ef7c403b3725f56a68e5a272abb7ec6b6c29a5d13215\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "easou.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"element-plus.org\",\"ttl\":293,\"type\":1,\"value\":\"104.21.54.203\"},{\"name\":\"element-plus.org\",\"ttl\":293,\"type\":1,\"value\":\"172.67.169.5\"}],\"domain\":\"element-plus.org\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"element-plus.org\",\"ttl\":300,\"type\":1,\"value\":\"104.21.54.203\"},{\"name\":\"element-plus.org\",\"ttl\":300,\"type\":1,\"value\":\"172.67.169.5\"}],\"domain\":\"element-plus.org\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":548,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,element-plus.org\"},\"source_rule_sha256\":\"578ae45ac11ecf16079c0b4591d5abc9352400b81bfd2eb9adeb3fde77dfa50c\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "element-plus.org"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"epicgames.com\",\"ttl\":56,\"type\":1,\"value\":\"44.198.255.28\"},{\"name\":\"epicgames.com\",\"ttl\":56,\"type\":1,\"value\":\"3.226.149.108\"},{\"name\":\"epicgames.com\",\"ttl\":56,\"type\":1,\"value\":\"52.4.145.239\"}],\"domain\":\"epicgames.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"epicgames.com\",\"ttl\":60,\"type\":1,\"value\":\"3.226.149.108\"},{\"name\":\"epicgames.com\",\"ttl\":60,\"type\":1,\"value\":\"52.4.145.239\"},{\"name\":\"epicgames.com\",\"ttl\":60,\"type\":1,\"value\":\"44.198.255.28\"}],\"domain\":\"epicgames.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.tracking.epicgames.com\",\"scope\":\"subtree\"},{\"provider\":\"game_download\",\"rule\":\"+.download.epicgames.com\",\"scope\":\"subtree\"},{\"provider\":\"game_download\",\"rule\":\"download2.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"game_download\",\"rule\":\"download3.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"game_download\",\"rule\":\"download4.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"game_download\",\"rule\":\"fastly-download.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"download_domains\",\"rule\":\"+.download.epicgames.com\",\"scope\":\"subtree\"},{\"provider\":\"download_domains\",\"rule\":\"download2.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"download_domains\",\"rule\":\"download3.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"download_domains\",\"rule\":\"download4.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"download_domains\",\"rule\":\"fastly-download.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"cdn1.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"cdn2.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"media-cdn.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"static-assets-prod.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"talon-website-prod.ecosec.on.epicgames.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"epic-social-social-modules-prod.ol.epicgames.com\",\"scope\":\"host\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":228,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Epic\",\"text\":\"DOMAIN-SUFFIX,epicgames.com\"},\"source_rule_sha256\":\"d223e61e7856988daa032933b536c55616fc5374b45c00f0f16453cc89a43555\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "epicgames.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"epicgames.dev\",\"ttl\":1,\"type\":1,\"value\":\"44.209.244.6\"},{\"name\":\"epicgames.dev\",\"ttl\":1,\"type\":1,\"value\":\"54.162.242.142\"},{\"name\":\"epicgames.dev\",\"ttl\":1,\"type\":1,\"value\":\"98.89.141.219\"}],\"domain\":\"epicgames.dev\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"epicgames.dev\",\"ttl\":60,\"type\":1,\"value\":\"54.162.242.142\"},{\"name\":\"epicgames.dev\",\"ttl\":60,\"type\":1,\"value\":\"44.209.244.6\"},{\"name\":\"epicgames.dev\",\"ttl\":60,\"type\":1,\"value\":\"98.89.141.219\"}],\"domain\":\"epicgames.dev\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":229,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Epic\",\"text\":\"DOMAIN-SUFFIX,epicgames.dev\"},\"source_rule_sha256\":\"8b55326001c4af0af07bf8388e66b01598810667888a29b851a40ecc65bfaee2\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "epicgames.dev"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"fantasy.tv\",\"ttl\":3600,\"type\":1,\"value\":\"13.248.169.48\"},{\"name\":\"fantasy.tv\",\"ttl\":3600,\"type\":1,\"value\":\"76.223.54.146\"}],\"domain\":\"fantasy.tv\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"fantasy.tv\",\"ttl\":3600,\"type\":1,\"value\":\"76.223.54.146\"},{\"name\":\"fantasy.tv\",\"ttl\":3600,\"type\":1,\"value\":\"13.248.169.48\"}],\"domain\":\"fantasy.tv\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":551,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,fantasy.tv\"},\"source_rule_sha256\":\"9842cfd20486fa20aa0a9399378566727f02de77932c00644d363acd348f1b9f\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "fantasy.tv"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"helpshift.com\",\"ttl\":12,\"type\":1,\"value\":\"209.42.198.106\"}],\"domain\":\"helpshift.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"helpshift.com\",\"ttl\":60,\"type\":1,\"value\":\"209.42.198.106\"}],\"domain\":\"helpshift.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":230,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Epic\",\"text\":\"DOMAIN-SUFFIX,helpshift.com\"},\"source_rule_sha256\":\"d69a0502f1ed4e9c878302faa7baba121fd2db2297d0513a15aa68edeadaa271\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "helpshift.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"hrtsea.com\",\"ttl\":120,\"type\":5,\"value\":\"planfour.seihappy.com\"},{\"name\":\"planfour.seihappy.com\",\"ttl\":120,\"type\":1,\"value\":\"38.174.152.129\"},{\"name\":\"planfour.seihappy.com\",\"ttl\":120,\"type\":1,\"value\":\"38.177.233.201\"}],\"domain\":\"hrtsea.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"hrtsea.com\",\"ttl\":120,\"type\":5,\"value\":\"planfour.seihappy.com\"},{\"name\":\"planfour.seihappy.com\",\"ttl\":300,\"type\":1,\"value\":\"38.174.152.129\"},{\"name\":\"planfour.seihappy.com\",\"ttl\":300,\"type\":1,\"value\":\"38.177.233.201\"}],\"domain\":\"hrtsea.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":9,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,hrtsea.com\"},\"source_rule_sha256\":\"8d87574515459f7dfd84576f1859f3079acc1fb21178c17a601f0025f5e49693\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "hrtsea.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"jiathis.com\",\"ttl\":300,\"type\":1,\"value\":\"104.21.59.230\"},{\"name\":\"jiathis.com\",\"ttl\":300,\"type\":1,\"value\":\"172.67.184.213\"}],\"domain\":\"jiathis.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"jiathis.com\",\"ttl\":300,\"type\":1,\"value\":\"104.21.59.230\"},{\"name\":\"jiathis.com\",\"ttl\":300,\"type\":1,\"value\":\"172.67.184.213\"}],\"domain\":\"jiathis.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.jiathis.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":586,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,jiathis.com\"},\"source_rule_sha256\":\"2e32f3d5fe9d7a47eb9411d2e29ef00481f52032595d4fffe2197a09ed773017\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier reject_domains; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "jiathis.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.130.11\"},{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.128.221\"},{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.133.54\"},{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.130.103\"}],\"domain\":\"koowo.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.128.221\"},{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.130.11\"},{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.130.103\"},{\"name\":\"koowo.com\",\"ttl\":600,\"type\":1,\"value\":\"101.42.133.54\"}],\"domain\":\"koowo.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"g.koowo.com\",\"scope\":\"host\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":591,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,koowo.com\"},\"source_rule_sha256\":\"18a8fe3195957e9b0c3c16e2418a12da47bc33cbccfe98fc7bd56e0fd2902e5e\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "koowo.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"koyso.com\",\"ttl\":5,\"type\":1,\"value\":\"172.67.75.37\"},{\"name\":\"koyso.com\",\"ttl\":5,\"type\":1,\"value\":\"104.26.14.208\"},{\"name\":\"koyso.com\",\"ttl\":5,\"type\":1,\"value\":\"104.26.15.208\"}],\"domain\":\"koyso.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"koyso.com\",\"ttl\":300,\"type\":1,\"value\":\"172.67.75.37\"},{\"name\":\"koyso.com\",\"ttl\":300,\"type\":1,\"value\":\"104.26.14.208\"},{\"name\":\"koyso.com\",\"ttl\":300,\"type\":1,\"value\":\"104.26.15.208\"}],\"domain\":\"koyso.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":592,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,koyso.com\"},\"source_rule_sha256\":\"b7c4ba4c6e74a12b4a60470609fc11faf1c89b9b42f719b5ffddeda225125196\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "koyso.com"
+        },
+        {
+          "action": "candidate",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"lancdns.com\",\"pool\":\"Ali\",\"rcode\":3},{\"answers\":[],\"domain\":\"lancdns.com\",\"pool\":\"Tencent\",\"rcode\":3}],\"dns_targeted\":[{\"answers\":[],\"domain\":\"www.lancdns.com\",\"pool\":\"Ali\",\"rcode\":3},{\"answers\":[],\"domain\":\"www.lancdns.com\",\"pool\":\"Tencent\",\"rcode\":3}],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":596,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,lancdns.com\"},\"source_rule_sha256\":\"ae560ed183c7bf7258713df4bd428f580baaa35434a644e41380e216d9dcb8e0\"}",
+          "reason": "Both domestic DoH pools return NXDOMAIN for root and www; hold pending a current active endpoint or corrected upstream domain. This is a present negative DNS finding, not a permanent ownership claim.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "lancdns.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"letitfly.me\",\"ttl\":3600,\"type\":1,\"value\":\"206.168.149.18\"}],\"domain\":\"letitfly.me\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"letitfly.me\",\"ttl\":3600,\"type\":1,\"value\":\"206.168.149.18\"}],\"domain\":\"letitfly.me\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":602,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,letitfly.me\"},\"source_rule_sha256\":\"df0e67ef620ef576266ab42503876e1783f5fea40da21520155d27d424a060e0\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "letitfly.me"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"mob.com\",\"ttl\":60,\"type\":1,\"value\":\"60.188.7.57\"}],\"domain\":\"mob.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"mob.com\",\"ttl\":60,\"type\":1,\"value\":\"60.188.7.57\"}],\"domain\":\"mob.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.mob.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":207,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# ChinaOneKeyLogin 运营商一键登录\",\"text\":\"DOMAIN-SUFFIX,mob.com\"},\"source_rule_sha256\":\"0464408bfcdc6329d78b05aa5f8da0970a73297ee3c0ef860c98477de9efdc13\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier reject_domains; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "mob.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"mpyit.com\",\"ttl\":300,\"type\":1,\"value\":\"172.67.131.183\"},{\"name\":\"mpyit.com\",\"ttl\":300,\"type\":1,\"value\":\"104.21.10.199\"}],\"domain\":\"mpyit.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"mpyit.com\",\"ttl\":300,\"type\":1,\"value\":\"104.21.10.199\"},{\"name\":\"mpyit.com\",\"ttl\":300,\"type\":1,\"value\":\"172.67.131.183\"}],\"domain\":\"mpyit.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":12,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,mpyit.com\"},\"source_rule_sha256\":\"a6a015632fa4f69f8a7baa9da7692727b418f5cc63123647cb4c721388001967\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "mpyit.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"msftconnecttest.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"msftconnecttest.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[{\"answers\":[{\"name\":\"www.msftconnecttest.com\",\"ttl\":53,\"type\":5,\"value\":\"www.msftconnecttest.com.edgesuite.net\"},{\"name\":\"www.msftconnecttest.com.edgesuite.net\",\"ttl\":2855,\"type\":5,\"value\":\"a39.d.akamai.net\"},{\"name\":\"a39.d.akamai.net\",\"ttl\":12,\"type\":1,\"value\":\"23.220.70.96\"},{\"name\":\"a39.d.akamai.net\",\"ttl\":12,\"type\":1,\"value\":\"23.220.70.116\"},{\"name\":\"a39.d.akamai.net\",\"ttl\":12,\"type\":1,\"value\":\"23.220.70.108\"},{\"name\":\"a39.d.akamai.net\",\"ttl\":12,\"type\":1,\"value\":\"23.220.70.76\"}],\"domain\":\"www.msftconnecttest.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"www.msftconnecttest.com\",\"ttl\":2696,\"type\":5,\"value\":\"www.msftconnecttest.com.edgesuite.net\"},{\"name\":\"www.msftconnecttest.com.edgesuite.net\",\"ttl\":3560,\"type\":5,\"value\":\"a39.d.akamai.net\"},{\"name\":\"a39.d.akamai.net\",\"ttl\":20,\"type\":1,\"value\":\"23.211.177.205\"},{\"name\":\"a39.d.akamai.net\",\"ttl\":20,\"type\":1,\"value\":\"23.211.177.228\"}],\"domain\":\"www.msftconnecttest.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"earlier_provider_coverage\":[{\"provider\":\"cdn_domains\",\"rule\":\"+.msftconnecttest.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":13,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,msftconnecttest.com\"},\"source_rule_sha256\":\"af311bd01939de4250bbc83ed711984fefbb6c16b416917ca72e364bd3d34ac8\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier cdn_domains; accepting this source record adds no effective route or DNS behavior at the intended later position. Root NODATA is expected to be inconclusive; official Microsoft functional hosts resolve in both pools.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "msftconnecttest.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"msftncsi.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"msftncsi.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[{\"answers\":[{\"name\":\"dns.msftncsi.com\",\"ttl\":11,\"type\":1,\"value\":\"131.107.255.255\"}],\"domain\":\"dns.msftncsi.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"dns.msftncsi.com\",\"ttl\":35,\"type\":1,\"value\":\"131.107.255.255\"}],\"domain\":\"dns.msftncsi.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"earlier_provider_coverage\":[{\"provider\":\"cdn_domains\",\"rule\":\"+.msftncsi.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":14,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,msftncsi.com\"},\"source_rule_sha256\":\"9c7688e4fa27976d34eba99e31ec303e31b444c3f4ad09ec18c2768fc457dfcf\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier cdn_domains; accepting this source record adds no effective route or DNS behavior at the intended later position. Root NODATA is expected to be inconclusive; official Microsoft functional hosts resolve in both pools.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "msftncsi.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"paragon.com\",\"ttl\":60,\"type\":1,\"value\":\"18.204.232.109\"},{\"name\":\"paragon.com\",\"ttl\":60,\"type\":1,\"value\":\"3.217.128.251\"},{\"name\":\"paragon.com\",\"ttl\":60,\"type\":1,\"value\":\"184.193.211.64\"}],\"domain\":\"paragon.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"paragon.com\",\"ttl\":60,\"type\":1,\"value\":\"18.204.232.109\"},{\"name\":\"paragon.com\",\"ttl\":60,\"type\":1,\"value\":\"184.193.211.64\"},{\"name\":\"paragon.com\",\"ttl\":60,\"type\":1,\"value\":\"3.217.128.251\"}],\"domain\":\"paragon.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":231,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Epic\",\"text\":\"DOMAIN-SUFFIX,paragon.com\"},\"source_rule_sha256\":\"6fc1c76dbcfe39404643c02413bf839509f6a7bd297f3a0e6edbe2ba5658df08\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "paragon.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"pdfwifi.com\",\"ttl\":300,\"type\":1,\"value\":\"138.201.65.166\"}],\"domain\":\"pdfwifi.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"pdfwifi.com\",\"ttl\":300,\"type\":1,\"value\":\"138.201.65.166\"}],\"domain\":\"pdfwifi.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":16,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,pdfwifi.com\"},\"source_rule_sha256\":\"d85b02d4ee8a1c61df770eef6d0b92ca50130ed9dfccd475af201e25c7139362\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "pdfwifi.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"playstation.com\",\"ttl\":11,\"type\":1,\"value\":\"54.176.242.157\"},{\"name\":\"playstation.com\",\"ttl\":11,\"type\":1,\"value\":\"54.67.31.53\"}],\"domain\":\"playstation.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"playstation.com\",\"ttl\":60,\"type\":1,\"value\":\"54.67.31.53\"},{\"name\":\"playstation.com\",\"ttl\":60,\"type\":1,\"value\":\"54.176.242.157\"}],\"domain\":\"playstation.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.metrics.eu.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.metrics.us.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.metrics.aem.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.telemetry.api.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.telemetry-cii.api.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.telemetry-console.api.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_extra\",\"rule\":\"+.eve.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"reject_extra\",\"rule\":\"+.payments.direct.playstation.com\",\"scope\":\"subtree\"},{\"provider\":\"cdn_domains\",\"rule\":\"gmedia.playstation.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"static.playstation.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"web-toolbar.playstation.com\",\"scope\":\"host\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":371,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Sony\",\"text\":\"DOMAIN-SUFFIX,playstation.com\"},\"source_rule_sha256\":\"1c5dc422c775f2b4a9d3529733fb267328b90d7dd2bb50b418c47ad49ee658fd\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "playstation.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"playstation.net\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"playstation.net\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.bravia.dl.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.nsx.np.dl.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.mercury.dl.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.nsx-e.np.dl.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"reject_domains\",\"rule\":\"+.eventcom.api.np.km.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"reject_extra\",\"rule\":\"+.a.ad.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"game_download\",\"rule\":\"+.dl.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"download_domains\",\"rule\":\"+.dl.playstation.net\",\"scope\":\"subtree\"},{\"provider\":\"cdn_domains\",\"rule\":\"static-resource.np.community.playstation.net\",\"scope\":\"host\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":372,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Sony\",\"text\":\"DOMAIN-SUFFIX,playstation.net\"},\"source_rule_sha256\":\"91fef4d8f80bbdf6d8c7fae8764a68fd826bb10e39db8f305615897d3e2bdfc5\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "playstation.net"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"playstationnetwork.com\",\"ttl\":20,\"type\":1,\"value\":\"184.87.199.240\"}],\"domain\":\"playstationnetwork.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"playstationnetwork.com\",\"ttl\":60,\"type\":1,\"value\":\"184.87.199.240\"}],\"domain\":\"playstationnetwork.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":373,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Sony\",\"text\":\"DOMAIN-SUFFIX,playstationnetwork.com\"},\"source_rule_sha256\":\"016d94c792cd23322f99b0b91ac54be1ce32af9a88bc29cc5c462afb3cb1fadb\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "playstationnetwork.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"qupu123.com\",\"ttl\":116,\"type\":1,\"value\":\"27.102.129.129\"}],\"domain\":\"qupu123.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"qupu123.com\",\"ttl\":300,\"type\":1,\"value\":\"27.102.129.129\"}],\"domain\":\"qupu123.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":15,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,qupu123.com\"},\"source_rule_sha256\":\"34de844a27b20336684fdfb555cfd95cfb0e88b31511ab8be213333e0555f3f0\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "qupu123.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"repaik.com\",\"pool\":\"Ali\",\"rcode\":2},{\"answers\":[{\"name\":\"repaik.com\",\"ttl\":3600,\"type\":1,\"value\":\"208.73.209.18\"}],\"domain\":\"repaik.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[{\"answers\":[{\"name\":\"www.repaik.com\",\"ttl\":3600,\"type\":1,\"value\":\"208.73.209.18\"}],\"domain\":\"www.repaik.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"www.repaik.com\",\"ttl\":3600,\"type\":1,\"value\":\"208.73.209.18\"}],\"domain\":\"www.repaik.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":652,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,repaik.com\"},\"source_rule_sha256\":\"eb536e7cdfab03b1706e44cefab62c710a1505f7624709eb2d7458f4961380ae\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Root Ali SERVFAIL is not suffix failure: Tencent root A and both pools www A succeed.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "repaik.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"shumilou.net\",\"ttl\":60,\"type\":1,\"value\":\"208.98.40.39\"}],\"domain\":\"shumilou.net\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"shumilou.net\",\"ttl\":60,\"type\":1,\"value\":\"208.98.40.39\"}],\"domain\":\"shumilou.net\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":658,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,shumilou.net\"},\"source_rule_sha256\":\"202016796b0e7ff309f81bfb056692f1548dab16a037fd25e4fbbe3983def1d0\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "shumilou.net"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"simplecd.me\",\"ttl\":600,\"type\":1,\"value\":\"172.237.146.39\"},{\"name\":\"simplecd.me\",\"ttl\":600,\"type\":1,\"value\":\"172.237.146.46\"},{\"name\":\"simplecd.me\",\"ttl\":600,\"type\":1,\"value\":\"172.237.146.18\"}],\"domain\":\"simplecd.me\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"simplecd.me\",\"ttl\":600,\"type\":1,\"value\":\"172.237.146.46\"},{\"name\":\"simplecd.me\",\"ttl\":600,\"type\":1,\"value\":\"172.237.146.18\"},{\"name\":\"simplecd.me\",\"ttl\":600,\"type\":1,\"value\":\"172.237.146.39\"}],\"domain\":\"simplecd.me\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":659,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,simplecd.me\"},\"source_rule_sha256\":\"fd20d384797d2a758d30e8a03bc6454c3cfd7a7d7468e8fcd4e20560c23c0430\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "simplecd.me"
+        },
+        {
+          "action": "candidate",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"sohuno.com\",\"pool\":\"Ali\",\"rcode\":2},{\"answers\":[],\"domain\":\"sohuno.com\",\"pool\":\"Tencent\",\"rcode\":2}],\"dns_targeted\":[{\"answers\":[],\"domain\":\"www.sohuno.com\",\"pool\":\"Ali\",\"rcode\":2},{\"answers\":[],\"domain\":\"www.sohuno.com\",\"pool\":\"Tencent\",\"rcode\":2}],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":366,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Sohu Sogo\",\"text\":\"DOMAIN-SUFFIX,sohuno.com\"},\"source_rule_sha256\":\"369ff60a8075795b97104577d24bfb60edbb3d7f636515478c9ae02ad55148c2\"}",
+          "reason": "Both domestic DoH pools return SERVFAIL for root and www; do not claim the suffix is nonexistent, but defer addition until current active-service DNS evidence exists.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "sohuno.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"staticfile.org\",\"ttl\":461,\"type\":5,\"value\":\"67252e17.cdn77.vip\"},{\"name\":\"67252e17.cdn77.vip\",\"ttl\":271,\"type\":5,\"value\":\"cluster2a10108c.cdn77.vip\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"45.125.35.170\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"45.125.35.167\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"202.181.25.23\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"45.125.35.252\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"202.181.25.19\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"202.181.25.28\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"202.181.25.15\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"202.181.25.22\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":104,\"type\":1,\"value\":\"202.181.25.20\"}],\"domain\":\"staticfile.org\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"staticfile.org\",\"ttl\":600,\"type\":5,\"value\":\"67252e17.cdn77.vip\"},{\"name\":\"67252e17.cdn77.vip\",\"ttl\":300,\"type\":5,\"value\":\"cluster2a10108c.cdn77.vip\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"202.181.25.28\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"202.181.25.15\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"202.181.25.23\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"202.181.25.20\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"45.125.35.252\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"202.181.25.19\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"45.125.35.167\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"45.125.35.170\"},{\"name\":\"cluster2a10108c.cdn77.vip\",\"ttl\":300,\"type\":1,\"value\":\"202.181.25.22\"}],\"domain\":\"staticfile.org\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.staticfile.org\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":472,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Public Direct CDN 公共直连\",\"text\":\"DOMAIN-SUFFIX,staticfile.org\"},\"source_rule_sha256\":\"ddf8f381c59ec8c290ce11eec4fee1125eae1abb0d0943394eeec01b319b43c0\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier reject_domains; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "staticfile.org"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"steamcontent.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"steamcontent.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"game_download\",\"rule\":\"+.steamcontent.com\",\"scope\":\"entire_suffix\"},{\"provider\":\"download_domains\",\"rule\":\"+.steamcontent.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":379,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# SteamCN\",\"text\":\"DOMAIN-SUFFIX,steamcontent.com\"},\"source_rule_sha256\":\"764f6537b9c5b2e77b62de02684a708aefe59fa2cf37882b067512b117520918\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier download_domains,game_download; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "steamcontent.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"steamusercontent.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"steamusercontent.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"cdn_domains\",\"rule\":\"+.steamusercontent.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":380,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# SteamCN\",\"text\":\"DOMAIN-SUFFIX,steamusercontent.com\"},\"source_rule_sha256\":\"1f0ba2081f82fec248ec6ca66846efb292f4b30882daa84180eafe2a2bc91810\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier cdn_domains; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "steamusercontent.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"synology.com\",\"ttl\":51,\"type\":1,\"value\":\"35.183.194.109\"},{\"name\":\"synology.com\",\"ttl\":51,\"type\":1,\"value\":\"15.175.122.104\"}],\"domain\":\"synology.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"synology.com\",\"ttl\":60,\"type\":1,\"value\":\"35.183.194.109\"},{\"name\":\"synology.com\",\"ttl\":60,\"type\":1,\"value\":\"15.175.122.104\"}],\"domain\":\"synology.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":666,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,synology.com\"},\"source_rule_sha256\":\"2ec7c33a90e914e599d1c754962b49609c8ee96ae316776c994a679362999e53\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "synology.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"teamviewer.com\",\"ttl\":1189,\"type\":1,\"value\":\"52.223.21.92\"}],\"domain\":\"teamviewer.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"teamviewer.com\",\"ttl\":3600,\"type\":1,\"value\":\"52.223.21.92\"}],\"domain\":\"teamviewer.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.metrics.teamviewer.com\",\"scope\":\"subtree\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":454,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# TeamViewer\",\"text\":\"DOMAIN-SUFFIX,teamviewer.com\"},\"source_rule_sha256\":\"1681751dc1467aad699bd21cc61a46bb513c22ac38be47e382a3d40dc6c73e4c\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "teamviewer.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"tebex.io\",\"ttl\":300,\"type\":1,\"value\":\"104.18.37.189\"},{\"name\":\"tebex.io\",\"ttl\":300,\"type\":1,\"value\":\"172.64.150.67\"}],\"domain\":\"tebex.io\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"tebex.io\",\"ttl\":300,\"type\":1,\"value\":\"172.64.150.67\"},{\"name\":\"tebex.io\",\"ttl\":300,\"type\":1,\"value\":\"104.18.37.189\"}],\"domain\":\"tebex.io\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_extra\",\"rule\":\"+.eyestore.tebex.io\",\"scope\":\"subtree\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":20,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# MyList\",\"text\":\"DOMAIN-SUFFIX,tebex.io\"},\"source_rule_sha256\":\"9b7b24de7d497d5ba449ff35c2a8ef9959f8b938372fc0a32419fc6a7d6c29ee\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "tebex.io"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"tencentmind.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"tencentmind.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.p.tencentmind.com\",\"scope\":\"subtree\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":410,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Tencent\",\"text\":\"DOMAIN-SUFFIX,tencentmind.com\"},\"source_rule_sha256\":\"ec93f81d97afc102c99a297b7722093abac6ec696d3b5752dc2e808ec64e4622\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "tencentmind.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"tmiaoo.com\",\"ttl\":600,\"type\":1,\"value\":\"172.239.193.161\"},{\"name\":\"tmiaoo.com\",\"ttl\":600,\"type\":1,\"value\":\"172.234.27.71\"},{\"name\":\"tmiaoo.com\",\"ttl\":600,\"type\":1,\"value\":\"172.234.27.37\"}],\"domain\":\"tmiaoo.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"tmiaoo.com\",\"ttl\":600,\"type\":1,\"value\":\"172.234.27.37\"},{\"name\":\"tmiaoo.com\",\"ttl\":600,\"type\":1,\"value\":\"172.239.193.161\"},{\"name\":\"tmiaoo.com\",\"ttl\":600,\"type\":1,\"value\":\"172.234.27.71\"}],\"domain\":\"tmiaoo.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":675,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,tmiaoo.com\"},\"source_rule_sha256\":\"36cdb29f7da5e7f74364b78fa8190fcd0cc90ed1ddb7b17c7f2dded0ff924f9a\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "tmiaoo.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"unrealengine.com\",\"ttl\":1,\"type\":1,\"value\":\"13.223.103.55\"},{\"name\":\"unrealengine.com\",\"ttl\":1,\"type\":1,\"value\":\"100.50.165.24\"},{\"name\":\"unrealengine.com\",\"ttl\":1,\"type\":1,\"value\":\"100.57.191.254\"}],\"domain\":\"unrealengine.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"unrealengine.com\",\"ttl\":60,\"type\":1,\"value\":\"100.50.165.24\"},{\"name\":\"unrealengine.com\",\"ttl\":60,\"type\":1,\"value\":\"100.57.191.254\"},{\"name\":\"unrealengine.com\",\"ttl\":60,\"type\":1,\"value\":\"13.223.103.55\"}],\"domain\":\"unrealengine.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[{\"answers\":[{\"name\":\"unrealengine.com\",\"ttl\":60,\"type\":1,\"value\":\"100.50.165.24\"},{\"name\":\"unrealengine.com\",\"ttl\":60,\"type\":1,\"value\":\"100.57.191.254\"},{\"name\":\"unrealengine.com\",\"ttl\":60,\"type\":1,\"value\":\"13.223.103.55\"}],\"domain\":\"unrealengine.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.tracking.unrealengine.com\",\"scope\":\"subtree\"},{\"provider\":\"cdn_domains\",\"rule\":\"cdn.unrealengine.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"cdn1.unrealengine.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"cdn2.unrealengine.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"cdn3.unrealengine.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"cms-assets.unrealengine.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"components.unrealengine.com\",\"scope\":\"host\"},{\"provider\":\"cdn_domains\",\"rule\":\"static-assets-prod.unrealengine.com\",\"scope\":\"host\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":232,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# Epic\",\"text\":\"DOMAIN-SUFFIX,unrealengine.com\"},\"source_rule_sha256\":\"cfbaba7953d24de1e76a823f92e4ebadfc281c5bb82b7e831f29deb18ad020aa\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "unrealengine.com"
+        },
+        {
+          "action": "accept",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[{\"name\":\"xdrig.com\",\"ttl\":343,\"type\":5,\"value\":\"xdrig-com-selfsigned-v12-49945831.cn-northwest-1.elb.amazonaws.com.cn\"},{\"name\":\"xdrig-com-selfsigned-v12-49945831.cn-northwest-1.elb.amazonaws.com.cn\",\"ttl\":60,\"type\":1,\"value\":\"52.83.140.245\"},{\"name\":\"xdrig-com-selfsigned-v12-49945831.cn-northwest-1.elb.amazonaws.com.cn\",\"ttl\":60,\"type\":1,\"value\":\"52.83.103.185\"}],\"domain\":\"xdrig.com\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[{\"name\":\"xdrig.com\",\"ttl\":600,\"type\":5,\"value\":\"xdrig-com-selfsigned-v12-49945831.cn-northwest-1.elb.amazonaws.com.cn\"},{\"name\":\"xdrig-com-selfsigned-v12-49945831.cn-northwest-1.elb.amazonaws.com.cn\",\"ttl\":60,\"type\":1,\"value\":\"52.83.103.185\"},{\"name\":\"xdrig-com-selfsigned-v12-49945831.cn-northwest-1.elb.amazonaws.com.cn\",\"ttl\":60,\"type\":1,\"value\":\"52.83.140.245\"}],\"domain\":\"xdrig.com\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[],\"earlier_provider_coverage\":[{\"provider\":\"reject_domains\",\"rule\":\"+.xdrig.com\",\"scope\":\"entire_suffix\"}],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":true,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":694,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,xdrig.com\"},\"source_rule_sha256\":\"47f25d992ed0ce9cee7587e0aa23d5b4cb242d3db75e5367034bb5bb6a5fbd3e\"}",
+          "reason": "ACL ChinaDomain explicitly includes this suffix in its direct list; domestically queried DNS supplies current resolution evidence or valid root NODATA. Accept faithful source integration while preserving earlier dedicated routing and DNS precedence. No exclusion based on vendor nationality or answer IP geography. Entire suffix is already shadowed by earlier reject_domains; accepting this source record adds no effective route or DNS behavior at the intended later position.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "xdrig.com"
+        },
+        {
+          "action": "candidate",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"xip.io\",\"pool\":\"Ali\",\"rcode\":0},{\"answers\":[],\"domain\":\"xip.io\",\"pool\":\"Tencent\",\"rcode\":0}],\"dns_targeted\":[{\"answers\":[],\"domain\":\"127.0.0.1.xip.io\",\"pool\":\"Ali\",\"rcode\":2},{\"answers\":[],\"domain\":\"127.0.0.1.xip.io\",\"pool\":\"Tencent\",\"rcode\":3},{\"answers\":[],\"domain\":\"1.2.3.4.xip.io\",\"pool\":\"Ali\",\"rcode\":3},{\"answers\":[],\"domain\":\"1.2.3.4.xip.io\",\"pool\":\"Tencent\",\"rcode\":3},{\"answers\":[],\"domain\":\"xip.io\",\"pool\":\"Ali\",\"rcode\":2},{\"answers\":[{\"name\":\"xip.io\",\"ttl\":3600,\"type\":2,\"value\":\"036e73310d646e73696d706c652d6564676503636f6d00\"},{\"name\":\"xip.io\",\"ttl\":3600,\"type\":2,\"value\":\"036e73320d646e73696d706c652d65646765036e657400\"},{\"name\":\"xip.io\",\"ttl\":3600,\"type\":2,\"value\":\"036e73330d646e73696d706c652d65646765c010\"},{\"name\":\"xip.io\",\"ttl\":3600,\"type\":2,\"value\":\"036e73340d646e73696d706c652d65646765036f726700\"}],\"domain\":\"xip.io\",\"pool\":\"Tencent\",\"rcode\":0}],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":700,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# AccelerateDirectSites\",\"text\":\"DOMAIN-SUFFIX,xip.io\"},\"source_rule_sha256\":\"3a060e6cd38c597dfa12081375e2ee949d1404b1983baaaa4f31047e1a13e31b\"}",
+          "reason": "Root NOERROR/NODATA alone is insufficient to reject. Historical wildcard service public-address functional query 1.2.3.4.xip.io returns NXDOMAIN in both pools; hold pending current active functional endpoint. Domain NS exists, so do not claim the entire suffix is nonexistent.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "xip.io"
+        },
+        {
+          "action": "candidate",
+          "evidence": "{\"dns_root_A\":[{\"answers\":[],\"domain\":\"zmzfile.com\",\"pool\":\"Ali\",\"rcode\":3},{\"answers\":[],\"domain\":\"zmzfile.com\",\"pool\":\"Tencent\",\"rcode\":3}],\"dns_targeted\":[{\"answers\":[],\"domain\":\"www.zmzfile.com\",\"pool\":\"Ali\",\"rcode\":3},{\"answers\":[],\"domain\":\"www.zmzfile.com\",\"pool\":\"Tencent\",\"rcode\":3}],\"earlier_provider_coverage\":[],\"review_audit_sha256\":\"22f89bbbbcff786418bc3c3c1d4af3d4569efa870bf6bb836f1694da3b87793f\",\"shadowed_entire_suffix\":false,\"source\":{\"id\":\"ACLChinaDomain\",\"line\":451,\"reference\":\"https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/ChinaDomain.list\",\"section\":\"# YYeTs 人人影视\",\"text\":\"DOMAIN-SUFFIX,zmzfile.com\"},\"source_rule_sha256\":\"03c154c6961261fcdb296b46aa39ffe040628b1b6ecedc68e8b4f7d4931961fc\"}",
+          "reason": "Both domestic DoH pools return NXDOMAIN for root and www; hold pending a current active endpoint or corrected upstream domain. This is a present negative DNS finding, not a permanent ownership claim.",
+          "review_date": "2026-10-02",
+          "type": "DOMAIN-SUFFIX",
+          "value": "zmzfile.com"
+        }
+      ],
+      "excluded_counts": {
+        "DOMAIN-KEYWORD": 16,
+        "IP-CIDR": 5,
+        "IP-CIDR6": 4
+      },
+      "review_date": "2026-10-02",
+      "source_sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08"
+    },
+    "adds": [],
+    "china_max_initial_wide_suffixes": [
+      "1kapp.com",
+      "alibaba",
+      "alipay",
+      "anquan",
+      "appchizi.com",
+      "applinzi.com",
+      "baidu",
+      "citic",
+      "cn",
+      "heiyu.space",
+      "icbc",
+      "in.th",
+      "ms",
+      "mycloudnas.com",
+      "nett.to",
+      "nyat.app",
+      "shouji",
+      "sina",
+      "sinaapp.com",
+      "sohu",
+      "taobao",
+      "tmall",
+      "unicom",
+      "vicp.fun",
+      "vipsinaapp.com",
+      "wang",
+      "weibo",
+      "xihuan",
+      "xn--1qqw23a",
+      "xn--3bst00m",
+      "xn--3ds443g",
+      "xn--55qw42g",
+      "xn--55qx5d",
+      "xn--5tzm5g",
+      "xn--6frz82g",
+      "xn--6qq986b3xl",
+      "xn--8y0a063a",
+      "xn--9et52u",
+      "xn--9krt00a",
+      "xn--czr694b",
+      "xn--czrs0t",
+      "xn--czru2d",
+      "xn--fiq228c5hs",
+      "xn--fiq64b",
+      "xn--fiqs8s",
+      "xn--fiqz9s",
+      "xn--fjq720a",
+      "xn--g2xx48c",
+      "xn--hxt814e",
+      "xn--imr513n",
+      "xn--io0a7i",
+      "xn--kput3i",
+      "xn--nyqy26a",
+      "xn--otu796d",
+      "xn--rhqv96g",
+      "xn--ses554g",
+      "xn--unup4y",
+      "xn--vhquv",
+      "xn--vuq861b",
+      "xn--xhq521b",
+      "xn--zfr164b",
+      "yun",
+      "zicp.fun",
+      "zone.id"
+    ],
+    "converter": {
+      "binaries": {
+        "darwin-arm64": "ddc3fae7940188c617850be2a875cb8b3d4c900aaa519e696a301d8029c51157",
+        "linux-amd64": "bb38a93a781f87d4c1fe270c169ab2dceb50abacd59c738a1d2fd91e68feff7d"
+      },
+      "command": [
+        "convert-ruleset",
+        "domain",
+        "text"
+      ],
+      "version": "v1.19.17"
+    },
+    "first_match_assertions": [],
+    "limits": {
+      "maximum_added_minimum": 0,
+      "maximum_added_ratio": 0.2,
+      "maximum_output_rules": 300000,
+      "maximum_removed_minimum": 0,
+      "maximum_removed_ratio": 0.1,
+      "minimum_output_rules": 1
+    },
+    "removes": [],
+    "schema": 1,
+    "sources": {
+      "acl_china_domain": {
+        "archive_path": "upstream/cn-direct/acl-china-domain.list",
+        "max_bytes": 1048576,
+        "max_rules": 10000,
+        "snapshot_sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08"
+      },
+      "china_max": {
+        "archive_path": "upstream/cn-direct/china-max-domain.txt",
+        "max_bytes": 16777216,
+        "max_rules": 300000,
+        "snapshot_sha256": "92f59e48f855628936e089989b58e55677adbf0cdd09d7dad507aac578574c6e"
+      },
+      "sukka_direct_clash": {
+        "archive_path": "upstream/cn-direct/sukka-direct.txt",
+        "max_bytes": 524288,
+        "max_rules": 10000,
+        "snapshot_sha256": "881e44c53f74bb33e4ef7d132322d44ccfdb9cf403a3598bb4d83e127829343a"
+      },
+      "sukka_direct_surge": {
+        "archive_path": "upstream/cn-direct/sukka-direct.conf",
+        "max_bytes": 524288,
+        "max_rules": 10000,
+        "snapshot_sha256": "46c65d1a59289d07f52f7652f9d1695d2996f65c125a14593b3eb7322086f8ec"
+      },
+      "sukka_domestic_clash": {
+        "archive_path": "upstream/cn-direct/sukka-domestic.txt",
+        "max_bytes": 524288,
+        "max_rules": 10000,
+        "snapshot_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39"
+      },
+      "sukka_domestic_surge": {
+        "archive_path": "upstream/cn-direct/sukka-domestic.conf",
+        "max_bytes": 524288,
+        "max_rules": 10000,
+        "snapshot_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2"
+      }
+    },
+    "china_max_wide_scope_review": {
+      "approval": "faithful_initial_source_snapshot",
+      "review_date": "2026-10-02",
+      "source_sha256": "92f59e48f855628936e089989b58e55677adbf0cdd09d7dad507aac578574c6e",
+      "psl_sha256": "e0fe072d26b0536525badea237953ff451c9f8e64c9d02c6daa81a4491d2fc66",
+      "psl_version": "2026-10-01",
+      "reason": "Preserve every one-label and effective public-suffix scope present in the fixed initial ChinaMax snapshot; later scope expansions require review."
+    }
+  },
+  "license_sources": {
+    "ACL4SSR-CC-BY-SA-4.0.txt": {
+      "source": "ACL4SSR/ACL4SSR",
+      "spdx": "CC-BY-SA-4.0",
+      "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/LICENCE"
+    },
+    "ChinaMax-GPL-2.0.txt": {
+      "source": "blackmatrix7/ios_rule_script",
+      "spdx": "GPL-2.0-only",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/5fe08949edb51935c67e0766dc4bc94c0dad0509/LICENSE"
+    },
+    "MetaCubeX-GPL-3.0.txt": {
+      "source": "MetaCubeX/meta-rules-dat",
+      "spdx": "GPL-3.0-only",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/master/LICENSE"
+    },
+    "Sukka-AGPL-3.0.txt": {
+      "source": "SukkaW/Surge",
+      "spdx": "AGPL-3.0-only",
+      "url": "https://raw.githubusercontent.com/SukkaW/Surge/master/LICENSE"
+    },
+    "v2fly-MIT.txt": {
+      "source": "v2fly/domain-list-community",
+      "spdx": "MIT",
+      "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/LICENSE"
+    },
+    "PublicSuffix-MPL-2.0.txt": {
+      "spdx": "MPL-2.0",
+      "source": "publicsuffix/list",
+      "url": "https://raw.githubusercontent.com/publicsuffix/list/6cd82aff889e3d64e5e03bc5c1f43da1934a960a/LICENSE"
+    }
+  },
+  "limits": {
+    "maximum_added_minimum": 10,
+    "maximum_added_ratio": 0.2,
+    "maximum_removed_minimum": 5,
+    "maximum_removed_ratio": 0.1,
+    "maximum_rules_per_category": 1000,
+    "minimum_rules_per_category": 1
+  },
   "moves": [],
-  "removes": [],
+  "publish_hold": {
+    "enabled": false,
+    "reason": "",
+    "rolled_back_release_id": ""
+  },
+  "quantity_approvals": [],
   "regex_adapters": [
     {
-      "source": "^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$",
       "output_type": "DOMAIN-WILDCARD",
       "output_value": "chatgpt-async-webps-prod-*-*.webpubsub.azure.com",
       "reason": "Keep the previously reviewed ChatGPT Azure endpoint rule; the wildcard intentionally allows an empty or nonnumeric second segment.",
@@ -89,153 +643,120 @@
           "chatgpt-async-webps-prod--1.webpubsub.azure.com",
           "chatgpt-async-webps-prod-a-anything.webpubsub.azure.com"
         ]
-      }
+      },
+      "source": "^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$"
     }
   ],
-  "limits": {
-    "minimum_rules_per_category": 1,
-    "maximum_rules_per_category": 1000,
-    "maximum_added_minimum": 10,
-    "maximum_added_ratio": 0.2,
-    "maximum_removed_minimum": 5,
-    "maximum_removed_ratio": 0.1
-  },
+  "removes": [],
   "route_assertions": [
     {
-      "host": "chatgpt.com",
-      "category": "global"
+      "category": "global",
+      "host": "chatgpt.com"
     },
     {
-      "host": "openai.com",
-      "category": "global"
+      "category": "global",
+      "host": "openai.com"
     },
     {
-      "host": "claude.ai",
-      "category": "global"
+      "category": "global",
+      "host": "claude.ai"
     },
     {
-      "host": "api.github.com",
-      "category": "global"
+      "category": "global",
+      "host": "api.github.com"
     },
     {
-      "host": "anthropic.services",
-      "category": "global"
+      "category": "global",
+      "host": "anthropic.services"
     },
     {
-      "host": "api.anthropic.services",
-      "category": "global"
+      "category": "global",
+      "host": "api.anthropic.services"
     },
     {
-      "host": "qwen.ai",
-      "category": "cn"
+      "category": "cn",
+      "host": "qwen.ai"
     },
     {
-      "host": "kimi.com",
-      "category": "cn"
+      "category": "cn",
+      "host": "kimi.com"
     },
     {
-      "host": "whatismyip.com",
-      "category": "network-test"
+      "category": "network-test",
+      "host": "whatismyip.com"
     },
     {
-      "host": "speedtest.net",
-      "category": "network-test"
+      "category": "network-test",
+      "host": "speedtest.net"
     },
     {
-      "host": "ipinfo.io",
-      "category": "network-test"
+      "category": "network-test",
+      "host": "ipinfo.io"
     },
     {
-      "host": "whatismyip.akamai.com",
-      "category": "network-test"
+      "category": "network-test",
+      "host": "whatismyip.akamai.com"
     }
   ],
-  "quantity_approvals": [],
+  "schema": 1,
   "surge_process_rules": [
     {
-      "value": "/Applications/ChatGPT.app/",
+      "enabled": true,
       "forms": [
         "ChatGPT 桌面端（含 Codex (Service) 网络进程、内置 codex-cli、包内 helper）"
       ],
-      "tier": "conservative",
-      "enabled": true,
       "reason": "App bundle prefix covers the ChatGPT desktop app and its network-service helper in one rule.",
       "reference": "https://manual.nssurge.com/rules/process.html; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
-      "review_date": "2026-09-29"
+      "review_date": "2026-09-29",
+      "tier": "conservative",
+      "value": "/Applications/ChatGPT.app/"
     },
     {
-      "value": "/Applications/Claude.app/",
+      "enabled": true,
       "forms": [
         "Claude 桌面端（网络出口为无后缀 Claude Helper）"
       ],
-      "tier": "conservative",
-      "enabled": true,
       "reason": "App bundle prefix covers the Claude desktop app; its network traffic exits via the unsuffixed Claude Helper.",
       "reference": "https://manual.nssurge.com/rules/process.html; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
-      "review_date": "2026-09-29"
+      "review_date": "2026-09-29",
+      "tier": "conservative",
+      "value": "/Applications/Claude.app/"
     },
     {
-      "value": "claude",
+      "enabled": true,
       "forms": [
         "Claude Code CLI（~/.local 原生二进制）",
         "VS Code 扩展打包的同名原生二进制",
         "Claude Code URL Handler"
       ],
-      "tier": "conservative",
-      "enabled": true,
       "reason": "Filename match covers the native Claude Code binary regardless of install path; case-sensitive lowercase.",
       "reference": "https://code.claude.com/docs/en/whats-new/2026-w16.md; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
-      "review_date": "2026-09-29"
+      "review_date": "2026-09-29",
+      "tier": "conservative",
+      "value": "claude"
     },
     {
-      "value": "codex",
+      "enabled": true,
       "forms": [
         "VS Code 扩展打包的原生 codex",
         "未来独立安装的 Codex CLI"
       ],
-      "tier": "conservative",
-      "enabled": true,
       "reason": "Filename match is a backup alongside the ChatGPT.app bundle prefix for the native Rust codex binary.",
       "reference": "https://github.com/openai/codex/releases/tag/rust-v0.158.0; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
-      "review_date": "2026-09-29"
+      "review_date": "2026-09-29",
+      "tier": "conservative",
+      "value": "codex"
     },
     {
-      "value": "SkyComputerUseService",
+      "enabled": false,
       "forms": [
         "Codex Computer Use（~/.codex，位于 ChatGPT.app 包外）"
       ],
-      "tier": "optional",
-      "enabled": false,
       "reason": "Optional: its OpenAI traffic is normally already covered by the ai-global domain set; keep disabled until Requests view shows an uncovered endpoint.",
       "reference": "https://manual.nssurge.com/rules/process.html; local forensics 2026-09-29 (ps/lsof/surge-cli rule match)",
-      "review_date": "2026-09-29"
+      "review_date": "2026-09-29",
+      "tier": "optional",
+      "value": "SkyComputerUseService"
     }
-  ],
-  "publish_hold": {
-    "enabled": false,
-    "reason": "",
-    "rolled_back_release_id": ""
-  },
-  "license_sources": {
-    "MetaCubeX-GPL-3.0.txt": {
-      "spdx": "GPL-3.0-only",
-      "source": "MetaCubeX/meta-rules-dat",
-      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/master/LICENSE"
-    },
-    "v2fly-MIT.txt": {
-      "spdx": "MIT",
-      "source": "v2fly/domain-list-community",
-      "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/LICENSE"
-    },
-    "Sukka-AGPL-3.0.txt": {
-      "spdx": "AGPL-3.0-only",
-      "source": "SukkaW/Surge",
-      "url": "https://raw.githubusercontent.com/SukkaW/Surge/master/LICENSE"
-    },
-    "ACL4SSR-CC-BY-SA-4.0.txt": {
-      "spdx": "CC-BY-SA-4.0",
-      "source": "ACL4SSR/ACL4SSR",
-      "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/LICENCE"
-    }
-  }
+  ]
 }

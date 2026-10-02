@@ -2,6 +2,30 @@
 # DIRECT / PROXY / TEST below are examples. Bind ai-global to your AI proxy group,
 # network-test to a test selection group (default US, optional JP and direct).
 rule-providers:
+  cn-direct-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://raw.githubusercontent.com/zesming/ruleset/main/rules/mihomo/cn-direct-domain.mrs
+    path: ./ruleset/zesming-cn-direct-domain.mrs
+    interval: 43200
+    proxy: PROXY
+  cn-direct-special:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/zesming/ruleset/main/rules/mihomo/cn-direct-special.list
+    path: ./ruleset/zesming-cn-direct-special.list
+    interval: 43200
+    proxy: PROXY
+  cn-direct-process:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/zesming/ruleset/main/rules/mihomo/cn-direct-process.list
+    path: ./ruleset/zesming-cn-direct-process.list
+    interval: 43200
+    proxy: PROXY
   network-test:
     type: http
     behavior: classical
@@ -32,3 +56,15 @@ rules:
   - RULE-SET,network-test,TEST
   - RULE-SET,ai-cn,DIRECT
   - RULE-SET,ai-global,PROXY
+  # Keep existing ad/Apple/Microsoft/CDN/Telegram domain rules here.
+  # Replace old direct/domestic DOMAIN providers at their original position,
+  # before LAN/IP/GEOIP rules. Bind DIRECT to your existing direct policy group.
+  - RULE-SET,cn-direct-domain,DIRECT
+  - RULE-SET,cn-direct-special,DIRECT
+  - RULE-SET,cn-direct-process,DIRECT
+dns:
+  nameserver-policy:
+    # Merge at the old direct/domestic DNS selector's position. Keep other policies.
+    'rule-set:cn-direct-domain,cn-direct-special':
+      - https://223.5.5.5/dns-query#DIRECT
+      - https://1.12.12.12/dns-query#DIRECT

@@ -95,10 +95,15 @@ def prepare_temp_root(root: Path) -> None:
     (root / "tests/fixtures").mkdir(parents=True)
     (root / "licenses").mkdir()
     shutil.copy2(ROOT / "policy.json", root / "policy.json")
-    shutil.copy2(ROOT / "scripts/build.py", root / "scripts/build.py")
-    shutil.copy2(ROOT / "tests/test_build.py", root / "tests/test_build.py")
-    for name in ("source-cn.list", "source-global.list", "source-network-test.list", "routes.json"):
-        shutil.copy2(ROOT / "tests/fixtures" / name, root / "tests/fixtures" / name)
+    for relative in build.TOOL_CONTENT_FILES:
+        source = ROOT / relative
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    copied_policy_path = root / "policy.json"
+    copied_policy = json.loads(copied_policy_path.read_text(encoding="utf-8"))
+    copied_policy.pop("cn_direct", None)
+    copied_policy_path.write_text(json.dumps(copied_policy, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     for name in build.LICENSE_FILES:
         shutil.copy2(ROOT / "licenses" / name, root / "licenses" / name)
     (root / ".gitignore").write_text("/.build-report/\n", encoding="utf-8")
@@ -507,6 +512,45 @@ class NetworkTestCategoryTests(unittest.TestCase):
 
 
 class FetchAndUpdateTests(unittest.TestCase):
+    def test_cn_direct_cannot_be_implicitly_retired_by_removing_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prepare_temp_root(root)
+            copied_policy = json.loads((root / "policy.json").read_text(encoding="utf-8"))
+            self.assertNotIn("cn_direct", copied_policy)
+
+            bundle_paths = (
+                set(build.OUTPUT_PATHS.values())
+                | set(build.ARCHIVE_PATHS.values())
+                | set(build.SURGE_DOMAIN_SET_PATHS.values())
+                | build._cn_allowed_paths()
+                | {
+                    build.SURGE_PROCESS_RULES_PATH,
+                    "manifest.json",
+                    "upstream/provenance.json",
+                    "CHECKED_AT.json",
+                }
+            )
+            for index, relative in enumerate(sorted(bundle_paths)):
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(f"existing bundle {index}\n".encode("utf-8"))
+            before_bundle = {relative: (root / relative).read_bytes() for relative in bundle_paths}
+            retained_baseline = build.Baseline(
+                release_id="a" * 64,
+                source_rules={},
+                output_rules={},
+                cn_direct={"fixture": "previously enabled"},
+            )
+
+            with mock.patch.object(build, "_read_current_baseline", return_value=retained_baseline), \
+                    mock.patch.object(build, "fetch_upstream") as fetch_upstream:
+                with self.assertRaisesRegex(build.BuildError, "CN-direct policy cannot be removed"):
+                    build.run_update(root, "2026-10-02T00:00:00Z")
+
+            fetch_upstream.assert_not_called()
+            self.assertEqual(before_bundle, {relative: (root / relative).read_bytes() for relative in bundle_paths})
+
     def test_ref_fetch_pins_both_paths_to_one_full_commit_sha(self) -> None:
         sha = META_SHA_A
         calls = []

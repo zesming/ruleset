@@ -1,0 +1,5 @@
+# The two domain scopes are already covered by ChinaMax.
+DOMAIN,www.example.com
+DOMAIN-SUFFIX,child.example.com
+DOMAIN-KEYWORD,legacy
+IP-CIDR,192.0.2.0/24,no-resolve

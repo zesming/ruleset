@@ -1,5 +1,151 @@
 {
-  "license_snapshot_sha256": "f00591b7b53fc7a7583634c7ee889dd5b4d0f1fb8aaf68ce203d997d1ebbc22b",
+  "cn_direct": {
+    "converter_execution": {
+      "binary_sha256": "ddc3fae7940188c617850be2a875cb8b3d4c900aaa519e696a301d8029c51157",
+      "platform": "darwin-arm64"
+    },
+    "fetch_metadata": {
+      "schema": 1,
+      "sources": {
+        "acl_china_domain": {
+          "branch": "master",
+          "commit": "7ec917109533597bd7f646cf2c01ad8f1db6c88d",
+          "fetched_at": "2026-10-02T15:42:45Z",
+          "path": "Clash/ChinaDomain.list",
+          "repository": "ACL4SSR/ACL4SSR",
+          "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
+          "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/7ec917109533597bd7f646cf2c01ad8f1db6c88d/Clash/ChinaDomain.list"
+        },
+        "china_max": {
+          "branch": "master",
+          "commit": "5fe08949edb51935c67e0766dc4bc94c0dad0509",
+          "fetched_at": "2026-10-02T15:42:45Z",
+          "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
+          "repository": "blackmatrix7/ios_rule_script",
+          "sha256": "92f59e48f855628936e089989b58e55677adbf0cdd09d7dad507aac578574c6e",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/5fe08949edb51935c67e0766dc4bc94c0dad0509/rule/Clash/ChinaMax/ChinaMax_Domain.txt"
+        },
+        "sukka_direct_clash": {
+          "artifact": "sukka_direct_clash",
+          "fetched_at": "2026-10-02T15:42:45Z",
+          "header": {
+            "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
+            "declared_size": "219",
+            "last_updated": "2026-08-29T18:37:13.404Z",
+            "license": "AGPL 3.0"
+          },
+          "sha256": "881e44c53f74bb33e4ef7d132322d44ccfdb9cf403a3598bb4d83e127829343a",
+          "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/direct.txt"
+        },
+        "sukka_direct_surge": {
+          "artifact": "sukka_direct_surge",
+          "fetched_at": "2026-10-02T15:42:45Z",
+          "header": {
+            "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
+            "declared_size": "224",
+            "last_updated": "2026-08-29T18:37:13.404Z",
+            "license": "AGPL 3.0"
+          },
+          "sha256": "46c65d1a59289d07f52f7652f9d1695d2996f65c125a14593b3eb7322086f8ec",
+          "url": "https://ruleset-mirror.skk.moe/List/non_ip/direct.conf"
+        },
+        "sukka_domestic_clash": {
+          "artifact": "sukka_domestic_clash",
+          "fetched_at": "2026-10-02T15:42:45Z",
+          "header": {
+            "content_hash": "tpv0Wjwwaed8UoJHtpXNZYnuaoSZVNK_FaEQecUqEIk",
+            "declared_size": "869",
+            "last_updated": "2026-09-30T11:33:00.392Z",
+            "license": "AGPL 3.0"
+          },
+          "sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+          "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
+        },
+        "sukka_domestic_surge": {
+          "artifact": "sukka_domestic_surge",
+          "fetched_at": "2026-10-02T15:42:45Z",
+          "header": {
+            "content_hash": "rWUXpmmZfqd-E48xeinjmUM2pBbxQLRUZDouiuMITlE",
+            "declared_size": "872",
+            "last_updated": "2026-09-30T11:33:00.392Z",
+            "license": "AGPL 3.0"
+          },
+          "sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+          "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
+        }
+      }
+    },
+    "schema": 1,
+    "sources": {
+      "acl_china_domain": {
+        "branch": "master",
+        "commit": "7ec917109533597bd7f646cf2c01ad8f1db6c88d",
+        "fetched_at": "2026-10-02T15:42:45Z",
+        "path": "Clash/ChinaDomain.list",
+        "repository": "ACL4SSR/ACL4SSR",
+        "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
+        "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/7ec917109533597bd7f646cf2c01ad8f1db6c88d/Clash/ChinaDomain.list"
+      },
+      "china_max": {
+        "branch": "master",
+        "commit": "5fe08949edb51935c67e0766dc4bc94c0dad0509",
+        "fetched_at": "2026-10-02T15:42:45Z",
+        "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
+        "repository": "blackmatrix7/ios_rule_script",
+        "sha256": "92f59e48f855628936e089989b58e55677adbf0cdd09d7dad507aac578574c6e",
+        "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/5fe08949edb51935c67e0766dc4bc94c0dad0509/rule/Clash/ChinaMax/ChinaMax_Domain.txt"
+      },
+      "sukka_direct_clash": {
+        "artifact": "sukka_direct_clash",
+        "fetched_at": "2026-10-02T15:42:45Z",
+        "header": {
+          "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
+          "declared_size": "219",
+          "last_updated": "2026-08-29T18:37:13.404Z",
+          "license": "AGPL 3.0"
+        },
+        "sha256": "881e44c53f74bb33e4ef7d132322d44ccfdb9cf403a3598bb4d83e127829343a",
+        "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/direct.txt"
+      },
+      "sukka_direct_surge": {
+        "artifact": "sukka_direct_surge",
+        "fetched_at": "2026-10-02T15:42:45Z",
+        "header": {
+          "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
+          "declared_size": "224",
+          "last_updated": "2026-08-29T18:37:13.404Z",
+          "license": "AGPL 3.0"
+        },
+        "sha256": "46c65d1a59289d07f52f7652f9d1695d2996f65c125a14593b3eb7322086f8ec",
+        "url": "https://ruleset-mirror.skk.moe/List/non_ip/direct.conf"
+      },
+      "sukka_domestic_clash": {
+        "artifact": "sukka_domestic_clash",
+        "fetched_at": "2026-10-02T15:42:45Z",
+        "header": {
+          "content_hash": "tpv0Wjwwaed8UoJHtpXNZYnuaoSZVNK_FaEQecUqEIk",
+          "declared_size": "869",
+          "last_updated": "2026-09-30T11:33:00.392Z",
+          "license": "AGPL 3.0"
+        },
+        "sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+        "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
+      },
+      "sukka_domestic_surge": {
+        "artifact": "sukka_domestic_surge",
+        "fetched_at": "2026-10-02T15:42:45Z",
+        "header": {
+          "content_hash": "rWUXpmmZfqd-E48xeinjmUM2pBbxQLRUZDouiuMITlE",
+          "declared_size": "872",
+          "last_updated": "2026-09-30T11:33:00.392Z",
+          "license": "AGPL 3.0"
+        },
+        "sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+        "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
+      }
+    }
+  },
+  "license_snapshot_sha256": "2560d358672c65cf6fc0c47e4dee5658e1584edfe2a47bdf780f37d413d6bc5a",
   "licenses": [
     {
       "file": "ACL4SSR-CC-BY-SA-4.0.txt",
@@ -9,11 +155,25 @@
       "url": "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/LICENCE"
     },
     {
+      "file": "ChinaMax-GPL-2.0.txt",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "source": "blackmatrix7/ios_rule_script",
+      "spdx": "GPL-2.0-only",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/5fe08949edb51935c67e0766dc4bc94c0dad0509/LICENSE"
+    },
+    {
       "file": "MetaCubeX-GPL-3.0.txt",
       "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
       "source": "MetaCubeX/meta-rules-dat",
       "spdx": "GPL-3.0-only",
       "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/master/LICENSE"
+    },
+    {
+      "file": "PublicSuffix-MPL-2.0.txt",
+      "sha256": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172",
+      "source": "publicsuffix/list",
+      "spdx": "MPL-2.0",
+      "url": "https://raw.githubusercontent.com/publicsuffix/list/6cd82aff889e3d64e5e03bc5c1f43da1934a960a/LICENSE"
     },
     {
       "file": "Sukka-AGPL-3.0.txt",

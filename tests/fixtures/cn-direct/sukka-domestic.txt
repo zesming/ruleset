@@ -1,0 +1,2 @@
+DOMAIN-SUFFIX,domestic.example
+DOMAIN-WILDCARD,*.sub.domestic.example

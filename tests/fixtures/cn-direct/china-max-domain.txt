@@ -1,0 +1,4 @@
+# Minimal ChinaMax fixture
+.example.com
+exact.example.net
+.test

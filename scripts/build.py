@@ -7,6 +7,7 @@ import argparse
 import datetime as dt
 import hashlib
 import ipaddress
+import importlib.util
 import json
 import math
 import os
@@ -23,6 +24,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+
+_CN_SPEC = importlib.util.spec_from_file_location("cn_direct", Path(__file__).with_name("cn_direct.py"))
+cn_direct = importlib.util.module_from_spec(_CN_SPEC)
+sys.modules["cn_direct"] = cn_direct
+_CN_SPEC.loader.exec_module(cn_direct)
 
 SCHEMA = 1
 EMPTY_RELEASE = "EMPTY"
@@ -71,6 +77,8 @@ LICENSE_FILES = (
     "v2fly-MIT.txt",
     "Sukka-AGPL-3.0.txt",
     "ACL4SSR-CC-BY-SA-4.0.txt",
+    "ChinaMax-GPL-2.0.txt",
+    "PublicSuffix-MPL-2.0.txt",
 )
 REGISTERED_REGEX = r"^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$"
 REGISTERED_WILDCARD = "chatgpt-async-webps-prod-*-*.webpubsub.azure.com"
@@ -166,7 +174,18 @@ HEX_256 = re.compile(r"^[0-9a-f]{64}$")
 DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 TOOL_CONTENT_FILES = (
     "scripts/build.py",
+    "scripts/cn_direct.py",
+    "scripts/install_converter.py",
+    "scripts/public_suffix_list.dat",
     "tests/test_build.py",
+    "tests/test_cn_direct.py",
+    "tests/test_cn_replay.py",
+    "tests/fixtures/cn-direct/acl-china-domain.list",
+    "tests/fixtures/cn-direct/china-max-domain.txt",
+    "tests/fixtures/cn-direct/sukka-direct.conf",
+    "tests/fixtures/cn-direct/sukka-direct.txt",
+    "tests/fixtures/cn-direct/sukka-domestic.conf",
+    "tests/fixtures/cn-direct/sukka-domestic.txt",
     "tests/fixtures/source-cn.list",
     "tests/fixtures/source-global.list",
     "tests/fixtures/source-network-test.list",
@@ -198,6 +217,7 @@ class Baseline:
     release_id: str
     source_rules: dict[str, list[tuple[str, str]]]
     output_rules: dict[str, list[tuple[str, str]]]
+    cn_direct: dict[str, Any] | None = None
 
 
 @dataclass
@@ -210,6 +230,7 @@ class Candidate:
     candidate_id: str
     quantity_errors: list[str] = field(default_factory=list)
     manual_files: dict[str, bytes] = field(default_factory=dict)
+    cn_direct_candidate: Any = None
 
 
 def canonical_bytes(value: Any) -> bytes:
@@ -414,7 +435,7 @@ def validate_policy(root: Path) -> dict[str, Any]:
             "publish_hold",
             "license_sources",
         },
-        set(),
+        {"cn_direct"},
         "policy",
     )
     if policy["schema"] != SCHEMA:
@@ -540,10 +561,12 @@ def validate_policy(root: Path) -> dict[str, Any]:
             raise BuildError("An enabled publish hold must name the restored release id")
 
     validate_surge_process_rules(policy)
+    if "cn_direct" in policy:
+        cn_direct.validate_policy(policy["cn_direct"])
 
     license_sources = require_object(policy["license_sources"], "policy.license_sources")
     if set(license_sources) != set(LICENSE_FILES):
-        raise BuildError("policy.license_sources must describe exactly the four included third-party license files")
+        raise BuildError("policy.license_sources must describe exactly the included third-party license files")
     for filename in LICENSE_FILES:
         label = f"policy.license_sources.{filename}"
         source = require_object(license_sources[filename], label)
@@ -1157,6 +1180,7 @@ def build_candidate(
     license_hash: str,
     baseline: Baseline | None,
     current_tool_hash: str | None = None,
+    cn_direct_candidate: Any = None,
 ) -> Candidate:
     if not re.fullmatch(r"[0-9a-f]{40}", meta_sha):
         raise BuildError("Meta source identifier must be one lowercase 40-character SHA")
@@ -1206,6 +1230,13 @@ def build_candidate(
     semantic_hash = sha256(canonical_bytes(semantic_policy(policy)))
     tool_hash = current_tool_hash or tool_sha256()
     release_inputs = _release_identity_inputs(meta_sha, source_hashes, tool_hash, semantic_hash, output_hashes, license_hash, manual_hashes)
+    if cn_direct_candidate is not None:
+        release_inputs["cn_direct"] = {
+            "sources": cn_direct_candidate.source_hashes,
+            "outputs": {path: sha256(data) for path, data in sorted(cn_direct_candidate.outputs.items())},
+            "policy_sha256": sha256(canonical_bytes(policy["cn_direct"])),
+            "converter": cn_direct_candidate.manifest.get("converter"),
+        }
     release_id = sha256(canonical_bytes(release_inputs))
     candidate_inputs = {"schema": SCHEMA, "baseline_release_id": baseline.release_id, **release_inputs}
     candidate_id = sha256(canonical_bytes(candidate_inputs))
@@ -1256,7 +1287,11 @@ def build_candidate(
         },
         "rule_origins": _origin_manifest(output_records),
     }
-    return Candidate(manifest, provenance, output_bytes, raw_sources, release_id, candidate_id, quantity_errors, {SURGE_PROCESS_RULES_PATH: process_bytes})
+    if cn_direct_candidate is not None:
+        quantity_errors.extend(cn_direct_candidate.manifest.get("quantity_errors", []))
+        manifest["cn_direct"] = cn_direct_candidate.manifest
+        provenance["cn_direct"] = cn_direct_candidate.provenance
+    return Candidate(manifest, provenance, output_bytes, raw_sources, release_id, candidate_id, quantity_errors, {SURGE_PROCESS_RULES_PATH: process_bytes}, cn_direct_candidate)
 
 
 def enforce_quantity_gate(candidate: Candidate, policy: dict[str, Any]) -> None:
@@ -1281,7 +1316,7 @@ def _baseline_from_manifest(manifest: Any, label: str) -> Baseline:
     source_rules = _tuples_by_category(obj["normalized_source"], f"{label}.normalized_source")
     raw_output = {category: obj["outputs"].get(category, {}).get("rules") for category in SOURCE_CATEGORIES}
     output_rules = _tuples_by_category(raw_output, f"{label}.outputs.rules")
-    return Baseline(release_id, source_rules, output_rules)
+    return Baseline(release_id, source_rules, output_rules, obj.get("cn_direct"))
 
 
 def _read_current_baseline(root: Path) -> Baseline | None:
@@ -1304,6 +1339,18 @@ def _read_current_baseline(root: Path) -> Baseline | None:
             raise BuildError(f"Last accepted {category} source snapshot does not match its manifest")
         if sha256(output_data) != output_meta.get("sha256"):
             raise BuildError(f"Last accepted {category} output does not match its manifest")
+    if baseline.cn_direct is not None:
+        cn_manifest = baseline.cn_direct
+        for key, spec in cn_direct.SOURCE_SPECS.items():
+            path = spec["archive_path"]
+            if sha256((root / path).read_bytes()) != cn_manifest["sources"][key]["sha256"]:
+                raise BuildError("Last accepted CN-direct source snapshot differs: " + key)
+        outputs = cn_manifest["outputs"]
+        if set(outputs) != set(cn_direct.ALLOWED_OUTPUTS):
+            raise BuildError("Last accepted CN-direct output manifest is incomplete")
+        for path, metadata in outputs.items():
+            if sha256((root / path).read_bytes()) != metadata["sha256"]:
+                raise BuildError("Last accepted CN-direct output differs: " + path)
     return baseline
 
 
@@ -1423,6 +1470,86 @@ def _write_evidence_source(report: Path, category: str, content: bytes) -> None:
     evidence.write_bytes(content)
 
 
+def _cn_allowed_paths() -> set[str]:
+    return set(cn_direct.ALLOWED_OUTPUTS) | {
+        spec["archive_path"] for spec in cn_direct.SOURCE_SPECS.values()
+    }
+
+
+def _build_cn_candidate(policy: dict[str, Any], baseline: Baseline | None,
+                        raw_sources: dict[str, bytes], source_provenance: dict[str, Any]) -> Any:
+    converter = os.environ.get("MIHOMO_CONVERTER")
+    candidate = cn_direct.build_candidate(
+        raw_sources, policy["cn_direct"],
+        baseline=baseline.cn_direct if baseline else None,
+        converter_path=converter,
+        source_provenance=source_provenance,
+    )
+    review_errors = candidate.manifest.get("quantity_errors", [])
+    if candidate.unreviewed_candidates:
+        details = {"cn_direct_candidate_id": candidate.candidate_id,
+                   "quantity_errors": review_errors,
+                   "unreviewed_acl_count": len(candidate.unreviewed_candidates),
+                   "unreviewed_acl_sample": candidate.unreviewed_candidates[:10]}
+        raise BuildError("CN-direct candidate requires review: " + json.dumps(details, ensure_ascii=False))
+    candidate.manifest["fetch_metadata"] = source_provenance
+    candidate.provenance["fetch_metadata"] = source_provenance
+    return candidate
+
+
+def _fetch_cn_candidate(policy: dict[str, Any], baseline: Baseline | None, report: Path) -> Any:
+    if "cn_direct" not in policy:
+        return None
+    def retain_source(key: str, data: bytes) -> None:
+        if key not in cn_direct.SOURCE_SPECS:
+            raise BuildError("Unexpected CN-direct source key")
+        (report / "evidence" / ("cn-direct-" + key + ".source")).write_bytes(data)
+    refs: dict[str, str] = {}
+    def retain_ref(key: str, value: str) -> None:
+        refs[key] = value
+        (report / "evidence" / "cn-direct-refs.json").write_bytes(pretty_json_bytes(refs))
+    raw_sources, metadata = cn_direct.fetch_sources(on_source=retain_source, on_meta_sha=retain_ref)
+    (report / "evidence" / "cn-direct-fetch.json").write_bytes(pretty_json_bytes(metadata))
+    return _build_cn_candidate(policy, baseline, raw_sources, metadata)
+
+
+def _replay_cn_candidate(root: Path, policy: dict[str, Any], baseline: Baseline | None,
+                         manifest: dict[str, Any], allow_cross_platform_replay: bool = False) -> Any:
+    if "cn_direct" not in policy:
+        if "cn_direct" in manifest:
+            raise BuildError("CN-direct policy is missing from the archived release")
+        return None
+    cn_manifest = manifest.get("cn_direct")
+    if not isinstance(cn_manifest, dict):
+        raise BuildError("CN-direct manifest is missing")
+    raw_sources = {}
+    for key, spec in cn_direct.SOURCE_SPECS.items():
+        data = (root / spec["archive_path"]).read_bytes()
+        expected = cn_manifest["sources"][key]["sha256"]
+        if sha256(data) != expected:
+            raise BuildError("Archived CN-direct source hash differs: " + key)
+        raw_sources[key] = data
+    candidate = _build_cn_candidate(policy, baseline, raw_sources, cn_manifest["fetch_metadata"])
+    archived_provenance = read_json(root / "upstream/provenance.json", "archived CN-direct provenance")
+    published_execution = archived_provenance["cn_direct"]["converter_execution"]
+    actual_execution = candidate.provenance["converter_execution"]
+    if actual_execution != published_execution:
+        if not allow_cross_platform_replay:
+            raise BuildError("CN-direct MRS replay requires the published converter platform; "
+                             "use --allow-cross-platform-replay to verify all output bytes with another approved platform")
+        # Never normalize the execution record until the newly executed converter
+        # has independently reproduced every byte in the accepted output bundle.
+        for path, expected in candidate.outputs.items():
+            if (root / path).read_bytes() != expected:
+                raise BuildError("Cross-platform CN-direct replay differs: " + path)
+        proof = {"status": "passed", "published_execution": published_execution,
+                 "replay_execution": actual_execution,
+                 "output_sha256": {path: sha256(data) for path, data in sorted(candidate.outputs.items())}}
+        (root / REPORT_DIR / "evidence/cn-direct-cross-platform.json").write_bytes(pretty_json_bytes(proof))
+        candidate.provenance["converter_execution"] = published_execution
+    return candidate
+
+
 def _ensure_allowed_paths(files: dict[str, bytes]) -> None:
     allowed = set(OUTPUT_PATHS.values()) | set(ARCHIVE_PATHS.values()) | set(SURGE_DOMAIN_SET_PATHS.values()) | {
         SURGE_PROCESS_RULES_PATH,
@@ -1430,6 +1557,7 @@ def _ensure_allowed_paths(files: dict[str, bytes]) -> None:
         "manifest.json",
         "CHECKED_AT.json",
     }
+    allowed.update(_cn_allowed_paths())
     unexpected = set(files) - allowed
     if unexpected:
         raise BuildError("Refusing to write unexpected bundle paths: " + ", ".join(sorted(unexpected)))
@@ -1498,6 +1626,10 @@ def _bundle_files(candidate: Candidate, checked_at: dict[str, Any]) -> dict[str,
     for category, surge_path in SURGE_DOMAIN_SET_PATHS.items():
         files[surge_path] = _to_surge_domain_set(candidate.manifest["outputs"][category]["rules"])
     files[SURGE_PROCESS_RULES_PATH] = candidate.manual_files[SURGE_PROCESS_RULES_PATH]
+    if candidate.cn_direct_candidate is not None:
+        files.update(candidate.cn_direct_candidate.outputs)
+        for key, data in candidate.cn_direct_candidate.raw_sources.items():
+            files[cn_direct.SOURCE_SPECS[key]["archive_path"]] = data
     files["upstream/provenance.json"] = pretty_json_bytes(candidate.provenance)
     files["manifest.json"] = pretty_json_bytes(candidate.manifest)
     files["CHECKED_AT.json"] = pretty_json_bytes(checked_at)
@@ -1512,6 +1644,8 @@ def run_update(root: Path, now_arg: str | None = None) -> dict[str, Any]:
         policy = validate_policy(root)
         license_record, license_hash = license_snapshot(root, policy)
         baseline = _read_current_baseline(root)
+        if baseline is not None and baseline.cn_direct is not None and "cn_direct" not in policy:
+            raise BuildError("CN-direct policy cannot be removed from an enabled bundle; restore the complete compatible bundle for rollback")
         live_release_id = baseline.release_id if baseline else EMPTY_RELEASE
         current_tool_hash = tool_sha256(root)
 
@@ -1538,7 +1672,9 @@ def run_update(root: Path, now_arg: str | None = None) -> dict[str, Any]:
             _write_evidence_source(report_dir, category, content)
 
         meta_sha, raw_sources = fetch_upstream(on_meta_sha=retain_meta_sha, on_source=retain_source)
+        cn_candidate = _fetch_cn_candidate(policy, baseline, report_dir)
         candidate = build_candidate(
+            cn_direct_candidate=cn_candidate,
             raw_sources=raw_sources,
             meta_sha=meta_sha,
             policy=policy,
@@ -1620,7 +1756,7 @@ def _validate_provenance(root: Path, candidate: Candidate) -> None:
         raise BuildError("upstream/provenance.json does not match the archived sources and license snapshot")
 
 
-def run_offline_validation(root: Path, baseline_path: Path | None = None) -> dict[str, Any]:
+def run_offline_validation(root: Path, baseline_path: Path | None = None, *, allow_cross_platform_replay: bool = False) -> dict[str, Any]:
     report_dir = _clear_report(root)
     report: dict[str, Any] = {"schema": SCHEMA, "status": "failed", "candidate_id": None, "release_id": None}
     candidate: Candidate | None = None
@@ -1641,7 +1777,9 @@ def run_offline_validation(root: Path, baseline_path: Path | None = None) -> dic
         meta_sha, raw_sources = _read_archived_sources(root, manifest)
         for category in SOURCE_CATEGORIES:
             _write_evidence_source(report_dir, category, raw_sources[category])
+        cn_candidate = _replay_cn_candidate(root, policy, baseline, manifest, allow_cross_platform_replay)
         candidate = build_candidate(
+            cn_direct_candidate=cn_candidate,
             raw_sources=raw_sources,
             meta_sha=meta_sha,
             policy=policy,
@@ -1677,6 +1815,10 @@ def run_offline_validation(root: Path, baseline_path: Path | None = None) -> dic
             raise BuildError(f"Missing generated Surge process rules: {exc}") from exc
         if actual_process != candidate.manual_files[SURGE_PROCESS_RULES_PATH]:
             raise BuildError(f"{SURGE_PROCESS_RULES_PATH} differs from offline replay")
+        if cn_candidate is not None:
+            for path, expected in cn_candidate.outputs.items():
+                if (root / path).read_bytes() != expected:
+                    raise BuildError(path + " differs from deterministic CN-direct replay")
         _validate_provenance(root, candidate)
         checked = require_object(read_json(root / "CHECKED_AT.json", "CHECKED_AT"), "CHECKED_AT")
         _parse_checked_at(root)
@@ -1700,7 +1842,9 @@ def run_offline_validation(root: Path, baseline_path: Path | None = None) -> dic
                 raise BuildError("CHECKED_AT.source_sha differs from the archived source SHA")
             # An unchanged audit is bound to the now-live release as its baseline.
             unchanged_baseline = _baseline_from_manifest(manifest, "live manifest")
+            audit_cn = _replay_cn_candidate(root, policy, unchanged_baseline, manifest, allow_cross_platform_replay)
             audit_candidate = build_candidate(
+                cn_direct_candidate=audit_cn,
                 raw_sources=raw_sources,
                 meta_sha=meta_sha,
                 policy=policy,
@@ -1751,13 +1895,16 @@ def main(argv: list[str] | None = None) -> int:
     validate = commands.add_parser("validate", help="validate archived inputs without network access")
     validate.add_argument("--offline", action="store_true", required=True, help="replay only repository snapshots")
     validate.add_argument("--baseline", type=Path, help="explicit directory containing a prior accepted release")
+    validate.add_argument("--allow-cross-platform-replay", action="store_true",
+                          help="permit another approved converter platform only after all seven output files match byte-for-byte")
     args = parser.parse_args(argv)
     root = _resolve_root(args.root)
     try:
         if args.command == "update":
             result = run_update(root, args.now)
         else:
-            result = run_offline_validation(root, args.baseline.resolve() if args.baseline else None)
+            result = run_offline_validation(root, args.baseline.resolve() if args.baseline else None,
+                                            allow_cross_platform_replay=args.allow_cross_platform_replay)
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     except BuildError as exc:
