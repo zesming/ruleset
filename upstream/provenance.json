@@ -34,31 +34,31 @@
   "sources": {
     "cn": {
       "branch": "meta",
-      "meta_sha": "c3e7b224bf892ab5ad308744419d5dea788c1b31",
+      "meta_sha": "c98b7dfd30a369df1d093d8394e68f0a2d970ca3",
       "paths": [
         "geo/geosite/classical/category-ai-cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
       "sha256": "eb1f7f09eb8482e6f349adce8014ea7f8b5b500368f3124f6a66758a1d405e6d",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c3e7b224bf892ab5ad308744419d5dea788c1b31/geo/geosite/classical/category-ai-cn.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c98b7dfd30a369df1d093d8394e68f0a2d970ca3/geo/geosite/classical/category-ai-cn.list"
       ]
     },
     "global": {
       "branch": "meta",
-      "meta_sha": "c3e7b224bf892ab5ad308744419d5dea788c1b31",
+      "meta_sha": "c98b7dfd30a369df1d093d8394e68f0a2d970ca3",
       "paths": [
         "geo/geosite/classical/category-ai-!cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "d43121f252c88342dac2a3661673b42768d8d81127ddf197269149a156157061",
+      "sha256": "ad437fdb6174e9512f0ab748c0f88078c10fc1f0bf55e01044480724eaaaedaf",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c3e7b224bf892ab5ad308744419d5dea788c1b31/geo/geosite/classical/category-ai-!cn.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c98b7dfd30a369df1d093d8394e68f0a2d970ca3/geo/geosite/classical/category-ai-!cn.list"
       ]
     },
     "network-test": {
       "branch": "meta",
-      "meta_sha": "c3e7b224bf892ab5ad308744419d5dea788c1b31",
+      "meta_sha": "c98b7dfd30a369df1d093d8394e68f0a2d970ca3",
       "paths": [
         "geo/geosite/classical/category-ip-geo-detect.list",
         "geo/geosite/classical/category-speedtest.list"
@@ -66,8 +66,8 @@
       "repository": "MetaCubeX/meta-rules-dat",
       "sha256": "f0850eb2634a3d1a6fc11f5b3bada79b8e621936f78f595123b5f05c80d68271",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c3e7b224bf892ab5ad308744419d5dea788c1b31/geo/geosite/classical/category-ip-geo-detect.list",
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c3e7b224bf892ab5ad308744419d5dea788c1b31/geo/geosite/classical/category-speedtest.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c98b7dfd30a369df1d093d8394e68f0a2d970ca3/geo/geosite/classical/category-ip-geo-detect.list",
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/c98b7dfd30a369df1d093d8394e68f0a2d970ca3/geo/geosite/classical/category-speedtest.list"
       ]
     }
   }
