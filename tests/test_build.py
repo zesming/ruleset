@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 
@@ -50,6 +51,7 @@ def candidate(
     policy: dict | None = None,
     baseline: build.Baseline | None = None,
     meta_sha: str = META_SHA_A,
+    cn_direct_candidate=None,
 ) -> build.Candidate:
     policy = copy.deepcopy(policy if policy is not None else policy_value())
     licenses, license_hash = build.license_snapshot(ROOT, policy)
@@ -61,6 +63,27 @@ def candidate(
         license_hash=license_hash,
         baseline=baseline,
         current_tool_hash=TOOL_HASH,
+        cn_direct_candidate=cn_direct_candidate,
+    )
+
+
+def cn_candidate_with_scopes(*scopes: tuple[str, str], source_hash: str = "c" * 64):
+    accepted = [
+        {
+            "type": typ,
+            "value": value,
+            "source": "china_max",
+            "line": index,
+            "raw": f"{typ},{value}",
+        }
+        for index, (typ, value) in enumerate(sorted(set(scopes)), 1)
+    ]
+    return SimpleNamespace(
+        accepted_domain_rules=accepted,
+        source_hashes={"china_max": source_hash},
+        outputs={},
+        manifest={"converter": None, "quantity_errors": []},
+        provenance={},
     )
 
 
@@ -196,6 +219,210 @@ class PolicyAndBuildTests(unittest.TestCase):
         effects = result.manifest["counts"]["manual_adds"]
         self.assertEqual(len(effects), 8)
         self.assertEqual(result.manifest["counts"]["adapted_regex_rules"], 1)
+
+    def test_cn_direct_full_coverage_moves_only_whole_domain_scopes(self) -> None:
+        sources = fixture_sources()
+        sources["global"] = append_rules(
+            sources["global"],
+            "DOMAIN,api.exact-covered.example.test",
+            "DOMAIN,api.suffix-covered.example.test",
+            "DOMAIN-SUFFIX,covered.example.test",
+            "DOMAIN-SUFFIX,exact-only.example.test",
+            "DOMAIN-SUFFIX,partial.example.test",
+        )
+        direct = cn_candidate_with_scopes(
+            ("DOMAIN-SUFFIX", "covered.example.test"),
+            ("DOMAIN", "api.exact-covered.example.test"),
+            ("DOMAIN-SUFFIX", "suffix-covered.example.test"),
+            ("DOMAIN", "exact-only.example.test"),
+            ("DOMAIN", "host.partial.example.test"),
+        )
+
+        result = candidate(sources, cn_direct_candidate=direct)
+        global_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["global"]["rules"]}
+        cn_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["cn"]["rules"]}
+        self.assertNotIn(("DOMAIN", "api.exact-covered.example.test"), global_rules)
+        self.assertIn(("DOMAIN", "api.exact-covered.example.test"), cn_rules)
+        self.assertIn(("DOMAIN", "api.suffix-covered.example.test"), cn_rules)
+        self.assertNotIn(("DOMAIN-SUFFIX", "covered.example.test"), global_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "covered.example.test"), cn_rules)
+        # A CN exact host cannot cover an AI suffix, even when the root host matches.
+        self.assertIn(("DOMAIN-SUFFIX", "exact-only.example.test"), global_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "partial.example.test"), global_rules)
+
+        audit = result.manifest["routing_ownership"]["rules"]
+        by_value = {item["value"]: item for item in audit if item["category_before_auto"] == "global"}
+        self.assertEqual(by_value["api.exact-covered.example.test"]["decision"], "auto_moved")
+        self.assertEqual(by_value["api.suffix-covered.example.test"]["decision"], "auto_moved")
+        self.assertEqual(by_value["covered.example.test"]["decision"], "auto_moved")
+        self.assertEqual(by_value["exact-only.example.test"]["decision"], "partial_overlap_retained")
+        self.assertEqual(by_value["partial.example.test"]["decision"], "partial_overlap_retained")
+        self.assertIn("cover_evidence", by_value["covered.example.test"])
+        self.assertEqual(by_value["covered.example.test"]["cover_evidence"][0]["source_sha256"], "c" * 64)
+        self.assertEqual(by_value["covered.example.test"]["cover_evidence"][0]["archive_path"], "upstream/cn-direct/china-max-domain.txt")
+
+        global_sources = {(item["type"], item["value"]) for item in result.manifest["normalized_source"]["global"]}
+        self.assertIn(("DOMAIN-SUFFIX", "covered.example.test"), global_sources)
+        self.assertTrue(any(
+            origin["kind"] == "cn-direct-coverage"
+            and origin["evidence"][0]["raw"] == "DOMAIN-SUFFIX,covered.example.test"
+            for record in result.manifest["rule_origins"]
+            if record["category"] == "cn" and record["value"] == "covered.example.test"
+            for origin in record["origins"]
+        ))
+
+    def test_global_parent_overlap_stops_partial_auto_move_and_full_move_is_safe(self) -> None:
+        sources = fixture_sources()
+        sources["global"] = append_rules(
+            sources["global"],
+            "DOMAIN-SUFFIX,parent-guard.example.test",
+            "DOMAIN,api.parent-guard.example.test",
+        )
+        with self.assertRaisesRegex(build.BuildError, "Automatic cn-direct classification would create a cross-category overlap"):
+            candidate(
+                sources,
+                cn_direct_candidate=cn_candidate_with_scopes(("DOMAIN", "api.parent-guard.example.test")),
+            )
+
+        covered = candidate(
+            sources,
+            cn_direct_candidate=cn_candidate_with_scopes(("DOMAIN-SUFFIX", "parent-guard.example.test")),
+        )
+        covered_cn = {(item["type"], item["value"]) for item in covered.manifest["outputs"]["cn"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "parent-guard.example.test"), covered_cn)
+        self.assertIn(("DOMAIN", "api.parent-guard.example.test"), covered_cn)
+
+    def test_cn_direct_excludes_single_label_and_public_suffix_evidence(self) -> None:
+        sources = fixture_sources()
+        sources["global"] = append_rules(
+            sources["global"],
+            "DOMAIN-SUFFIX,service.co.uk",
+            "DOMAIN-SUFFIX,service.foo.test",
+        )
+        result = candidate(
+            sources,
+            cn_direct_candidate=cn_candidate_with_scopes(
+                ("DOMAIN-SUFFIX", "co.uk"),
+                ("DOMAIN-SUFFIX", "test"),
+            ),
+        )
+        global_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["global"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "service.co.uk"), global_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "service.foo.test"), global_rules)
+        audit = result.manifest["routing_ownership"]["rules"]
+        by_value = {item["value"]: item for item in audit if item["category_before_auto"] == "global"}
+        self.assertEqual(by_value["service.co.uk"]["decision"], "broad_scope_only")
+        self.assertEqual(by_value["service.co.uk"]["excluded_broad_scope"]["evidence"][0]["excluded_reason"], "public_suffix_scope")
+        self.assertEqual(by_value["service.foo.test"]["decision"], "broad_scope_only")
+        self.assertEqual(by_value["service.foo.test"]["excluded_broad_scope"]["evidence"][0]["excluded_reason"], "single_label_scope")
+
+    def test_overlapping_explicit_global_add_or_move_protects_entire_source_rule(self) -> None:
+        sources = fixture_sources()
+        sources["global"] = append_rules(sources["global"], "DOMAIN-SUFFIX,vendor-override.example.test")
+        sources["cn"] = append_rules(sources["cn"], "DOMAIN,host.move-override.example.test")
+        policy = policy_value()
+        policy["adds"].append({
+            "category": "global",
+            "type": "DOMAIN",
+            "value": "api.vendor-override.example.test",
+            "reason": "Fixture explicit global exception.",
+            "reference": "https://example.invalid/global-exception",
+            "review_date": "2026-10-09",
+        })
+        policy["moves"].append({
+            "type": "DOMAIN",
+            "value": "host.move-override.example.test",
+            "to": "global",
+            "reason": "Fixture explicit global move.",
+        })
+        result = candidate(
+            sources,
+            policy=policy,
+            cn_direct_candidate=cn_candidate_with_scopes(
+                ("DOMAIN-SUFFIX", "vendor-override.example.test"),
+                ("DOMAIN-SUFFIX", "move-override.example.test"),
+            ),
+        )
+        global_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["global"]["rules"]}
+        cn_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["cn"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "vendor-override.example.test"), global_rules)
+        self.assertIn(("DOMAIN", "host.move-override.example.test"), global_rules)
+        self.assertNotIn(("DOMAIN", "host.move-override.example.test"), cn_rules)
+        audit = result.manifest["routing_ownership"]["rules"]
+        add_item = next(item for item in audit if item["value"] == "vendor-override.example.test")
+        move_item = next(item for item in audit if item["value"] == "host.move-override.example.test")
+        self.assertEqual(add_item["decision"], "explicit_global_protected")
+        self.assertEqual(add_item["explicit_global_protection"], [{"kind": "add", "type": "DOMAIN", "value": "api.vendor-override.example.test"}])
+        self.assertEqual(move_item["decision"], "explicit_global_protected")
+
+    def test_ai_cn_and_network_test_keep_categories_when_direct_scopes_overlap(self) -> None:
+        sources = fixture_sources()
+        sources["cn"] = append_rules(sources["cn"], "DOMAIN-SUFFIX,cn-overlap.example.test")
+        sources["network-test"] = append_rules(sources["network-test"], "DOMAIN-SUFFIX,test-overlap.example.test")
+        result = candidate(
+            sources,
+            cn_direct_candidate=cn_candidate_with_scopes(("DOMAIN-SUFFIX", "example.test")),
+        )
+        cn_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["cn"]["rules"]}
+        test_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["network-test"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "cn-overlap.example.test"), cn_rules)
+        self.assertIn(("DOMAIN-SUFFIX", "test-overlap.example.test"), test_rules)
+        audit = result.manifest["routing_ownership"]["rules"]
+        self.assertEqual(next(item for item in audit if item["value"] == "cn-overlap.example.test")["decision"], "preserve_ai_cn")
+        self.assertEqual(next(item for item in audit if item["value"] == "test-overlap.example.test")["decision"], "preserve_network_test")
+        self.assertNotIn(("DOMAIN-WILDCARD", build.REGISTERED_WILDCARD), {
+            (item["type"], item["value"]) for item in result.manifest["outputs"]["cn"]["rules"]
+        })
+        self.assertFalse(any(item["type"] == "DOMAIN-WILDCARD" for item in audit))
+
+    def test_global_wildcard_overlap_is_audited_but_never_auto_moved(self) -> None:
+        result = candidate(
+            cn_direct_candidate=cn_candidate_with_scopes(("DOMAIN-SUFFIX", "webpubsub.azure.com")),
+        )
+        global_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["global"]["rules"]}
+        self.assertIn(("DOMAIN-WILDCARD", build.REGISTERED_WILDCARD), global_rules)
+        wildcard = next(item for item in result.manifest["routing_ownership"]["rules"] if item["type"] == "DOMAIN-WILDCARD")
+        self.assertEqual(wildcard["decision"], "wildcard_manual_review")
+        self.assertEqual(wildcard["direct_relation"], "possible_overlap")
+        self.assertGreater(wildcard["possible_overlap"]["scope_count"], 0)
+        self.assertIn("china_max", wildcard["possible_overlap"]["source_scope_counts"])
+
+    def test_cn_direct_evidence_changes_move_back_and_restore_source_category(self) -> None:
+        sources = fixture_sources()
+        sources["global"] = append_rules(sources["global"], "DOMAIN-SUFFIX,appears-later.example.test")
+        first = candidate(sources, cn_direct_candidate=cn_candidate_with_scopes())
+        first_global = {(item["type"], item["value"]) for item in first.manifest["outputs"]["global"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "appears-later.example.test"), first_global)
+
+        covered = cn_candidate_with_scopes(("DOMAIN-SUFFIX", "appears-later.example.test"), source_hash="d" * 64)
+        second = candidate(sources, baseline=baseline_from(first), meta_sha=META_SHA_B, cn_direct_candidate=covered)
+        second_cn = {(item["type"], item["value"]) for item in second.manifest["outputs"]["cn"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "appears-later.example.test"), second_cn)
+        self.assertIn(("DOMAIN-SUFFIX", "appears-later.example.test"), {
+            (item["type"], item["value"]) for item in second.manifest["normalized_source"]["global"]
+        })
+        self.assertIn({"type": "DOMAIN-SUFFIX", "value": "appears-later.example.test"}, second.manifest["diffs"]["output"]["global"]["removed"])
+
+        third = candidate(sources, baseline=baseline_from(second), meta_sha="c" * 40, cn_direct_candidate=cn_candidate_with_scopes(source_hash="e" * 64))
+        third_global = {(item["type"], item["value"]) for item in third.manifest["outputs"]["global"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "appears-later.example.test"), third_global)
+        self.assertIn({"type": "DOMAIN-SUFFIX", "value": "appears-later.example.test"}, third.manifest["diffs"]["output"]["global"]["added"])
+
+    def test_cn_direct_classification_does_not_bypass_source_migration_gate(self) -> None:
+        first_sources = fixture_sources()
+        first_sources["cn"] = append_rules(first_sources["cn"], "DOMAIN-SUFFIX,migration.example.test")
+        first = candidate(first_sources, cn_direct_candidate=cn_candidate_with_scopes())
+        migrated = {
+            **first_sources,
+            "global": append_rules(first_sources["global"], "DOMAIN,host.migration.example.test"),
+        }
+        with self.assertRaisesRegex(build.BuildError, "Unapproved cross-category source migration"):
+            candidate(
+                migrated,
+                baseline=baseline_from(first),
+                meta_sha=META_SHA_B,
+                cn_direct_candidate=cn_candidate_with_scopes(("DOMAIN-SUFFIX", "migration.example.test")),
+            )
 
     def test_anthropic_services_add_is_bounded_and_persistent(self) -> None:
         original_sources = fixture_sources()

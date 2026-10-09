@@ -21,6 +21,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -1092,6 +1093,358 @@ def _count_gate(
     return errors
 
 
+_COVERAGE_SAMPLE_LIMIT = 5
+
+
+@dataclass
+class _DomainScopeTrieNode:
+    children: dict[str, "_DomainScopeTrieNode"] = field(default_factory=dict)
+    scope_count: int = 0
+    source_scope_counts: dict[str, int] = field(default_factory=dict)
+    sample_scopes: list[dict[str, Any]] = field(default_factory=list)
+    terminal_scopes: list[tuple[str, str]] = field(default_factory=list)
+
+
+class _DomainScopeIndex:
+    """Index accepted DOMAIN and DOMAIN-SUFFIX scopes by reversed DNS labels."""
+
+    def __init__(self, records: list[dict[str, Any]]) -> None:
+        self.suffix_records: dict[str, list[dict[str, Any]]] = {}
+        self.exact_records: dict[str, list[dict[str, Any]]] = {}
+        self.scope_records: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        self.root = _DomainScopeTrieNode()
+        grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        for record in records:
+            key = (record["type"], record["value"])
+            grouped.setdefault(key, []).append(record)
+        for key in sorted(grouped):
+            typ, value = key
+            evidence = sorted(grouped[key], key=canonical_bytes)
+            self.scope_records[key] = evidence
+            if typ == "DOMAIN-SUFFIX":
+                self.suffix_records[value] = evidence
+            else:
+                self.exact_records[value] = evidence
+            sources = sorted({item["source"] for item in evidence})
+            scope_summary = {"type": typ, "value": value, "sources": sources}
+            node = self.root
+            path = [node]
+            for label in reversed(value.split(".")):
+                node = node.children.setdefault(label, _DomainScopeTrieNode())
+                path.append(node)
+            node.terminal_scopes.append(key)
+            for node in path:
+                node.scope_count += 1
+                for source in sources:
+                    node.source_scope_counts[source] = node.source_scope_counts.get(source, 0) + 1
+                if len(node.sample_scopes) < _COVERAGE_SAMPLE_LIMIT:
+                    node.sample_scopes.append(scope_summary)
+
+    @property
+    def scope_count(self) -> int:
+        return len(self.scope_records)
+
+    def node_for_domain(self, value: str) -> _DomainScopeTrieNode | None:
+        node = self.root
+        for label in reversed(value.split(".")):
+            node = node.children.get(label)  # type: ignore[assignment]
+            if node is None:
+                return None
+        return node
+
+    def suffix_cover(self, value: str) -> tuple[str, list[dict[str, Any]]] | None:
+        labels = value.split(".")
+        for index in range(len(labels)):
+            suffix = ".".join(labels[index:])
+            records = self.suffix_records.get(suffix)
+            if records:
+                return suffix, records
+        return None
+
+    def descendant_scopes(self, value: str) -> list[tuple[str, str]]:
+        node = self.node_for_domain(value)
+        if node is None:
+            return []
+        result: list[tuple[str, str]] = []
+        stack = [node]
+        while stack:
+            current = stack.pop()
+            result.extend(current.terminal_scopes)
+            stack.extend(current.children[label] for label in sorted(current.children, reverse=True))
+        return sorted(result)
+
+    def subtree_summary(self, value: str) -> dict[str, Any] | None:
+        node = self.node_for_domain(value)
+        if node is None or node.scope_count == 0:
+            return None
+        return {
+            "scope_count": node.scope_count,
+            "source_scope_counts": dict(sorted(node.source_scope_counts.items())),
+            "sample_scopes": sorted(node.sample_scopes, key=canonical_bytes),
+        }
+
+
+@lru_cache(maxsize=1)
+def _pinned_public_suffix_list() -> cn_direct.PublicSuffixList:
+    try:
+        return cn_direct.load_public_suffix_list()
+    except cn_direct.CnDirectError as exc:
+        raise BuildError(f"Cannot verify cn-direct coverage scopes against the pinned PSL: {exc}") from exc
+
+
+def _accepted_cn_domain_evidence(cn_candidate: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    raw_records = getattr(cn_candidate, "accepted_domain_rules", []) or []
+    if not raw_records:
+        return [], []
+    if not isinstance(raw_records, list):
+        raise BuildError("cn-direct accepted_domain_rules must be a list")
+    source_hashes = getattr(cn_candidate, "source_hashes", {})
+    psl = _pinned_public_suffix_list()
+    eligible: list[dict[str, Any]] = []
+    excluded: list[dict[str, Any]] = []
+    for index, item in enumerate(raw_records):
+        label = f"cn-direct accepted_domain_rules[{index}]"
+        if not isinstance(item, dict):
+            raise BuildError(f"{label} must be an object")
+        typ = item.get("type")
+        if typ not in DOMAIN_TYPES:
+            raise BuildError(f"{label}.type must be DOMAIN or DOMAIN-SUFFIX")
+        value = canonical_policy_domain(item.get("value"), label + ".value")
+        source = item.get("source")
+        line = item.get("line")
+        raw = item.get("raw")
+        if not isinstance(source, str) or not source:
+            raise BuildError(f"{label}.source must be non-empty text")
+        if not isinstance(line, int) or line < 0:
+            raise BuildError(f"{label}.line must be a non-negative integer")
+        if not isinstance(raw, str):
+            raise BuildError(f"{label}.raw must be text")
+        evidence: dict[str, Any] = {"type": typ, "value": value, "source": source, "line": line, "raw": raw}
+        source_hash = source_hashes.get(source) if isinstance(source_hashes, dict) else None
+        if isinstance(source_hash, str):
+            evidence["source_sha256"] = source_hash
+        source_spec = cn_direct.SOURCE_SPECS.get(source)
+        if source_spec is not None:
+            evidence["archive_path"] = source_spec["archive_path"]
+        labels = value.split(".")
+        if len(labels) < 2:
+            evidence["excluded_reason"] = "single_label_scope"
+            excluded.append(evidence)
+        elif psl.suffix_for(value) == value:
+            evidence["excluded_reason"] = "public_suffix_scope"
+            excluded.append(evidence)
+        else:
+            eligible.append(evidence)
+    evidence_key = lambda item: (item["type"], item["value"], item["source"], item["line"], item["raw"])
+    return sorted(eligible, key=evidence_key), sorted(excluded, key=evidence_key)
+
+
+def _coverage_relation(rule: Rule, index: _DomainScopeIndex) -> dict[str, Any]:
+    if rule.type == "DOMAIN":
+        exact = index.exact_records.get(rule.value)
+        if exact:
+            return {"relation": "full", "cover": {"type": "DOMAIN", "value": rule.value, "evidence": exact}}
+        suffix = index.suffix_cover(rule.value)
+        if suffix:
+            value, evidence = suffix
+            return {"relation": "full", "cover": {"type": "DOMAIN-SUFFIX", "value": value, "evidence": evidence}}
+        return {"relation": "none"}
+    if rule.type == "DOMAIN-SUFFIX":
+        suffix = index.suffix_cover(rule.value)
+        if suffix:
+            value, evidence = suffix
+            return {"relation": "full", "cover": {"type": "DOMAIN-SUFFIX", "value": value, "evidence": evidence}}
+        partial = index.subtree_summary(rule.value)
+        if partial:
+            return {"relation": "partial", "partial": partial}
+    return {"relation": "none"}
+
+
+def _wildcard_coverage_relation(rule: Rule, index: _DomainScopeIndex) -> dict[str, Any]:
+    tail = _wildcard_tail_domain(rule.value)
+    matched_scopes: list[tuple[str, str]] = []
+    for index_value in range(len(tail.split("."))):
+        suffix = ".".join(tail.split(".")[index_value:])
+        if suffix in index.suffix_records:
+            matched_scopes.append(("DOMAIN-SUFFIX", suffix))
+    for key in index.descendant_scopes(tail):
+        if key[0] == "DOMAIN-SUFFIX":
+            matched_scopes.append(key)
+        elif rule_matches_host(rule, key[1]):
+            matched_scopes.append(key)
+    matched_scopes = sorted(set(matched_scopes))
+    if not matched_scopes:
+        return {"relation": "none"}
+    evidence = [
+        item
+        for key in matched_scopes
+        for item in index.scope_records[key]
+    ]
+    matched_sources = sorted({item["source"] for item in evidence})
+    source_scope_counts = {
+        source: sum(
+            1
+            for key in matched_scopes
+            if any(item["source"] == source for item in index.scope_records[key])
+        )
+        for source in matched_sources
+    }
+    return {
+        "relation": "possible_overlap",
+        "possible_overlap": {
+            "scope_count": len(matched_scopes),
+            "source_scope_counts": source_scope_counts,
+            "sample_scopes": [
+                {"type": typ, "value": value, "sources": sorted({item["source"] for item in index.scope_records[(typ, value)]})}
+                for typ, value in matched_scopes[:_COVERAGE_SAMPLE_LIMIT]
+            ],
+            "evidence": sorted(evidence, key=canonical_bytes),
+        },
+    }
+
+
+def _excluded_scope_relation(rule: Rule, index: _DomainScopeIndex) -> dict[str, Any]:
+    if rule.type == "DOMAIN":
+        exact = index.exact_records.get(rule.value)
+        if exact:
+            return {"relation": "excluded_full", "scopes": exact}
+        suffix = index.suffix_cover(rule.value)
+        if suffix:
+            value, evidence = suffix
+            return {"relation": "excluded_full", "scopes": evidence, "cover": {"type": "DOMAIN-SUFFIX", "value": value}}
+        return {"relation": "none"}
+    if rule.type == "DOMAIN-SUFFIX":
+        suffix = index.suffix_cover(rule.value)
+        if suffix:
+            value, evidence = suffix
+            return {"relation": "excluded_full", "scopes": evidence, "cover": {"type": "DOMAIN-SUFFIX", "value": value}}
+        partial = index.subtree_summary(rule.value)
+        if partial:
+            return {"relation": "excluded_partial", "partial": partial}
+    if rule.type == "DOMAIN-WILDCARD":
+        return _wildcard_coverage_relation(rule, index)
+    return {"relation": "none"}
+
+
+def _global_policy_protections(rule: Rule, policy: dict[str, Any]) -> list[dict[str, str]]:
+    protections: list[dict[str, str]] = []
+    for item in policy["adds"]:
+        if item["category"] == "global" and rules_overlap(rule, Rule(item["type"], item["value"], "global")):
+            protections.append({"kind": "add", "type": item["type"], "value": item["value"]})
+    for item in policy["moves"]:
+        if item["to"] == "global" and rules_overlap(rule, Rule(item["type"], item["value"], "global")):
+            protections.append({"kind": "move", "type": item["type"], "value": item["value"]})
+    return sorted(protections, key=canonical_bytes)
+
+
+def _automatic_cn_direct_classification(
+    records: list[Rule], policy: dict[str, Any], cn_candidate: Any
+) -> dict[str, Any]:
+    """Apply conservative output-only routing classification from accepted direct domains."""
+    eligible_records, excluded_records = _accepted_cn_domain_evidence(cn_candidate)
+    eligible_index = _DomainScopeIndex(eligible_records)
+    excluded_index = _DomainScopeIndex(excluded_records)
+    audit: list[dict[str, Any]] = []
+    pending_moves: list[tuple[Rule, dict[str, Any], dict[str, Any]]] = []
+
+    for record in records:
+        if record.category not in SOURCE_CATEGORIES or record.type not in ALLOWED_OUTPUT_TYPES:
+            continue
+        eligible = (
+            _wildcard_coverage_relation(record, eligible_index)
+            if record.type == "DOMAIN-WILDCARD"
+            else _coverage_relation(record, eligible_index)
+        )
+        excluded = _excluded_scope_relation(record, excluded_index)
+        if eligible["relation"] == "none" and excluded["relation"] == "none":
+            continue
+        item: dict[str, Any] = {
+            "category_before_auto": record.category,
+            "assigned_category": record.category,
+            "type": record.type,
+            "value": record.value,
+            "direct_relation": eligible["relation"],
+        }
+        if "cover" in eligible:
+            item["cover"] = {key: value for key, value in eligible["cover"].items() if key != "evidence"}
+            item["cover_evidence"] = eligible["cover"]["evidence"]
+        if "partial" in eligible:
+            item["partial_overlap"] = eligible["partial"]
+        if "possible_overlap" in eligible:
+            item["possible_overlap"] = eligible["possible_overlap"]
+        if excluded["relation"] != "none":
+            item["excluded_broad_scope"] = {
+                key: value for key, value in excluded.items() if key not in {"relation", "scopes"}
+            }
+            if "scopes" in excluded:
+                item["excluded_broad_scope"]["evidence"] = excluded["scopes"]
+
+        if record.category == "network-test":
+            item["decision"] = "preserve_network_test"
+        elif record.category == "cn":
+            item["decision"] = "preserve_ai_cn"
+        elif record.type == "DOMAIN-WILDCARD":
+            item["decision"] = "wildcard_manual_review"
+        else:
+            protections = _global_policy_protections(record, policy)
+            if protections:
+                item["decision"] = "explicit_global_protected"
+                item["explicit_global_protection"] = protections
+            elif eligible["relation"] == "full":
+                item["decision"] = "auto_moved"
+                pending_moves.append((record, eligible["cover"], item))
+            elif eligible["relation"] == "partial":
+                item["decision"] = "partial_overlap_retained"
+            elif excluded["relation"] != "none":
+                item["decision"] = "broad_scope_only"
+            else:
+                item["decision"] = "unchanged"
+        audit.append(item)
+
+    pending_ids = {id(record) for record, _, _ in pending_moves}
+    for record, cover, item in pending_moves:
+        blockers = [
+            other
+            for other in records
+            if other is not record
+            and other.category == "global"
+            and rules_overlap(record, other)
+            and id(other) not in pending_ids
+        ]
+        if blockers:
+            other = sorted(blockers, key=lambda value: (value.type, value.value))[0]
+            raise BuildError(
+                "Automatic cn-direct classification would create a cross-category overlap: "
+                f"global {other.type},{other.value} overlaps cn {record.type},{record.value}; "
+                "review the complete scopes before publishing"
+            )
+        record.category = "cn"
+        evidence = cover.get("evidence", [])
+        record.origins.append(
+            {
+                "kind": "cn-direct-coverage",
+                "cover_type": cover.get("type"),
+                "cover_value": cover.get("value"),
+                "evidence": sorted(evidence, key=canonical_bytes),
+            }
+        )
+        item["assigned_category"] = "cn"
+
+    records[:] = deduplicate(records)
+    validate_wildcard_intersections(records, "Generated output after cn-direct routing classification")
+    audit.sort(key=lambda item: (item["category_before_auto"], item["type"], item["value"]))
+    auto_moves = [item for item in audit if item["decision"] == "auto_moved"]
+    return {
+        "schema": 1,
+        "basis": "accepted_unremoved_cn_direct_domain_inputs_before_compression",
+        "eligible_scope_count": eligible_index.scope_count,
+        "excluded_scope_count": excluded_index.scope_count,
+        "public_suffix_list_sha256": _pinned_public_suffix_list().sha256 if (eligible_records or excluded_records) else None,
+        "rules": audit,
+        "automatic_moves": auto_moves,
+    }
+
+
 def _assert_routes(records: list[Rule], policy: dict[str, Any]) -> None:
     for assertion in policy["route_assertions"]:
         matches = {record.category for record in records if rule_matches_host(record, assertion["host"])}
@@ -1207,6 +1560,9 @@ def build_candidate(
         migrations = []
 
     output_records, effects = apply_policy(source_records, policy)
+    routing_ownership = None
+    if cn_direct_candidate is not None:
+        routing_ownership = _automatic_cn_direct_classification(output_records, policy, cn_direct_candidate)
     _assert_routes(output_records, policy)
     output_json = _serialize_records(output_records)
     output_tuples = _tuples_by_category(output_json, "normalized output rules")
@@ -1291,6 +1647,7 @@ def build_candidate(
         quantity_errors.extend(cn_direct_candidate.manifest.get("quantity_errors", []))
         manifest["cn_direct"] = cn_direct_candidate.manifest
         provenance["cn_direct"] = cn_direct_candidate.provenance
+        manifest["routing_ownership"] = routing_ownership
     return Candidate(manifest, provenance, output_bytes, raw_sources, release_id, candidate_id, quantity_errors, {SURGE_PROCESS_RULES_PATH: process_bytes}, cn_direct_candidate)
 
 

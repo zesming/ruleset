@@ -441,6 +441,7 @@ class CnDirectCandidate:
     source_hashes: dict[str, str]
     candidate_id: str
     unreviewed_candidates: list[dict[str, str]] = field(default_factory=list)
+    accepted_domain_rules: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _is_suffix_or_equal(host: str, suffix: str) -> bool:
@@ -844,6 +845,16 @@ def _decision_for(scope: tuple[str, str], decisions: list[Mapping[str, Any]]) ->
     return matched[0]
 
 
+def _acl_scope_has_qualified_accept(
+    scope: tuple[str, str], decisions: list[Mapping[str, Any]], psl: PublicSuffixList
+) -> bool:
+    decision = _decision_for(scope, decisions)
+    if decision is None or decision["action"] != "accept":
+        return False
+    decision_value = decision["value"]
+    return decision_value.count(".") >= 1 and psl.suffix_for(decision_value) != decision_value
+
+
 def _remove_rules(rules: list[Rule], removes: list[Mapping[str, Any]]) -> tuple[list[Rule], list[dict[str, str]]]:
     if not removes:
         return rules, []
@@ -1104,6 +1115,25 @@ def build_candidate(
     for item in policy["adds"]:
         merge_records.append(Rule(item["type"], item["value"], "policy.adds", 0, f"{item['type']},{item['value']}"))
     merge_records, removed_rules = _remove_rules(merge_records, policy["removes"])
+    accepted_domain_rules = [
+        {
+            "type": rule.type,
+            "value": rule.value,
+            "source": rule.source,
+            "line": rule.line,
+            "raw": rule.raw,
+        }
+        for rule in sorted(
+            merge_records,
+            key=lambda item: (item.type, item.value, item.source, item.line, item.raw),
+        )
+        # Redundant ACL records remain in the public cn-direct merge and its
+        # provenance, but are not trustworthy routing evidence until explicitly
+        # accepted.  Otherwise a broad base suffix such as `cn` can make an
+        # unreviewed narrow ACL entry look like precise, reviewed coverage.
+        if rule.source != "acl_china_domain"
+        or _acl_scope_has_qualified_accept(rule.key, decisions, psl)
+    ]
     domain_rules, rule_origins = compress_domain_rules(merge_records)
     if not policy["limits"]["minimum_output_rules"] <= len(domain_rules) <= policy["limits"]["maximum_output_rules"]:
         raise CnDirectError("compressed cn-direct domain count is outside its hard policy limit")
@@ -1266,4 +1296,5 @@ def build_candidate(
         source_hashes=source_hashes,
         candidate_id=review_id,
         unreviewed_candidates=unreviewed,
+        accepted_domain_rules=accepted_domain_rules,
     )
