@@ -21,6 +21,12 @@ AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX
 
 固定的 Public Suffix List 仅用于检测公共/托管后缀和父域扩张，不是分流来源。初版宽范围名单与六份来源哈希一起审核；后续新增范围仍须复核。格式选择不代表固定提速：Surge 会索引 `DOMAIN-SET` 和 `RULE-SET` 中的纯域名。
 
+### AI 的直连路由分类
+
+每次构建会在应用 `policy.json` 后，读取 `cn_direct` 聚合器提供的已接受纯域名输入：删除项已移除、域名压缩尚未执行。ACL 域名只有在 `acl_review` 对相应范围显式标记 `accept` 后，才会作为自动分类证据；即使该 ACL 项被更宽的 base 域名覆盖、因此继续留在 cn-direct 合并输出中，`candidate`、`reject` 和未审记录都不提供窄范围证据。只有当一个 `ai-global` `DOMAIN` 或 `DOMAIN-SUFFIX` 的完整匹配范围被一个 `cn-direct` 纯域名规则完整覆盖时，构建才把它归入 `ai-cn` 的直连路由分类。直连证据必须是多标签且不是有效公共后缀；待审 ACL、关键词、通配符、进程、IP、PSL 父域以及 GeoIP 不会推动自动归类。
+
+显式全局 `adds` 或 `moves` 只要与整条规则语义重叠，就保护该全局规则。单个精确域名不能覆盖后缀规则；子后缀或子域名只构成部分重叠时，规则保留原分类，审计会给出范围和来源摘要。全局通配符只审计、不自动移动；`ai-cn` 与直连规则可以重叠，`network-test` 始终保持 TEST。构建重新计算分类，不改写 Meta 来源类别，因此来源迁移 gate 仍按原类别运行；直连证据消失时，规则下一轮恢复到来源分类，输出差异继续经过数量和发布身份检查。`manifest.json` 的 `routing_ownership` 汇总归属与重叠，输出来源清单记录自动分类所用的直连规则、来源哈希、归档路径、行号和原文。此分类描述路由选择，不代表服务商国籍、产品地区或服务可用性。
+
 ## 怎么用
 
 ### 修改规则
@@ -61,7 +67,7 @@ python3 scripts/build.py validate --offline --allow-cross-platform-replay
 
 跨平台检查必须先逐字节重现全部七个国内直连输出，再接受重放；当前执行身份写入诊断，原发布记录不被改写。涉及构建逻辑的 PR 在 Ubuntu 执行此检查。
 
-GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → Run workflow** 手动触发。远端以一个完整 Git 提交发布；客户端分别下载多个 URL，升级时要把国内直连的路由与 DNS 引用固定到同一提交并一起切换。
+GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → Run workflow** 手动触发。远端一次发布的全部文件来自同一个 Git 提交；客户端分别刷新多个 URL 时，短时间内可能读到不同发布版本。
 
 ### 回滚和清理
 

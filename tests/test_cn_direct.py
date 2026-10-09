@@ -164,6 +164,44 @@ class CnDirectTests(unittest.TestCase):
         output_scopes = {(item["type"], item["value"]) for item in candidate.domain_rules}
         self.assertNotIn(("DOMAIN-SUFFIX", "held.example"), output_scopes)
         self.assertNotIn(("DOMAIN-SUFFIX", "unreviewed.example"), output_scopes)
+        accepted_scopes = {(item["type"], item["value"]) for item in candidate.accepted_domain_rules}
+        self.assertNotIn(("DOMAIN-SUFFIX", "held.example"), accepted_scopes)
+        self.assertNotIn(("DOMAIN-SUFFIX", "unreviewed.example"), accepted_scopes)
+        self.assertTrue(all({"source", "line", "raw"} <= item.keys() for item in candidate.accepted_domain_rules))
+
+        removed_policy = copy.deepcopy(policy)
+        removed_policy["removes"] = [{
+            "type": "DOMAIN-SUFFIX",
+            "value": "example.com",
+            "reason": "Fixture removal before coverage indexing.",
+            "evidence": "Fixture source and generated record.",
+            "review_date": "2026-10-09",
+        }]
+        with mock.patch.object(cn_direct, "_convert_mrs", return_value=converter):
+            removed_candidate = cn_direct.build_candidate(raw, removed_policy, baseline=baseline, converter_path="unused")
+        removed_scopes = {(item["type"], item["value"]) for item in removed_candidate.accepted_domain_rules}
+        self.assertNotIn(("DOMAIN-SUFFIX", "example.com"), removed_scopes)
+        self.assertNotIn(("DOMAIN", "www.example.com"), removed_scopes)
+
+        meta_sources = {
+            "global": (ROOT / "tests/fixtures/source-global.list").read_bytes() + b"DOMAIN-SUFFIX,unreviewed.example\n",
+            "cn": (ROOT / "tests/fixtures/source-cn.list").read_bytes(),
+            "network-test": (ROOT / "tests/fixtures/source-network-test.list").read_bytes(),
+        }
+        meta_policy = build.validate_policy(ROOT)
+        license_record, license_hash = build.license_snapshot(ROOT, meta_policy)
+        meta_candidate = build.build_candidate(
+            raw_sources=meta_sources,
+            meta_sha="a" * 40,
+            policy=meta_policy,
+            license_record=license_record,
+            license_hash=license_hash,
+            baseline=None,
+            current_tool_hash="f" * 64,
+            cn_direct_candidate=candidate,
+        )
+        global_scopes = {(item["type"], item["value"]) for item in meta_candidate.manifest["outputs"]["global"]["rules"]}
+        self.assertIn(("DOMAIN-SUFFIX", "unreviewed.example"), global_scopes)
 
         build_baseline = build.Baseline("a" * 64, {}, {}, baseline)
         with mock.patch.dict("os.environ", {"MIHOMO_CONVERTER": "unused"}), \
@@ -175,6 +213,144 @@ class CnDirectTests(unittest.TestCase):
                     raw,
                     self.source_metadata(raw),
                 )
+
+    def test_redundant_acl_requires_explicit_accept_for_narrow_routing_evidence(self) -> None:
+        def direct_candidate(
+            base_suffix: str,
+            action: str | None,
+            *,
+            acl_scope: str = "vendor.cn",
+            decision_value: str | None = None,
+            include_acl: bool = True,
+        ):
+            raw = fixture_sources()
+            raw["china_max"] += f".{base_suffix}\n".encode("ascii")
+            if include_acl:
+                raw["acl_china_domain"] += f"DOMAIN-SUFFIX,{acl_scope}\n".encode("ascii")
+            policy = self.small_policy(raw)
+            if action is not None:
+                policy["acl_review"]["decisions"].append({
+                    "type": "DOMAIN-SUFFIX",
+                    "value": decision_value or acl_scope,
+                    "action": action,
+                    "reason": "Fixture decision for a redundant ACL scope.",
+                    "evidence": "The broad base scope already covers the ACL record.",
+                    "review_date": "2026-10-09",
+                })
+            baseline = self.fixture_baseline(raw, policy)
+            converter = self.converter_result(
+                policy,
+                b"fixture-mrs",
+                {"platform": "test", "binary_sha256": "b" * 64},
+            )
+            with mock.patch.object(cn_direct, "_convert_mrs", return_value=converter):
+                result = cn_direct.build_candidate(raw, policy, baseline=baseline, converter_path="unused")
+            return result
+
+        meta_sources = {
+            "global": (ROOT / "tests/fixtures/source-global.list").read_bytes(),
+            "cn": (ROOT / "tests/fixtures/source-cn.list").read_bytes(),
+            "network-test": (ROOT / "tests/fixtures/source-network-test.list").read_bytes(),
+        }
+        meta_policy = build.validate_policy(ROOT)
+        license_record, license_hash = build.license_snapshot(ROOT, meta_policy)
+
+        def build_meta_candidate(direct, ai_scope: str = "vendor.cn"):
+            sources = dict(meta_sources)
+            sources["global"] += f"DOMAIN-SUFFIX,{ai_scope}\n".encode("ascii")
+            return build.build_candidate(
+                raw_sources=sources,
+                meta_sha="a" * 40,
+                policy=meta_policy,
+                license_record=license_record,
+                license_hash=license_hash,
+                baseline=None,
+                current_tool_hash="f" * 64,
+                cn_direct_candidate=direct,
+            )
+
+        broad_without_acl = direct_candidate("cn", None, include_acl=False)
+        broad_outputs = broad_without_acl.outputs
+        broad_vendor = ("DOMAIN-SUFFIX", "vendor.cn")
+        for action in (None, "candidate", "reject", "accept"):
+            with self.subTest(base="cn", action=action or "unreviewed"):
+                direct = direct_candidate("cn", action)
+                # The ACL line is redundant beneath `.cn`, so routing review
+                # decisions cannot change any of the seven client artifacts.
+                self.assertEqual(direct.outputs, broad_outputs)
+                acl_evidence = [
+                    item for item in direct.accepted_domain_rules
+                    if item["source"] == "acl_china_domain" and item["value"] == "vendor.cn"
+                ]
+                self.assertEqual(bool(acl_evidence), action == "accept")
+
+                result = build_meta_candidate(direct)
+                global_rules = {
+                    (item["type"], item["value"])
+                    for item in result.manifest["outputs"]["global"]["rules"]
+                }
+                cn_rules = {
+                    (item["type"], item["value"])
+                    for item in result.manifest["outputs"]["cn"]["rules"]
+                }
+                if action == "accept":
+                    self.assertNotIn(broad_vendor, global_rules)
+                    self.assertIn(broad_vendor, cn_rules)
+                else:
+                    self.assertIn(broad_vendor, global_rules)
+                    self.assertNotIn(broad_vendor, cn_rules)
+
+        psl_wide_accept = direct_candidate("cn", "accept", decision_value="cn")
+        psl_wide_acl = [
+            item for item in psl_wide_accept.accepted_domain_rules
+            if item["source"] == "acl_china_domain" and item["value"] == "vendor.cn"
+        ]
+        self.assertEqual(psl_wide_acl, [])
+        self.assertEqual(psl_wide_accept.outputs, broad_outputs)
+        psl_wide_result = build_meta_candidate(psl_wide_accept)
+        self.assertIn(
+            broad_vendor,
+            {(item["type"], item["value"]) for item in psl_wide_result.manifest["outputs"]["global"]["rules"]},
+        )
+
+        inherited_accept = direct_candidate(
+            "cn",
+            "accept",
+            acl_scope="api.vendor.cn",
+            decision_value="vendor.cn",
+        )
+        inherited_acl = [
+            item for item in inherited_accept.accepted_domain_rules
+            if item["source"] == "acl_china_domain" and item["value"] == "api.vendor.cn"
+        ]
+        self.assertEqual(len(inherited_acl), 1)
+        self.assertEqual(inherited_accept.outputs, broad_outputs)
+        inherited_result = build_meta_candidate(inherited_accept, ai_scope="api.vendor.cn")
+        inherited_rule = ("DOMAIN-SUFFIX", "api.vendor.cn")
+        self.assertNotIn(
+            inherited_rule,
+            {(item["type"], item["value"]) for item in inherited_result.manifest["outputs"]["global"]["rules"]},
+        )
+        self.assertIn(
+            inherited_rule,
+            {(item["type"], item["value"]) for item in inherited_result.manifest["outputs"]["cn"]["rules"]},
+        )
+
+        qualified_base = direct_candidate("vendor.cn", None)
+        qualified_evidence = [
+            item for item in qualified_base.accepted_domain_rules
+            if item["value"] == "vendor.cn"
+        ]
+        self.assertEqual({item["source"] for item in qualified_evidence}, {"china_max"})
+        qualified_result = build_meta_candidate(qualified_base)
+        self.assertNotIn(
+            broad_vendor,
+            {(item["type"], item["value"]) for item in qualified_result.manifest["outputs"]["global"]["rules"]},
+        )
+        self.assertIn(
+            broad_vendor,
+            {(item["type"], item["value"]) for item in qualified_result.manifest["outputs"]["cn"]["rules"]},
+        )
 
     def test_domain_compression_preserves_coverage_and_origin_counts(self) -> None:
         source_rules = [
