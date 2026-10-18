@@ -753,6 +753,8 @@ class FetchAndUpdateTests(unittest.TestCase):
                 | build._cn_allowed_paths()
                 | {
                     build.SURGE_PROCESS_RULES_PATH,
+                    build.US_RULES_PATH,
+                    build.SURGE_US_RULES_PATH,
                     "manifest.json",
                     "upstream/provenance.json",
                     "CHECKED_AT.json",
@@ -811,7 +813,16 @@ class FetchAndUpdateTests(unittest.TestCase):
             with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(fixture_sources(), META_SHA_A)):
                 result = build.run_update(root, "2026-09-26T00:00:00Z")
             self.assertEqual(result["status"], "released")
-            for path in (*build.OUTPUT_PATHS.values(), *build.ARCHIVE_PATHS.values(), "upstream/provenance.json", "manifest.json", "CHECKED_AT.json"):
+            for path in (
+                *build.OUTPUT_PATHS.values(),
+                *build.ARCHIVE_PATHS.values(),
+                build.SURGE_PROCESS_RULES_PATH,
+                build.US_RULES_PATH,
+                build.SURGE_US_RULES_PATH,
+                "upstream/provenance.json",
+                "manifest.json",
+                "CHECKED_AT.json",
+            ):
                 self.assertTrue((root / path).is_file(), path)
             with mock.patch.object(build, "fetch_upstream", side_effect=AssertionError("offline validation must not fetch")):
                 replay = build.run_offline_validation(root)
@@ -823,7 +834,16 @@ class FetchAndUpdateTests(unittest.TestCase):
             prepare_temp_root(root)
             with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(fixture_sources(), META_SHA_A)):
                 build.run_update(root, "2026-09-26T00:00:00Z")
-            bundle_paths = [*build.OUTPUT_PATHS.values(), *build.ARCHIVE_PATHS.values(), "upstream/provenance.json", "manifest.json", "CHECKED_AT.json"]
+            bundle_paths = [
+                *build.OUTPUT_PATHS.values(),
+                *build.ARCHIVE_PATHS.values(),
+                build.SURGE_PROCESS_RULES_PATH,
+                build.US_RULES_PATH,
+                build.SURGE_US_RULES_PATH,
+                "upstream/provenance.json",
+                "manifest.json",
+                "CHECKED_AT.json",
+            ]
             before = {path: (root / path).read_bytes() for path in bundle_paths}
             bad = fixture_sources()
             bad["cn"] = b"DOMAIN-REGEX,^unknown\\.example$\n"
@@ -908,7 +928,15 @@ class FetchAndUpdateTests(unittest.TestCase):
             policy = json.loads((root / "policy.json").read_text(encoding="utf-8"))
             policy["publish_hold"] = {"enabled": True, "reason": "Rollback review.", "rolled_back_release_id": first["release_id"]}
             (root / "policy.json").write_text(json.dumps(policy, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-            bundle_paths = [*build.OUTPUT_PATHS.values(), *build.ARCHIVE_PATHS.values(), "upstream/provenance.json", "manifest.json"]
+            bundle_paths = [
+                *build.OUTPUT_PATHS.values(),
+                *build.ARCHIVE_PATHS.values(),
+                build.SURGE_PROCESS_RULES_PATH,
+                build.US_RULES_PATH,
+                build.SURGE_US_RULES_PATH,
+                "upstream/provenance.json",
+                "manifest.json",
+            ]
             before_bundle = {path: (root / path).read_bytes() for path in bundle_paths}
             not_due_check = (root / "CHECKED_AT.json").read_bytes()
             with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(original_sources, META_SHA_A)):
@@ -992,6 +1020,8 @@ class SurgeProcessRuleTests(unittest.TestCase):
         "rules/network-test.list",
         "rules/surge/ai-cn.set",
         "rules/surge/network-test.set",
+        build.US_RULES_PATH,
+        build.SURGE_US_RULES_PATH,
     )
 
     def _policy_with(self, **over):
@@ -1091,6 +1121,84 @@ class SurgeProcessRuleTests(unittest.TestCase):
             target = root / build.SURGE_PROCESS_RULES_PATH
             target.write_bytes(target.read_bytes() + b"PROCESS-NAME,node\n")
             with self.assertRaisesRegex(build.BuildError, "ai-process.list differs"):
+                build.run_offline_validation(root)
+
+
+class USRuleTests(unittest.TestCase):
+    EXPECTED_DOMAINS = [
+        "sentitlement2.mobile.att.net",
+        "epdg.epc.att.net",
+        "epdg.epc.att-idns.net",
+    ]
+
+    def test_us_rules_are_exact_and_render_surge_domain_set_without_prefix_dots(self) -> None:
+        policy = policy_value()
+        result = candidate(policy=policy)
+
+        self.assertEqual(build.SOURCE_CATEGORIES, ("global", "cn", "network-test"))
+        self.assertEqual(set(result.manifest["outputs"]), set(build.SOURCE_CATEGORIES))
+        us_text = result.manual_files[build.US_RULES_PATH].decode("utf-8")
+        us_rules = [line for line in us_text.splitlines() if line and not line.startswith("#")]
+        self.assertEqual(us_rules, [f"DOMAIN,{domain}" for domain in self.EXPECTED_DOMAINS])
+        surge_text = result.manual_files[build.SURGE_US_RULES_PATH].decode("utf-8")
+        self.assertEqual(surge_text.splitlines(), self.EXPECTED_DOMAINS)
+        self.assertTrue(surge_text.endswith("\n"))
+
+        for path in (build.US_RULES_PATH, build.SURGE_US_RULES_PATH):
+            entry = result.manifest["manual_artifacts"][path]
+            self.assertEqual(entry["path"], path)
+            self.assertEqual(entry["rules"], 3)
+            self.assertEqual(entry["source"], build.US_RULE_SOURCE)
+            self.assertEqual(entry["review_date"], "2026-10-18")
+            self.assertEqual(entry["sha256"], build.sha256(result.manual_files[path]))
+
+    def test_invalid_us_policy_entries_are_rejected(self) -> None:
+        mutations = (
+            lambda p: p["us_rules"].append(copy.deepcopy(p["us_rules"][0])),
+            lambda p: p["us_rules"][0].update(type="DOMAIN-KEYWORD"),
+            lambda p: p["us_rules"][0].update(value="Sentitlement2.mobile.att.net"),
+            lambda p: p["us_rules"][0].pop("reference"),
+            lambda p: p["us_rules"][0].update(review_date="2026-13-40"),
+            lambda p: p["us_rules"][0].update(unreviewed=True),
+            lambda p: p.update(us_rules=[]),
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                policy = policy_value()
+                mutation(policy)
+                with self.assertRaises(build.BuildError):
+                    build.validate_us_rules(policy)
+
+    def test_review_metadata_is_bound_to_release_identity(self) -> None:
+        original = candidate()
+        changed_policy = policy_value()
+        changed_policy["us_rules"][0]["reference"] += "; amended review note"
+        changed = candidate(policy=changed_policy)
+
+        self.assertNotEqual(original.release_id, changed.release_id)
+        self.assertNotEqual(
+            original.manifest["semantic_policy_sha256"],
+            changed.manifest["semantic_policy_sha256"],
+        )
+
+    def test_update_writes_us_artifacts_and_offline_replay_detects_tampering(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prepare_temp_root(root)
+            with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(fixture_sources(), META_SHA_A)):
+                result = build.run_update(root, "2026-10-18T00:00:00Z")
+            self.assertEqual(result["status"], "released")
+            self.assertEqual(
+                (root / build.SURGE_US_RULES_PATH).read_text(encoding="utf-8").splitlines(),
+                self.EXPECTED_DOMAINS,
+            )
+            with mock.patch.object(build, "fetch_upstream", side_effect=AssertionError("offline validation must not fetch")):
+                replay = build.run_offline_validation(root)
+            self.assertEqual(replay["offline_replay"], "passed")
+
+            target = root / build.SURGE_US_RULES_PATH
+            target.write_bytes(target.read_bytes() + b"tampered.example\n")
+            with self.assertRaisesRegex(build.BuildError, "rules/surge/us.set differs from offline replay"):
                 build.run_offline_validation(root)
 
 

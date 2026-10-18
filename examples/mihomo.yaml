@@ -1,6 +1,7 @@
 # Merge these snippets into an existing Mihomo / Smart configuration.
-# DIRECT / PROXY / TEST below are examples. Bind ai-global to your AI proxy group,
-# network-test to a test selection group (default US, optional JP and direct).
+# DIRECT / PROXY / TEST / US below are examples. Bind us to a dedicated US egress
+# policy that supports the required UDP traffic; no nodes or complete proxy config are supplied.
+# Maintain the required real DNS configuration separately in the client.
 rule-providers:
   cn-direct-domain:
     type: http
@@ -34,6 +35,14 @@ rule-providers:
     path: ./ruleset/zesming-network-test.list
     interval: 43200
     proxy: PROXY
+  us:
+    type: http
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/zesming/ruleset/main/rules/us.list
+    path: ./ruleset/zesming-us.list
+    interval: 43200
+    proxy: PROXY
   ai-cn:
     type: http
     behavior: classical
@@ -51,8 +60,8 @@ rule-providers:
     interval: 43200
     proxy: PROXY
 rules:
-  # After local/infrastructure exceptions; before broad ad, Apple, Microsoft,
-  # CDN, China and IP rules. network-test precedes AI rules.
+  # After local/infrastructure exceptions and before test, AI, ad and broad domain/IP rules.
+  - RULE-SET,us,US
   - RULE-SET,network-test,TEST
   - RULE-SET,ai-cn,DIRECT
   - RULE-SET,ai-global,PROXY
@@ -63,6 +72,7 @@ rules:
   - RULE-SET,cn-direct-special,DIRECT
   - RULE-SET,cn-direct-process,DIRECT
 dns:
+  # Keep the required real DNS configuration in your client; no US DNS selector is generated here.
   nameserver-policy:
     # Keep network-test on its existing DNS path. Place AI selectors before cn-direct.
     # The foreign DoH endpoint must follow your existing proxy policy.
