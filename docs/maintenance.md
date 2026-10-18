@@ -17,6 +17,10 @@
 
 AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 的 `meta` 分支，每轮固定到一个提交。
 
+`us` 是单独的人工维护入口，不属于 Meta 来源类别，也不参与 AI 的 `cn-direct` 自动分类。编辑 `policy.json` 的 `us_rules` 后，构建会生成 `rules/us.list`（Mihomo / classical）和 `rules/surge/us.set`（Surge domain-set），并把二者的哈希、数量、来源和复核日期写入 `manifest.json`。精确 `DOMAIN` 在 Surge `.set` 中不带前导点；若经复核以后加入 `DOMAIN-SUFFIX`，则使用前导点表达后缀范围。
+
+目前只有三个逐主机规则：`sentitlement2.mobile.att.net`、`epdg.epc.att.net`、`epdg.epc.att-idns.net`。后一个主机来自本机抓包中的 CNAME 观察。AT&T 文档 [KM1114459](https://www.att.com/support/article/wireless/KM1114459/) 作一般背景参考，主机范围来自本机验证；规则选择出口，不保证通话成功。客户端需单独维护所需的真实 DNS，并将它们放在本地/基础设施例外之后、网络测试、AI 和广告等普通分流规则之前，绑定到具备所需 UDP 能力的独立美国出口策略。
+
 国内直连聚合 3 个上游项目、4 个逻辑集合、6 个实际输入：ChinaMax Domain、ACL4SSR ChinaDomain，以及 Sukka direct/domestic 的 Clash、Surge 版本。ChinaMax 和 ACL 各固定一个 Git 提交；Sukka 的四份官方发布文件分别记录哈希和头部信息。原文保存在 `upstream/cn-direct/`，域名跨平台合并，平台表达式分别输出；ACL 待审增量不进入直连规则。
 
 固定的 Public Suffix List 仅用于检测公共/托管后缀和父域扩张，不是分流来源。初版宽范围名单与六份来源哈希一起审核；后续新增范围仍须复核。格式选择不代表固定提速：Surge 会索引 `DOMAIN-SET` 和 `RULE-SET` 中的纯域名。
@@ -39,11 +43,12 @@ AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX
 | `moves` | 调整仍存在于上游的规则分类 |
 | `route_assertions` | 校验指定域名的预期分类 |
 | `surge_process_rules` | 维护 Surge macOS 的 AI 进程兜底，附 `reference` 与 `review_date` |
+| `us_rules` | 维护需要固定到美国出口的逐主机规则；每项须有 `reason`、`reference` 与 `review_date` |
 | `cn_direct` | 国内直连来源、类型白名单、ACL 增量、宽后缀复核、补充/排除与规模门槛 |
 | `quantity_approvals` | 按完整候选身份批准需人工复核的变化 |
 | `publish_hold` | 暂停发布，保留当前规则版本 |
 
-人工补充与上游或其他分类冲突时构建会停止。复核国内直连范围按实际访问和来源意图判断；不要把厂商特例写死在聚合代码中。规则命中决定路由，不保证服务的账号、地区或出口 IP 要求。
+人工补充与上游或其他分类冲突时构建会停止。新增 `us_rules` 时，只加入已复核的必要范围并使用精确 `DOMAIN` 限定单主机；Surge `.set` 对精确域名不加前导点。该字段不改变 `network-test`、AI 或 `cn-direct` 的自动分类。客户端单独维护所需的真实 DNS，并确认绑定的美国出口能承载所需 UDP。
 
 ### 构建和验证
 

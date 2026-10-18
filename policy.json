@@ -699,6 +699,29 @@
     }
   ],
   "schema": 1,
+  "us_rules": [
+    {
+      "type": "DOMAIN",
+      "value": "sentitlement2.mobile.att.net",
+      "reason": "Observed during local device validation of an AT&T Wi-Fi Calling setup attempt; this exact-host route does not establish that routing alone makes calls succeed.",
+      "reference": "https://www.att.com/support/article/wireless/KM1114459/ (general background, not confirmation of this hostname); local device capture 2026-10-18",
+      "review_date": "2026-10-18"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "epdg.epc.att.net",
+      "reason": "Observed during local device validation of an AT&T Wi-Fi Calling setup attempt; this exact-host route does not establish that routing alone makes calls succeed.",
+      "reference": "https://www.att.com/support/article/wireless/KM1114459/ (general background, not confirmation of this hostname); local device capture 2026-10-18",
+      "review_date": "2026-10-18"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "epdg.epc.att-idns.net",
+      "reason": "Observed as a CNAME alias for the ePDG endpoint in the local device capture; retained as this exact hostname without claiming it ensures successful calls.",
+      "reference": "https://www.att.com/support/article/wireless/KM1114459/ (general background, not confirmation of this hostname); local device capture and CNAME observation 2026-10-18",
+      "review_date": "2026-10-18"
+    }
+  ],
   "surge_process_rules": [
     {
       "enabled": true,
