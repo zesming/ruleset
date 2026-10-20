@@ -28,7 +28,7 @@ REJECT 的不同动作、Surge extended-matching、域名格式与解析触发�
 | TEST 提前 | 测速与拦截重叠的 20 个见证仍走 TEST |
 | US 先于普通直连 | 15 条被原直连完整覆盖的 CDN 规则，以及 17 个部分重叠的下载主机见证由 DIRECT 变 US；例如 `cdn.nintendo.net`、`time.apple.com`、`objects.githubusercontent.com`、`registry-1.docker.io` |
 | REJECT 提前 | 15 个 AI 相关主机见证改为拦截，例如 `r.openai.com`、`statsig.anthropic.com`、`opt.doubao.com`；不据此声称所有子域都改变，也不保证相应应用功能不受影响 |
-| 去掉多余代理组 | Mihomo TUIC 节点直接为 US / JP；Surge 使用 `🇺🇸 US` / `🇯🇵 JP` Smart 组，各组仅包含本地区 Snell 6 与 TUIC；TEST 选择地区组或 DIRECT |
+| 去掉多余代理组 | Mihomo TUIC 叶直接显示为 `🇺🇸 US` / `🇯🇵 JP`，不增加国家包装组；Surge 使用 `🇺🇸 US` / `🇯🇵 JP` Smart 组，各组仅包含本地区 Snell 6 与 TUIC；TEST 选择地区组或直连别名 |
 
 Sukka direct 的关键词、普通业务和进程规则继续归入后段直连；不将整份集合提前，防止 `adp.cnki.net`、`adsp.xunlei.com` 等原拦截项被宽范围直连盖过。
 
@@ -50,7 +50,7 @@ DNS 查询只有域名上下文，不能保证进程或 SNI 改写后的每个�
 
 ## 客户端与节点参数
 
-Surge 的 `🇺🇸 US` / `🇯🇵 JP` Smart 组仅包含同地区 Snell 6 与 TUIC，TEST 选择地区组或 DIRECT，不跨国自动切换。[Smart](https://manual.nssurge.com/policy-groups/smart.html) 依据真实连接评分，当前版本也考虑 UDP 响应；已建立会话不保证无缝切换。
+两端统一显示 `⚒️ Test`、`🚀 Direct`、`⛔️ Reject` 与 `⛔️ Reject-Drop`；Surge 另以原生 `[Proxy]` 别名显示 `⛔️ Reject-No-Drop`。Mihomo 用固定单成员 select 组指向原生内建策略，Surge 用 `[Proxy]` 内建策略别名，保持原动作。Mihomo 的 `🇺🇸 US` / `🇯🇵 JP` 是 TUIC 叶名称，不额外包一层国家组。Surge 的 `🇺🇸 US` / `🇯🇵 JP` Smart 组仍只含同地区 Snell 6 与 TUIC，TEST 选择地区组或直连别名，不跨国自动切换。[Smart](https://manual.nssurge.com/policy-groups/smart.html) 依据真实连接评分，当前版本也考虑 UDP 响应；已建立会话不保证无缝切换。
 
 Clash JP 显式使用 BBR、8000 毫秒保活和启用 SNI，保留原生 UDP 模式及自己的证书名称；US 继续使用 QUIC stream 中继。QUIC stream 与 native 的可靠性和延迟特性不同，不机械对齐。JP 不复制 US 的 IP、0-RTT 或包大小参数。固定 Mihomo v1.19.17 的 TUIC v5 不使用 `fast-open`，因此移除该无效项；依据见 [TUIC 实现](https://github.com/MetaCubeX/mihomo/blob/v1.19.17/adapter/outbound/tuic.go#L300)。
 
