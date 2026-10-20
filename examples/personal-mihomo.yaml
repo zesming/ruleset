@@ -1,0 +1,369 @@
+# Generated from profiles/us-primary.json by scripts/profile_clients.py.
+# Bind the canonical US / JP / TEST / DIRECT / REJECT policies to local selectors.
+# No node definitions or credentials are included.
+rule-providers:
+  infra-lan:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/infra-lan.mrs"
+    path: ./ruleset/personal-infra-lan.mrs
+    interval: 43200
+    proxy: US
+  att-us:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/att-us.mrs"
+    path: ./ruleset/personal-att-us.mrs
+    interval: 43200
+    proxy: US
+  network-test:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/network-test.mrs"
+    path: ./ruleset/personal-network-test.mrs
+    interval: 43200
+    proxy: US
+  ai-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/ai-cn.mrs"
+    path: ./ruleset/personal-ai-cn.mrs
+    interval: 43200
+    proxy: US
+  ai-global:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/ai-global.list"
+    path: ./ruleset/personal-ai-global.text
+    interval: 43200
+    proxy: US
+  apple-intelligence:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/apple-intelligence.mrs"
+    path: ./ruleset/personal-apple-intelligence.mrs
+    interval: 43200
+    proxy: US
+  jp-manual:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/jp-manual.list"
+    path: ./ruleset/personal-jp-manual.text
+    interval: 43200
+    proxy: US
+  jp-manual-dns:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/dns-jp-manual.list"
+    path: ./ruleset/personal-jp-manual-dns.text
+    interval: 43200
+    proxy: US
+  reject-drop:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/reject-drop.list"
+    path: ./ruleset/personal-reject-drop.text
+    interval: 43200
+    proxy: US
+  reject-domains:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/reject-domains.mrs"
+    path: ./ruleset/personal-reject-domains.mrs
+    interval: 43200
+    proxy: US
+  reject-extra:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/reject-extra.mrs"
+    path: ./ruleset/personal-reject-extra.mrs
+    interval: 43200
+    proxy: US
+  reject-rules:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/reject-rules.list"
+    path: ./ruleset/personal-reject-rules.text
+    interval: 43200
+    proxy: US
+  reject-rules-dns:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/dns-reject-rules.list"
+    path: ./ruleset/personal-reject-rules-dns.text
+    interval: 43200
+    proxy: US
+  reject-no-drop:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/reject-no-drop.list"
+    path: ./ruleset/personal-reject-no-drop.text
+    interval: 43200
+    proxy: US
+  sogouinput:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/sogouinput.list"
+    path: ./ruleset/personal-sogouinput.text
+    interval: 43200
+    proxy: US
+  sogouinput-dns:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/dns-sogouinput.mrs"
+    path: ./ruleset/personal-sogouinput-dns.mrs
+    interval: 43200
+    proxy: US
+  apple-services:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/apple-services.list"
+    path: ./ruleset/personal-apple-services.text
+    interval: 43200
+    proxy: US
+  apple-services-dns:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/dns-apple-services.mrs"
+    path: ./ruleset/personal-apple-services-dns.mrs
+    interval: 43200
+    proxy: US
+  game-download:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/game-download.mrs"
+    path: ./ruleset/personal-game-download.mrs
+    interval: 43200
+    proxy: US
+  download:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/download.list"
+    path: ./ruleset/personal-download.text
+    interval: 43200
+    proxy: US
+  cdn:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/cdn.list"
+    path: ./ruleset/personal-cdn.text
+    interval: 43200
+    proxy: US
+  microsoft:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/microsoft.list"
+    path: ./ruleset/personal-microsoft.text
+    interval: 43200
+    proxy: US
+  netease:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/netease.mrs"
+    path: ./ruleset/personal-netease.mrs
+    interval: 43200
+    proxy: US
+  telegram:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/telegram.mrs"
+    path: ./ruleset/personal-telegram.mrs
+    interval: 43200
+    proxy: US
+  cn-direct-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/cn-direct-domain.mrs"
+    path: ./ruleset/personal-cn-direct-domain.mrs
+    interval: 43200
+    proxy: US
+  cn-direct-special:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/cn-direct-special.list"
+    path: ./ruleset/personal-cn-direct-special.text
+    interval: 43200
+    proxy: US
+  cn-direct-process:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/cn-direct-process.list"
+    path: ./ruleset/personal-cn-direct-process.text
+    interval: 43200
+    proxy: US
+  reject-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/reject-ip.list"
+    path: ./ruleset/personal-reject-ip.text
+    interval: 43200
+    proxy: US
+  ai-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/ai-ip.list"
+    path: ./ruleset/personal-ai-ip.text
+    interval: 43200
+    proxy: US
+  apple-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/apple-ip.list"
+    path: ./ruleset/personal-apple-ip.text
+    interval: 43200
+    proxy: US
+  cdn-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/cdn-ip.list"
+    path: ./ruleset/personal-cdn-ip.text
+    interval: 43200
+    proxy: US
+  domestic-ip:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/domestic-ip.list"
+    path: ./ruleset/personal-domestic-ip.text
+    interval: 43200
+    proxy: US
+rules:
+  - RULE-SET,infra-lan,DIRECT
+  - RULE-SET,att-us,US
+  - RULE-SET,network-test,TEST
+  - RULE-SET,ai-cn,DIRECT
+  - RULE-SET,ai-global,US
+  - RULE-SET,apple-intelligence,US
+  - RULE-SET,jp-manual,JP
+  - RULE-SET,reject-drop,REJECT-DROP
+  - RULE-SET,reject-domains,REJECT
+  - RULE-SET,reject-extra,REJECT
+  - RULE-SET,reject-rules,REJECT
+  - RULE-SET,reject-no-drop,REJECT
+  - RULE-SET,sogouinput,REJECT
+  - RULE-SET,apple-services,DIRECT
+  - RULE-SET,game-download,DIRECT
+  - RULE-SET,download,DIRECT
+  - RULE-SET,cdn,US
+  - RULE-SET,microsoft,DIRECT
+  - RULE-SET,netease,DIRECT
+  - RULE-SET,telegram,US
+  - RULE-SET,cn-direct-domain,DIRECT
+  - RULE-SET,cn-direct-special,DIRECT
+  - RULE-SET,cn-direct-process,DIRECT
+  - RULE-SET,reject-ip,REJECT
+  - RULE-SET,ai-ip,US
+  - RULE-SET,apple-ip,DIRECT
+  - RULE-SET,cdn-ip,US
+  - RULE-SET,domestic-ip,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
+  - MATCH,US
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+    - https://8.8.8.8/dns-query#US
+    - https://1.1.1.1/dns-query#US
+  nameserver-policy:
+    "rule-set:infra-lan":
+      - "system"
+    "rule-set:att-us":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:network-test":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:ai-cn":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:ai-global":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:apple-intelligence":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:jp-manual-dns":
+      - "https://1.0.0.1/dns-query#JP"
+      - "https://8.8.4.4/dns-query#JP"
+    "rule-set:reject-drop":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:reject-domains":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:reject-extra":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:reject-rules-dns":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:reject-no-drop":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:sogouinput-dns":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:apple-services-dns":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:game-download":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:download":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:cdn":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:microsoft":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:netease":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:telegram":
+      - "https://8.8.8.8/dns-query#US"
+      - "https://1.1.1.1/dns-query#US"
+    "rule-set:cn-direct-domain":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+    "rule-set:cn-direct-special":
+      - "https://223.5.5.5/dns-query#DIRECT"
+      - "https://1.12.12.12/dns-query#DIRECT"
+  fake-ip-filter-mode: blacklist
+  fake-ip-filter:
+    - "epdg.epc.att.net"
+    - "epdg.epc.att-idns.net"
+    - "+.srv.nintendo.net"
+    - "*.n.n.srv.nintendo.net"

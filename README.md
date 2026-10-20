@@ -4,7 +4,9 @@
 
 ## 是什么
 
-供 Mihomo、OpenClash Smart 和 Surge 使用的分流规则，包含国内外 AI、网络测试、人工维护的 `us` 固定美国出口名单和国内直连。仓库提供规则与接入片段，不含节点、订阅或完整客户端配置。
+供 Mihomo、OpenClash 和 Surge 使用的分流规则。个人策略将业务分类组合为有序规则：默认 US、明确直连 DIRECT、明确日本业务 JP、拦截 REJECT。JP 初始为空，不启用全局日本 GeoIP 分流。仓库提供规则和不含节点凭据的接入片段，保留原有 AI、网络测试、固定 US 和国内直连接口。
+
+个人策略定义在 `profiles/us-primary.json`，客户端资源位于 `rules/personal/`，原始输入与发布清单位于 `upstream/personal/`。业务成员与策略映射在远端维护；节点、内网、DNS 服务器和网络接管方式仍由客户端管理。四种出口对应多个有序聚合，保留 AI、拦截、下载、CDN 与通用直连之间的优先级。
 
 | 规则 | 用途 | 通常绑定 |
 |---|---|---|
@@ -25,6 +27,10 @@
 
 ## 怎么用
 
+个人完整策略使用 [Mihomo / OpenClash 片段](examples/personal-mihomo.yaml) 或 [Surge 片段](examples/personal-surge.conf)。在客户端定义 `US`、`JP`、`TEST` 策略，合并片段中的规则和 DNS 配置；保留节点、内网和客户端接管设置。遵循片段顺序，JP 首版为空，未命中业务仍走 US。两个国家的出口分别管理，不使用跨国自动切换。
+
+只接入原有独立分类时，使用以下兼容接口：
+
 1. 按客户端打开示例：[Mihomo / OpenClash Smart](examples/mihomo.yaml) 或 [Surge](examples/surge.conf)。把片段合并到现有配置，将 `DIRECT`、`PROXY`、`TEST` 换成自己的策略组。
 2. 保持规则顺序：本地与基础设施例外 → `us` → 网络测试 → AI → 原广告、Apple、Microsoft、CDN、Telegram 等专用规则 → 国内直连 → LAN / IP / GEOIP。`us` 应绑定独立的美国出口策略；示例不提供节点。
 3. 接入国内直连时，在原 Sukka `direct`、`domestic` 位置替换为下面三层，沿用原直连策略组。DNS 只引用域名层与特殊规则层，并保留原国内 DNS 服务器。
@@ -37,4 +43,4 @@
 
 示例使用 `main` 地址跟随更新，每 12 小时检查一次。每次发布的全部文件来自同一个 Git 提交；客户端分别刷新多个 URL 时，短时间内可能读到不同发布版本。Mihomo 的纯域名 MRS 使用 `behavior: domain, format: mrs`，其余 `.list` 使用 `behavior: classical, format: text`；Surge 的 `.set` 用 `DOMAIN-SET`，`.list` 用 `RULE-SET`。
 
-需要修改规则、构建或排查更新时，查看 [维护说明](docs/maintenance.md)。
+需要修改规则、构建或排查更新时，查看 [维护说明](docs/maintenance.md)；迁移范围与验证边界见 [分流和 DNS 对照](docs/personal-routing-comparison.md)。

@@ -1,0 +1,4 @@
+PROCESS-NAME,/Applications/ChatGPT.app/
+PROCESS-NAME,/Applications/Claude.app/
+PROCESS-NAME,claude
+PROCESS-NAME,codex

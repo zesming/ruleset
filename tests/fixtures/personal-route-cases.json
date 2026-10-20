@@ -1,0 +1,239 @@
+{
+  "schema": 1,
+  "description": "Independent archive-backed route examples and separately labeled synthetic matcher cases. No external GeoIP, ASN, DNS, or random host data is consulted.",
+  "independent_cases": [
+    {
+      "id": "apple-intelligence-relay",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "apple-relay.apple.com"},
+      "expected_old_action": "US",
+      "expected_new_stage": "apple-intelligence",
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
+    },
+    {
+      "id": "ai-versus-microsoft-openai-edge",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "openaiapi-site.azureedge.net"},
+      "expected_old_action": "US",
+      "expected_new_stage": "ai-global",
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
+    },
+    {
+      "id": "ai-versus-microsoft-bing-host",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "sydney.bing.com"},
+      "expected_old_action": "US",
+      "expected_new_stage": "ai-global",
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
+    },
+    {
+      "id": "cdn-before-domestic-overlap",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "bmp.ovh"},
+      "expected_new_stage": "cdn",
+      "expected_new_action": "US",
+      "expected_membership": ["cdn", "cn-direct-domain"]
+    },
+    {
+      "id": "nintendo-download-domain",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "cdn.nintendo.net"},
+      "expected_old_action": "DIRECT",
+      "expected_new_stage": "game-download",
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "DIRECT"
+    },
+    {
+      "id": "att-epdg-domain",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "epdg.epc.att.net"},
+      "expected_old_action": "US",
+      "expected_new_stage": "att-us",
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
+    },
+    {
+      "id": "network-test-real-member",
+      "kind": "stage-member",
+      "platforms": ["mihomo", "surge"],
+      "stage": "network-test",
+      "expected_stage_match": true
+    },
+    {
+      "id": "test-cn-overlap-witness",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "whatismyip.akamai.com"},
+      "expected_new_stage": "network-test",
+      "expected_new_action": "TEST",
+      "expected_membership": ["network-test", "cn-direct-domain"]
+    },
+    {
+      "id": "company-lan-archived-member",
+      "kind": "stage-member",
+      "platforms": ["mihomo", "surge"],
+      "stage": "infra-lan",
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "system"
+    },
+    {
+      "id": "cn-direct-process-platform-rules",
+      "kind": "stage-member",
+      "platforms": ["mihomo", "surge"],
+      "stage": "cn-direct-process",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "ai-process-only-on-surge",
+      "kind": "stage-member",
+      "platforms": ["surge"],
+      "stage": "ai-process",
+      "expected_new_stage": "ai-process",
+      "expected_new_action": "US"
+    },
+    {
+      "id": "lan-ipv4-source-witness",
+      "kind": "stage-member",
+      "platforms": ["mihomo", "surge"],
+      "stage": "lan-ip",
+      "family": 4,
+      "expected_new_stage": "lan-ip",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "lan-ipv6-source-witness",
+      "kind": "stage-member",
+      "platforms": ["mihomo", "surge"],
+      "stage": "lan-ip",
+      "family": 6,
+      "expected_new_stage": "lan-ip",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "geoip-matcher-explicit-metadata",
+      "kind": "matcher-rule",
+      "platforms": ["mihomo", "surge"],
+      "stage": "geoip-cn",
+      "rule_type": "GEOIP",
+      "rule_value": "CN",
+      "subject": {"geoip": "CN"},
+      "expected_match": true,
+      "evidence": "synthetic"
+    },
+    {
+      "id": "surge-extended-matching-cname",
+      "kind": "cname-domain",
+      "platforms": ["surge"],
+      "evidence": "synthetic",
+      "subject": {"domain": "relay-alias.example", "cname": ["apple-relay.apple.com"]},
+      "expected_old_action": "US",
+      "expected_new_stage": "apple-intelligence",
+      "expected_new_action": "US"
+    },
+    {
+      "id": "empty-jp-domain-falls-back-to-us",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "synthetic",
+      "subject": {"domain": "unlisted.example.jp"},
+      "expected_new_stage": "default-us",
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
+    },
+    {
+      "id": "retained-company-byted-domain",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "baseline-inline",
+      "subject": {"domain": "byted.org"},
+      "expected_old_action": "DIRECT",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "retained-company-bytedance-domain",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "baseline-inline",
+      "subject": {"domain": "bytedance.net"},
+      "expected_old_action": "DIRECT",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "retained-istatmenus-direct",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "baseline-inline",
+      "subject": {"domain": "istatmenus.app"},
+      "expected_old_action": "DIRECT",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "retained-speedtest-before-test-stage",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "baseline-inline",
+      "subject": {"domain": "speedtest.cn"},
+      "expected_old_action": "DIRECT",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "retained-mihomo-dashboard-domains",
+      "kind": "literal-domain",
+      "platforms": ["mihomo"],
+      "evidence": "baseline-inline",
+      "subject": {"domain": "clash.razord.top"},
+      "expected_old_action": "DIRECT",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "retained-mihomo-yacd-domain",
+      "kind": "literal-domain",
+      "platforms": ["mihomo"],
+      "evidence": "baseline-inline",
+      "subject": {"domain": "yacd.haishan.me"},
+      "expected_old_action": "DIRECT",
+      "expected_new_action": "DIRECT"
+    },
+    {
+      "id": "unknown-domain-falls-back-to-us",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "synthetic",
+      "subject": {"domain": "unknown.invalid"},
+      "expected_new_stage": "default-us",
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
+    }
+  ],
+  "expected_changes": [
+    {"id": "mihomo-fake-ip-explicit", "description": "The old baseline left enhanced DNS mode implicit; the candidate explicitly enables fake-ip and separately reports resolver ownership."},
+    {"id": "nintendo-real-ip", "description": "Preserve both ATT real-IP entries and add the dedicated srv.nintendo.net STUN subtree plus the legacy n.n.srv.nintendo.net subtree."},
+    {"id": "node-endpoint-bypass", "description": "Add direct rules for upstream proxy node IPs and hostnames to prevent proxy and DNS loops."},
+    {"id": "surge-country-selectors", "description": "Surge's country Smart and DNS-Fallback selectors converge on explicit US and JP policy groups; the user-selectable TEST group defaults to US."},
+    {"id": "legacy-auto-fixed-us", "description": "Legacy proxy and cross-country Smart targets are normalized to fixed US based on the observed baseline selection; country selection is explicit in the candidate."},
+    {"id": "dns-endpoints", "description": "Keep the dual US and domestic resolver sets; JP DoH uses a distinct endpoint and endpoint routing is limited to protocol-qualified DoH rules."}
+  ],
+  "unsupported_cases": [
+    {"id": "surge-ios-process-rules", "reason": "Surge iOS does not apply PROCESS-NAME rules; the profile comparison covers archived matcher inputs, not iOS process visibility."},
+    {"id": "surge-url-regex", "reason": "URL-REGEX matching is not modeled by the domain-only first-match index; matching baseline rules are listed as unsupported instead of being ignored."},
+    {"id": "sni-http-host-metadata", "reason": "SNI, HTTP Host, TLS state and socket resolution state are not represented by the static RuleIndex; independent engine checks are required for those subjects."},
+    {"id": "dns-resolution-failure", "reason": "The static comparison models resolver ownership, not live DNS failures or Surge dns-failed fallback timing."},
+    {"id": "geoip-asn-database", "reason": "GeoIP and ASN behavior uses explicit fixture metadata only; no external network database is consulted."}
+  ]
+}
