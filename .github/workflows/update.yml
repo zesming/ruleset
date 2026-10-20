@@ -8,6 +8,12 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'policy.json'
+      - 'profiles/**'
+      - 'rules/**'
+      - 'upstream/**'
+      - 'manifest.json'
+      - 'CHECKED_AT.json'
+      - 'examples/**'
       - 'licenses/**'
       - '.github/workflows/**'
   push:
@@ -16,6 +22,7 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'policy.json'
+      - 'profiles/**'
       - 'licenses/**'
       - '.github/workflows/**'
 permissions:
@@ -45,6 +52,10 @@ jobs:
         run: |
           python3 scripts/install_converter.py --output "$MIHOMO_CONVERTER"
           python3 scripts/build.py validate --offline --allow-cross-platform-replay
+          python3 scripts/personal_profile.py validate --offline
+          python3 scripts/profile_clients.py render --out-dir "$RUNNER_TEMP/personal-examples"
+          diff -u examples/personal-mihomo.yaml "$RUNNER_TEMP/personal-examples/personal-mihomo.yaml"
+          diff -u examples/personal-surge.conf "$RUNNER_TEMP/personal-examples/personal-surge.conf"
       - name: Retain proposed replay diagnostics
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -78,6 +89,12 @@ jobs:
         run: |
           python3 scripts/install_converter.py --output "$MIHOMO_CONVERTER"
           python3 scripts/build.py update
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          if not json.loads(Path('policy.json').read_text())['publish_hold']['enabled']:
+              subprocess.run(['python3', 'scripts/personal_profile.py', 'update'], check=True)
+          PY
       - name: Check release bundle or held audit
         env:
           MIHOMO_CONVERTER: ${{ runner.temp }}/ruleset-mihomo
@@ -92,6 +109,7 @@ jobs:
                   raise SystemExit('Publishing is on hold: live bundle must not change')
           else:
               subprocess.run(['python3', 'scripts/build.py', 'validate', '--offline', '--allow-cross-platform-replay'], check=True)
+              subprocess.run(['python3', 'scripts/personal_profile.py', 'validate', '--offline'], check=True)
           PY
       - name: Publish one complete bundle without overwriting newer work
         env:

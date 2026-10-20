@@ -1,0 +1,3114 @@
+{
+  "groups": {
+    "mihomo": [
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 502,
+        "capability": "domain",
+        "dns": "system",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/infra-lan.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "infra-lan",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/infra-lan.mrs",
+        "reject_mode": null,
+        "rule_count": 50,
+        "sha256": "530ca5166e13937795ef8d50879dd5131222202833656aa6abc1cefaf91261b9",
+        "stages": [
+          "infra-lan"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "domain-set",
+        "bytes": 114,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/att-us.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "att-us",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/att-us.mrs",
+        "reject_mode": null,
+        "rule_count": 3,
+        "sha256": "e582fa75fdfff675a33a7c53261c3a1d14305b0ada12f77b803860860b060f74",
+        "stages": [
+          "att-us"
+        ]
+      },
+      {
+        "action": "TEST",
+        "behavior": "domain-set",
+        "bytes": 2960,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/network-test.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "network-test",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/network-test.mrs",
+        "reject_mode": null,
+        "rule_count": 316,
+        "sha256": "fa04f58f61362782dff8f676fee477f5103fac3460e3935c2e2bda063070107c",
+        "stages": [
+          "network-test"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 1135,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/ai-cn.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "ai-cn",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/ai-cn.mrs",
+        "reject_mode": null,
+        "rule_count": 119,
+        "sha256": "5fe27b2f33b99bc5d201c0a5aae1d9ff8e1ff14a7af51dd0a5ffeedc8881a42d",
+        "stages": [
+          "ai-cn"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 6031,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/ai-global.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "ai-global",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/ai-global.list",
+        "reject_mode": null,
+        "rule_count": 198,
+        "sha256": "6987e0e43e2eca07fd21cfd79fe834ded59119d4f78e2f454015ccb60d7597fd",
+        "stages": [
+          "ai-global"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "domain-set",
+        "bytes": 173,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/apple-intelligence.mrs",
+        "extended_matching": true,
+        "format": "mrs",
+        "id": "apple-intelligence",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/apple-intelligence.mrs",
+        "reject_mode": null,
+        "rule_count": 6,
+        "sha256": "d054918504b5cb4197a2b7edb7145a7f3571420a5eaf66feedf3eaccbdc47402",
+        "stages": [
+          "apple-intelligence"
+        ]
+      },
+      {
+        "action": "JP",
+        "behavior": "classical",
+        "bytes": 37,
+        "capability": "classical",
+        "dns": "jp",
+        "dns_behavior": "classical",
+        "dns_bytes": 42,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/mihomo/dns-jp-manual.list",
+        "dns_sha256": "a0b0930775d19bb985efb256bd5af139e70087c4e8186fb711ed0858c8988007",
+        "extended_matching": false,
+        "format": "text",
+        "id": "jp-manual",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/jp-manual.list",
+        "reject_mode": null,
+        "rule_count": 0,
+        "sha256": "b80198a085e0ad720b8c233f4b31a07eaeb4df3dd2542ee8d04049fe7de2914e",
+        "stages": [
+          "jp-manual"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 891,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/reject-drop.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "reject-drop",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/reject-drop.list",
+        "reject_mode": "drop",
+        "rule_count": 29,
+        "sha256": "26b2451e9316a3d1054f00cefece1ecbfd1def2a1ef171b6a24bd67602b575d2",
+        "stages": [
+          "reject-drop"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "domain-set",
+        "bytes": 1438052,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/reject-domains.mrs",
+        "extended_matching": true,
+        "format": "mrs",
+        "id": "reject-domains",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/reject-domains.mrs",
+        "reject_mode": "plain",
+        "rule_count": 143052,
+        "sha256": "dca47d5606cd61a57b5d1a6b01e34b7045e0127428a07a5472dea6d2cd64da9d",
+        "stages": [
+          "reject-domains"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "domain-set",
+        "bytes": 690503,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/reject-extra.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "reject-extra",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/reject-extra.mrs",
+        "reject_mode": "plain",
+        "rule_count": 78969,
+        "sha256": "60f3813f04071bc0477986735e3cc7e71b6afd305fd6201b6635fc3dc6a1f4c0",
+        "stages": [
+          "reject-extra"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 11237,
+        "capability": "classical",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_bytes": 9460,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/mihomo/dns-reject-rules.list",
+        "dns_sha256": "8f5ca73c7bf5dc2924f25c6d0ea067656dd26eb0432fbe0bac24df99dbd4d7ac",
+        "extended_matching": true,
+        "format": "text",
+        "id": "reject-rules",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/reject-rules.list",
+        "reject_mode": "plain",
+        "rule_count": 367,
+        "sha256": "b17ca09950e69f1a0806edcadd7ad1acf11bb8c19b9ea5a2e2fbae030a627618",
+        "stages": [
+          "reject-rules"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 1383,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/reject-no-drop.list",
+        "extended_matching": true,
+        "format": "text",
+        "id": "reject-no-drop",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/reject-no-drop.list",
+        "reject_mode": "no-drop",
+        "rule_count": 45,
+        "sha256": "bfe67771024143847ed38295b78a7ee66bd0b5d387c8bbe56b9af381e605a42f",
+        "stages": [
+          "reject-no-drop"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 391,
+        "capability": "classical",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_bytes": 187,
+        "dns_format": "mrs",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/mihomo/dns-sogouinput.mrs",
+        "dns_sha256": "e267a7404d7060e995bc2128fbfd8a4344bd8f53143e77ecfedd230ee8902ee4",
+        "extended_matching": false,
+        "format": "text",
+        "id": "sogouinput",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/sogouinput.list",
+        "reject_mode": "plain",
+        "rule_count": 13,
+        "sha256": "f246db36b232f1b5eda62942d8fa010b7c84b6df4e0a57fa40d4cb7c71e1ba6b",
+        "stages": [
+          "sogouinput"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 7247,
+        "capability": "classical",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_bytes": 1783,
+        "dns_format": "mrs",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/mihomo/dns-apple-services.mrs",
+        "dns_sha256": "24ed6eee2f0bacba823a7f83d5f4d097d4734a29752e6a5561bb94e7bf3b6764",
+        "extended_matching": false,
+        "format": "text",
+        "id": "apple-services",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/apple-services.list",
+        "reject_mode": null,
+        "rule_count": 196,
+        "sha256": "067855da82fc07dfc70c36f399470c43f35751541b646dc5e5c468085aa6ebf5",
+        "stages": [
+          "apple-services"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 19625,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/game-download.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "game-download",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/game-download.mrs",
+        "reject_mode": null,
+        "rule_count": 2026,
+        "sha256": "aa2fc8dcdad43c9556ef1fa76a289307d22e6bdac4495f6b58d3c0f42930389a",
+        "stages": [
+          "game-download"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 370,
+        "capability": "domain-special",
+        "dns": "domestic",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/download.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "download",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/download.list",
+        "reject_mode": null,
+        "rule_count": 10,
+        "sha256": "b2835d442971e3ab2c51e07705bc07e781db99a2913f494966b86284d19d0ced",
+        "stages": [
+          "download"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 132850,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/cdn.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "cdn",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/cdn.list",
+        "reject_mode": null,
+        "rule_count": 4780,
+        "sha256": "069e2e96ab4cfe6dc3d3eccefd20ae415fcee009d2d5d5aa842526a6b7a424eb",
+        "stages": [
+          "cdn"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 4725,
+        "capability": "domain-special",
+        "dns": "domestic",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/microsoft.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "microsoft",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/microsoft.list",
+        "reject_mode": null,
+        "rule_count": 135,
+        "sha256": "24a312882b8969b9c27a0bc99dc66e07dc1c12901e76fd229797427e74f08ce6",
+        "stages": [
+          "microsoft"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 131,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/netease.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "netease",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/netease.mrs",
+        "reject_mode": null,
+        "rule_count": 3,
+        "sha256": "e2489016dc16dbfc97308cf5d2a7b90bf0bc5c2eaebf8c3490759e9066793e6c",
+        "stages": [
+          "netease"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "domain-set",
+        "bytes": 239,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/telegram.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "telegram",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/telegram.mrs",
+        "reject_mode": null,
+        "rule_count": 15,
+        "sha256": "a94ec888282e1b63e72d4aaa6f8961294fa487061bffa50fa029f0cdeab7aada",
+        "stages": [
+          "telegram"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 538310,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "mrs",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/cn-direct-domain.mrs",
+        "extended_matching": false,
+        "format": "mrs",
+        "id": "cn-direct-domain",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/cn-direct-domain.mrs",
+        "reject_mode": null,
+        "rule_count": 110955,
+        "sha256": "5d72b63fc796f4969ca12a0256dba21f3805476e6ba3f7d0e225e3af6642ec56",
+        "stages": [
+          "cn-direct-domain"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 253,
+        "capability": "domain-special",
+        "dns": "domestic",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/mihomo/cn-direct-special.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "cn-direct-special",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/cn-direct-special.list",
+        "reject_mode": null,
+        "rule_count": 10,
+        "sha256": "4f18f641be43b71056dbd6ae571513ec77a6b0555006715c95a24c82ee39eb93",
+        "stages": [
+          "cn-direct-special"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 1147,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "cn-direct-process",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/cn-direct-process.list",
+        "reject_mode": null,
+        "rule_count": 48,
+        "sha256": "8eccbd226a14daf60974a3aa5b38a949647e465501ff5961f2fcc3f954c6bf38",
+        "stages": [
+          "cn-direct-process",
+          "lan-ip"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 20033,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "reject-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/reject-ip.list",
+        "reject_mode": "plain",
+        "rule_count": 780,
+        "sha256": "3e82c967f4dd4f31914db7a4e0a55780c3550ae7c2971cfb374804509d2a878e",
+        "stages": [
+          "reject-ip"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 1548,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "ai-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/ai-ip.list",
+        "reject_mode": null,
+        "rule_count": 46,
+        "sha256": "bb43afee67c0316b675ed740275dcc077495636aa9aab4be727aacd407f37ee2",
+        "stages": [
+          "ai-ip",
+          "telegram-ip"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 825,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "apple-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/apple-ip.list",
+        "reject_mode": null,
+        "rule_count": 23,
+        "sha256": "48f79503307e64398c5ec1ecfadc8552b88388b83742168429fcf0366fd7cae2",
+        "stages": [
+          "apple-ip",
+          "download-ip"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 123,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "cdn-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/cdn-ip.list",
+        "reject_mode": null,
+        "rule_count": 4,
+        "sha256": "1ac0d824e9d1fc4c1bedd64fbc4ec46a31e6d5d253f696c264301058268316eb",
+        "stages": [
+          "cdn-ip"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 113,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "domestic-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/mihomo/domestic-ip.list",
+        "reject_mode": null,
+        "rule_count": 3,
+        "sha256": "51a548304689becdc323c1fe3828a5954754f5013e773b13cd2a4ee940ab5f56",
+        "stages": [
+          "domestic-ip"
+        ]
+      }
+    ],
+    "surge": [
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 860,
+        "capability": "domain",
+        "dns": "system",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/infra-lan.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "infra-lan",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/infra-lan.set",
+        "reject_mode": null,
+        "rule_count": 50,
+        "sha256": "800a98968d4626e62925722e67ade6cdcccff2c7ddffa5a11d1b0bad91d69f30",
+        "stages": [
+          "infra-lan"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "domain-set",
+        "bytes": 68,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/att-us.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "att-us",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/att-us.set",
+        "reject_mode": null,
+        "rule_count": 3,
+        "sha256": "42b876286b2219599f437aec414cbdd0c79af5d85816c7e79a07e2c00d980ecf",
+        "stages": [
+          "att-us"
+        ]
+      },
+      {
+        "action": "TEST",
+        "behavior": "domain-set",
+        "bytes": 4679,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/network-test.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "network-test",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/network-test.set",
+        "reject_mode": null,
+        "rule_count": 316,
+        "sha256": "100c0f1d04055c174057f09d666e21cc6c099e809fced284acc2a8afbf37e5bc",
+        "stages": [
+          "network-test"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 1648,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/ai-cn.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "ai-cn",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/ai-cn.set",
+        "reject_mode": null,
+        "rule_count": 119,
+        "sha256": "08989833f6571575bb2cd4a90e39f89de43a294acdb0174c0e85b81b511abeb9",
+        "stages": [
+          "ai-cn"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 6031,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/ai-global.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "ai-global",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/ai-global.list",
+        "reject_mode": null,
+        "rule_count": 198,
+        "sha256": "6987e0e43e2eca07fd21cfd79fe834ded59119d4f78e2f454015ccb60d7597fd",
+        "stages": [
+          "ai-global"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "domain-set",
+        "bytes": 158,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/apple-intelligence.set",
+        "extended_matching": true,
+        "format": "set",
+        "id": "apple-intelligence",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/apple-intelligence.set",
+        "reject_mode": null,
+        "rule_count": 6,
+        "sha256": "a6cd8944d0f4da86170f3291d4cf32307826cc59ccd5047aec44656234db22f5",
+        "stages": [
+          "apple-intelligence"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 118,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "ai-process",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/ai-process.list",
+        "reject_mode": null,
+        "rule_count": 4,
+        "sha256": "551c1f71b761f68dcb6753863fa76f275a986939c45e21382d718beecd5c24b9",
+        "stages": [
+          "ai-process"
+        ]
+      },
+      {
+        "action": "JP",
+        "behavior": "classical",
+        "bytes": 37,
+        "capability": "classical",
+        "dns": "jp",
+        "dns_behavior": "classical",
+        "dns_bytes": 42,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-jp-manual.list",
+        "dns_sha256": "a0b0930775d19bb985efb256bd5af139e70087c4e8186fb711ed0858c8988007",
+        "extended_matching": false,
+        "format": "text",
+        "id": "jp-manual",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/jp-manual.list",
+        "reject_mode": null,
+        "rule_count": 0,
+        "sha256": "b80198a085e0ad720b8c233f4b31a07eaeb4df3dd2542ee8d04049fe7de2914e",
+        "stages": [
+          "jp-manual"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 891,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/reject-drop.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "reject-drop",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/reject-drop.list",
+        "reject_mode": "drop",
+        "rule_count": 29,
+        "sha256": "26b2451e9316a3d1054f00cefece1ecbfd1def2a1ef171b6a24bd67602b575d2",
+        "stages": [
+          "reject-drop"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "domain-set",
+        "bytes": 3188600,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/reject-domains.set",
+        "extended_matching": true,
+        "format": "set",
+        "id": "reject-domains",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/reject-domains.set",
+        "reject_mode": "plain",
+        "rule_count": 143052,
+        "sha256": "2dc1c5f538cd2f0c70b1322e3ccb52a6ea6c482b44b80f96ef57576ddc707ed7",
+        "stages": [
+          "reject-domains"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "domain-set",
+        "bytes": 1553582,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/reject-extra.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "reject-extra",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/reject-extra.set",
+        "reject_mode": "plain",
+        "rule_count": 78969,
+        "sha256": "043065bc3da21c4b51cee9d1e183dd2d402256349512ca45a7bf7d99344c53e8",
+        "stages": [
+          "reject-extra"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 11302,
+        "capability": "classical",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_bytes": 9460,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-reject-rules.list",
+        "dns_sha256": "8f5ca73c7bf5dc2924f25c6d0ea067656dd26eb0432fbe0bac24df99dbd4d7ac",
+        "extended_matching": true,
+        "format": "text",
+        "id": "reject-rules",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/reject-rules.list",
+        "reject_mode": "plain",
+        "rule_count": 370,
+        "sha256": "cea96c5b1fb495f994386f72d23e44a683673cab40e376eced6205809f3a7830",
+        "stages": [
+          "reject-rules"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 1437,
+        "capability": "classical",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_bytes": 1383,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-reject-no-drop.list",
+        "dns_sha256": "bfe67771024143847ed38295b78a7ee66bd0b5d387c8bbe56b9af381e605a42f",
+        "extended_matching": true,
+        "format": "text",
+        "id": "reject-no-drop",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/reject-no-drop.list",
+        "reject_mode": "no-drop",
+        "rule_count": 46,
+        "sha256": "5bad80fa092405cdb87ee924780168e451af55875bf6e98c565a6c4ff17d4abf",
+        "stages": [
+          "reject-no-drop"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 458,
+        "capability": "classical",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_bytes": 192,
+        "dns_format": "set",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-sogouinput.set",
+        "dns_sha256": "8f370b7f120b0e1213793533b61e672d579d8b7914da4019983fcbddea1327e0",
+        "extended_matching": false,
+        "format": "text",
+        "id": "sogouinput",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/sogouinput.list",
+        "reject_mode": "plain",
+        "rule_count": 15,
+        "sha256": "957e0771982df6f00102c4f98e611815c0b6e44dc3359a6e5d5e71b72137ad42",
+        "stages": [
+          "sogouinput"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 7247,
+        "capability": "classical",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_bytes": 4612,
+        "dns_format": "set",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-apple-services.set",
+        "dns_sha256": "5bde2d15209d0322235aab2666eacd4d25afa959207af8689ae2026723f1dcd2",
+        "extended_matching": false,
+        "format": "text",
+        "id": "apple-services",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/apple-services.list",
+        "reject_mode": null,
+        "rule_count": 196,
+        "sha256": "067855da82fc07dfc70c36f399470c43f35751541b646dc5e5c468085aa6ebf5",
+        "stages": [
+          "apple-services"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 46603,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/game-download.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "game-download",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/game-download.set",
+        "reject_mode": null,
+        "rule_count": 2026,
+        "sha256": "5b227f3fb6187ebb34704523a745c9c713aba2dffe578f0eaab03474faaf899a",
+        "stages": [
+          "game-download"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 412,
+        "capability": "classical",
+        "dns": "domestic",
+        "dns_behavior": "classical",
+        "dns_bytes": 370,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-download.list",
+        "dns_sha256": "b2835d442971e3ab2c51e07705bc07e781db99a2913f494966b86284d19d0ced",
+        "extended_matching": false,
+        "format": "text",
+        "id": "download",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/download.list",
+        "reject_mode": null,
+        "rule_count": 11,
+        "sha256": "83f77510b7a34b6942c044e122bab633f0b10cd5fc516c6b0a9c3209fdc06908",
+        "stages": [
+          "download"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 132850,
+        "capability": "domain-special",
+        "dns": "foreign",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/cdn.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "cdn",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/cdn.list",
+        "reject_mode": null,
+        "rule_count": 4780,
+        "sha256": "069e2e96ab4cfe6dc3d3eccefd20ae415fcee009d2d5d5aa842526a6b7a424eb",
+        "stages": [
+          "cdn"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 4998,
+        "capability": "classical",
+        "dns": "domestic",
+        "dns_behavior": "classical",
+        "dns_bytes": 4827,
+        "dns_format": "text",
+        "dns_kind": "dns-selector",
+        "dns_path": "rules/personal/surge/dns-microsoft.list",
+        "dns_sha256": "64a2da7f8653c081f15e29a50772a0148970496548a986c969ddbac9cfebaf37",
+        "extended_matching": false,
+        "format": "text",
+        "id": "microsoft",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/microsoft.list",
+        "reject_mode": null,
+        "rule_count": 142,
+        "sha256": "ba1cb7daf5f3338695fb40b03132eaf43d1dda79b52636e02349679824173b43",
+        "stages": [
+          "microsoft",
+          "netease"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "domain-set",
+        "bytes": 206,
+        "capability": "domain",
+        "dns": "foreign",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/telegram.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "telegram",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/telegram.set",
+        "reject_mode": null,
+        "rule_count": 15,
+        "sha256": "23424aa397563572f7f656da387e238efce561478e3847aee1719eeb6f4af443",
+        "stages": [
+          "telegram"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "domain-set",
+        "bytes": 1517204,
+        "capability": "domain",
+        "dns": "domestic",
+        "dns_behavior": "domain-set",
+        "dns_format": "set",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/cn-direct-domain.set",
+        "extended_matching": false,
+        "format": "set",
+        "id": "cn-direct-domain",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/cn-direct-domain.set",
+        "reject_mode": null,
+        "rule_count": 110955,
+        "sha256": "4be78f2904dade71cc229b0b21dccad95fc7544074c87198851e54fe369ec99c",
+        "stages": [
+          "cn-direct-domain"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 253,
+        "capability": "domain-special",
+        "dns": "domestic",
+        "dns_behavior": "classical",
+        "dns_format": "text",
+        "dns_kind": "route",
+        "dns_path": "rules/personal/surge/cn-direct-special.list",
+        "extended_matching": false,
+        "format": "text",
+        "id": "cn-direct-special",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/cn-direct-special.list",
+        "reject_mode": null,
+        "rule_count": 10,
+        "sha256": "4f18f641be43b71056dbd6ae571513ec77a6b0555006715c95a24c82ee39eb93",
+        "stages": [
+          "cn-direct-special"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 1010,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "cn-direct-process",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/cn-direct-process.list",
+        "reject_mode": null,
+        "rule_count": 40,
+        "sha256": "7d9f95b89a8a010905097343ecd4ce4aab8effe58865a47ab2d15dc43164c8d9",
+        "stages": [
+          "cn-direct-process"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 267,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "lan-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/lan-ip.list",
+        "reject_mode": null,
+        "rule_count": 12,
+        "sha256": "5899001dbb629eb6f90d78161e2d206ed283fe4cfa6b99a16c5f86b281d7a5d6",
+        "stages": [
+          "lan-ip"
+        ]
+      },
+      {
+        "action": "REJECT",
+        "behavior": "classical",
+        "bytes": 20033,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "reject-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/reject-ip.list",
+        "reject_mode": "plain",
+        "rule_count": 780,
+        "sha256": "3e82c967f4dd4f31914db7a4e0a55780c3550ae7c2971cfb374804509d2a878e",
+        "stages": [
+          "reject-ip"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 1548,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "ai-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/ai-ip.list",
+        "reject_mode": null,
+        "rule_count": 46,
+        "sha256": "bb43afee67c0316b675ed740275dcc077495636aa9aab4be727aacd407f37ee2",
+        "stages": [
+          "ai-ip",
+          "telegram-ip"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 825,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "apple-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/apple-ip.list",
+        "reject_mode": null,
+        "rule_count": 23,
+        "sha256": "48f79503307e64398c5ec1ecfadc8552b88388b83742168429fcf0366fd7cae2",
+        "stages": [
+          "apple-ip",
+          "download-ip"
+        ]
+      },
+      {
+        "action": "US",
+        "behavior": "classical",
+        "bytes": 123,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "cdn-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/cdn-ip.list",
+        "reject_mode": null,
+        "rule_count": 4,
+        "sha256": "1ac0d824e9d1fc4c1bedd64fbc4ec46a31e6d5d253f696c264301058268316eb",
+        "stages": [
+          "cdn-ip"
+        ]
+      },
+      {
+        "action": "DIRECT",
+        "behavior": "classical",
+        "bytes": 113,
+        "capability": "classical",
+        "dns": "none",
+        "dns_behavior": null,
+        "dns_format": null,
+        "dns_kind": null,
+        "dns_path": null,
+        "extended_matching": false,
+        "format": "text",
+        "id": "domestic-ip",
+        "kind": "route",
+        "no_resolve": false,
+        "path": "rules/personal/surge/domestic-ip.list",
+        "reject_mode": null,
+        "rule_count": 3,
+        "sha256": "51a548304689becdc323c1fe3828a5954754f5013e773b13cd2a4ee940ab5f56",
+        "stages": [
+          "domestic-ip"
+        ]
+      }
+    ]
+  },
+  "legacy_inputs": {
+    "rules/ai-cn.list": {
+      "bytes": 3183,
+      "sha256": "adb738c340434761d2e27bcaa07605d530a633e7dc0534c3ae521f1ab4636ab0"
+    },
+    "rules/ai-global.list": {
+      "bytes": 6031,
+      "sha256": "6987e0e43e2eca07fd21cfd79fe834ded59119d4f78e2f454015ccb60d7597fd"
+    },
+    "rules/mihomo/cn-direct-domain.mrs": {
+      "bytes": 538310,
+      "sha256": "5d72b63fc796f4969ca12a0256dba21f3805476e6ba3f7d0e225e3af6642ec56"
+    },
+    "rules/mihomo/cn-direct-domain.txt": {
+      "bytes": 1627868,
+      "sha256": "a25bc49650810283855523f2d0488ad6c865a0f1eeafd13717aae44bc2d79ad2"
+    },
+    "rules/mihomo/cn-direct-process.list": {
+      "bytes": 944,
+      "sha256": "57c855abec44fb4c12d9ec3f8ebd8622b2a8c4bfbf889aaaf1dcc50278c1f22e"
+    },
+    "rules/mihomo/cn-direct-special.list": {
+      "bytes": 320,
+      "sha256": "1ea346626c99c4ca7c6beff0b563cad3cc7340a53fb3476d9254f591be7fa71b"
+    },
+    "rules/network-test.list": {
+      "bytes": 8709,
+      "sha256": "ed8a1b69a61b43e0b1f917afe84790ba22cb08ae80f8bc6a9b6df9c50b58aa56"
+    },
+    "rules/surge/ai-cn.set": {
+      "bytes": 1648,
+      "sha256": "08989833f6571575bb2cd4a90e39f89de43a294acdb0174c0e85b81b511abeb9"
+    },
+    "rules/surge/ai-process.list": {
+      "bytes": 327,
+      "sha256": "c863895f2701400a326e930fc13d8bbc162bc91eb61eda2c7a75b29b7f55e610"
+    },
+    "rules/surge/cn-direct-platform.list": {
+      "bytes": 1087,
+      "sha256": "eeb5a2b42f461fc2ef8375b3c1f082e2c1fe84efd890ee1542f6dcbd43e761f8"
+    },
+    "rules/surge/cn-direct-special.list": {
+      "bytes": 320,
+      "sha256": "1ea346626c99c4ca7c6beff0b563cad3cc7340a53fb3476d9254f591be7fa71b"
+    },
+    "rules/surge/cn-direct.set": {
+      "bytes": 1517204,
+      "sha256": "4be78f2904dade71cc229b0b21dccad95fc7544074c87198851e54fe369ec99c"
+    },
+    "rules/surge/network-test.set": {
+      "bytes": 4679,
+      "sha256": "100c0f1d04055c174057f09d666e21cc6c099e809fced284acc2a8afbf37e5bc"
+    },
+    "rules/surge/us.set": {
+      "bytes": 68,
+      "sha256": "42b876286b2219599f437aec414cbdd0c79af5d85816c7e79a07e2c00d980ecf"
+    },
+    "rules/us.list": {
+      "bytes": 229,
+      "sha256": "039166563c545a4f35b0da50f4967b11cf270c5f66bdddeaad991cb7d7af2362"
+    }
+  },
+  "outputs": {
+    "rules/personal/mihomo/ai-cn.mrs": {
+      "bytes": 1135,
+      "sha256": "5fe27b2f33b99bc5d201c0a5aae1d9ff8e1ff14a7af51dd0a5ffeedc8881a42d"
+    },
+    "rules/personal/mihomo/ai-global.list": {
+      "bytes": 6031,
+      "sha256": "6987e0e43e2eca07fd21cfd79fe834ded59119d4f78e2f454015ccb60d7597fd"
+    },
+    "rules/personal/mihomo/ai-ip.list": {
+      "bytes": 1548,
+      "sha256": "bb43afee67c0316b675ed740275dcc077495636aa9aab4be727aacd407f37ee2"
+    },
+    "rules/personal/mihomo/apple-intelligence.mrs": {
+      "bytes": 173,
+      "sha256": "d054918504b5cb4197a2b7edb7145a7f3571420a5eaf66feedf3eaccbdc47402"
+    },
+    "rules/personal/mihomo/apple-ip.list": {
+      "bytes": 825,
+      "sha256": "48f79503307e64398c5ec1ecfadc8552b88388b83742168429fcf0366fd7cae2"
+    },
+    "rules/personal/mihomo/apple-services.list": {
+      "bytes": 7247,
+      "sha256": "067855da82fc07dfc70c36f399470c43f35751541b646dc5e5c468085aa6ebf5"
+    },
+    "rules/personal/mihomo/att-us.mrs": {
+      "bytes": 114,
+      "sha256": "e582fa75fdfff675a33a7c53261c3a1d14305b0ada12f77b803860860b060f74"
+    },
+    "rules/personal/mihomo/cdn-ip.list": {
+      "bytes": 123,
+      "sha256": "1ac0d824e9d1fc4c1bedd64fbc4ec46a31e6d5d253f696c264301058268316eb"
+    },
+    "rules/personal/mihomo/cdn.list": {
+      "bytes": 132850,
+      "sha256": "069e2e96ab4cfe6dc3d3eccefd20ae415fcee009d2d5d5aa842526a6b7a424eb"
+    },
+    "rules/personal/mihomo/cn-direct-domain.mrs": {
+      "bytes": 538310,
+      "sha256": "5d72b63fc796f4969ca12a0256dba21f3805476e6ba3f7d0e225e3af6642ec56"
+    },
+    "rules/personal/mihomo/cn-direct-process.list": {
+      "bytes": 1147,
+      "sha256": "8eccbd226a14daf60974a3aa5b38a949647e465501ff5961f2fcc3f954c6bf38"
+    },
+    "rules/personal/mihomo/cn-direct-special.list": {
+      "bytes": 253,
+      "sha256": "4f18f641be43b71056dbd6ae571513ec77a6b0555006715c95a24c82ee39eb93"
+    },
+    "rules/personal/mihomo/dns-apple-services.mrs": {
+      "bytes": 1783,
+      "sha256": "24ed6eee2f0bacba823a7f83d5f4d097d4734a29752e6a5561bb94e7bf3b6764"
+    },
+    "rules/personal/mihomo/dns-jp-manual.list": {
+      "bytes": 42,
+      "sha256": "a0b0930775d19bb985efb256bd5af139e70087c4e8186fb711ed0858c8988007"
+    },
+    "rules/personal/mihomo/dns-reject-rules.list": {
+      "bytes": 9460,
+      "sha256": "8f5ca73c7bf5dc2924f25c6d0ea067656dd26eb0432fbe0bac24df99dbd4d7ac"
+    },
+    "rules/personal/mihomo/dns-sogouinput.mrs": {
+      "bytes": 187,
+      "sha256": "e267a7404d7060e995bc2128fbfd8a4344bd8f53143e77ecfedd230ee8902ee4"
+    },
+    "rules/personal/mihomo/domestic-ip.list": {
+      "bytes": 113,
+      "sha256": "51a548304689becdc323c1fe3828a5954754f5013e773b13cd2a4ee940ab5f56"
+    },
+    "rules/personal/mihomo/download.list": {
+      "bytes": 370,
+      "sha256": "b2835d442971e3ab2c51e07705bc07e781db99a2913f494966b86284d19d0ced"
+    },
+    "rules/personal/mihomo/game-download.mrs": {
+      "bytes": 19625,
+      "sha256": "aa2fc8dcdad43c9556ef1fa76a289307d22e6bdac4495f6b58d3c0f42930389a"
+    },
+    "rules/personal/mihomo/infra-lan.mrs": {
+      "bytes": 502,
+      "sha256": "530ca5166e13937795ef8d50879dd5131222202833656aa6abc1cefaf91261b9"
+    },
+    "rules/personal/mihomo/jp-manual.list": {
+      "bytes": 37,
+      "sha256": "b80198a085e0ad720b8c233f4b31a07eaeb4df3dd2542ee8d04049fe7de2914e"
+    },
+    "rules/personal/mihomo/microsoft.list": {
+      "bytes": 4725,
+      "sha256": "24a312882b8969b9c27a0bc99dc66e07dc1c12901e76fd229797427e74f08ce6"
+    },
+    "rules/personal/mihomo/netease.mrs": {
+      "bytes": 131,
+      "sha256": "e2489016dc16dbfc97308cf5d2a7b90bf0bc5c2eaebf8c3490759e9066793e6c"
+    },
+    "rules/personal/mihomo/network-test.mrs": {
+      "bytes": 2960,
+      "sha256": "fa04f58f61362782dff8f676fee477f5103fac3460e3935c2e2bda063070107c"
+    },
+    "rules/personal/mihomo/reject-domains.mrs": {
+      "bytes": 1438052,
+      "sha256": "dca47d5606cd61a57b5d1a6b01e34b7045e0127428a07a5472dea6d2cd64da9d"
+    },
+    "rules/personal/mihomo/reject-drop.list": {
+      "bytes": 891,
+      "sha256": "26b2451e9316a3d1054f00cefece1ecbfd1def2a1ef171b6a24bd67602b575d2"
+    },
+    "rules/personal/mihomo/reject-extra.mrs": {
+      "bytes": 690503,
+      "sha256": "60f3813f04071bc0477986735e3cc7e71b6afd305fd6201b6635fc3dc6a1f4c0"
+    },
+    "rules/personal/mihomo/reject-ip.list": {
+      "bytes": 20033,
+      "sha256": "3e82c967f4dd4f31914db7a4e0a55780c3550ae7c2971cfb374804509d2a878e"
+    },
+    "rules/personal/mihomo/reject-no-drop.list": {
+      "bytes": 1383,
+      "sha256": "bfe67771024143847ed38295b78a7ee66bd0b5d387c8bbe56b9af381e605a42f"
+    },
+    "rules/personal/mihomo/reject-rules.list": {
+      "bytes": 11237,
+      "sha256": "b17ca09950e69f1a0806edcadd7ad1acf11bb8c19b9ea5a2e2fbae030a627618"
+    },
+    "rules/personal/mihomo/sogouinput.list": {
+      "bytes": 391,
+      "sha256": "f246db36b232f1b5eda62942d8fa010b7c84b6df4e0a57fa40d4cb7c71e1ba6b"
+    },
+    "rules/personal/mihomo/telegram.mrs": {
+      "bytes": 239,
+      "sha256": "a94ec888282e1b63e72d4aaa6f8961294fa487061bffa50fa029f0cdeab7aada"
+    },
+    "rules/personal/surge/ai-cn.set": {
+      "bytes": 1648,
+      "sha256": "08989833f6571575bb2cd4a90e39f89de43a294acdb0174c0e85b81b511abeb9"
+    },
+    "rules/personal/surge/ai-global.list": {
+      "bytes": 6031,
+      "sha256": "6987e0e43e2eca07fd21cfd79fe834ded59119d4f78e2f454015ccb60d7597fd"
+    },
+    "rules/personal/surge/ai-ip.list": {
+      "bytes": 1548,
+      "sha256": "bb43afee67c0316b675ed740275dcc077495636aa9aab4be727aacd407f37ee2"
+    },
+    "rules/personal/surge/ai-process.list": {
+      "bytes": 118,
+      "sha256": "551c1f71b761f68dcb6753863fa76f275a986939c45e21382d718beecd5c24b9"
+    },
+    "rules/personal/surge/apple-intelligence.set": {
+      "bytes": 158,
+      "sha256": "a6cd8944d0f4da86170f3291d4cf32307826cc59ccd5047aec44656234db22f5"
+    },
+    "rules/personal/surge/apple-ip.list": {
+      "bytes": 825,
+      "sha256": "48f79503307e64398c5ec1ecfadc8552b88388b83742168429fcf0366fd7cae2"
+    },
+    "rules/personal/surge/apple-services.list": {
+      "bytes": 7247,
+      "sha256": "067855da82fc07dfc70c36f399470c43f35751541b646dc5e5c468085aa6ebf5"
+    },
+    "rules/personal/surge/att-us.set": {
+      "bytes": 68,
+      "sha256": "42b876286b2219599f437aec414cbdd0c79af5d85816c7e79a07e2c00d980ecf"
+    },
+    "rules/personal/surge/cdn-ip.list": {
+      "bytes": 123,
+      "sha256": "1ac0d824e9d1fc4c1bedd64fbc4ec46a31e6d5d253f696c264301058268316eb"
+    },
+    "rules/personal/surge/cdn.list": {
+      "bytes": 132850,
+      "sha256": "069e2e96ab4cfe6dc3d3eccefd20ae415fcee009d2d5d5aa842526a6b7a424eb"
+    },
+    "rules/personal/surge/cn-direct-domain.set": {
+      "bytes": 1517204,
+      "sha256": "4be78f2904dade71cc229b0b21dccad95fc7544074c87198851e54fe369ec99c"
+    },
+    "rules/personal/surge/cn-direct-process.list": {
+      "bytes": 1010,
+      "sha256": "7d9f95b89a8a010905097343ecd4ce4aab8effe58865a47ab2d15dc43164c8d9"
+    },
+    "rules/personal/surge/cn-direct-special.list": {
+      "bytes": 253,
+      "sha256": "4f18f641be43b71056dbd6ae571513ec77a6b0555006715c95a24c82ee39eb93"
+    },
+    "rules/personal/surge/dns-apple-services.set": {
+      "bytes": 4612,
+      "sha256": "5bde2d15209d0322235aab2666eacd4d25afa959207af8689ae2026723f1dcd2"
+    },
+    "rules/personal/surge/dns-download.list": {
+      "bytes": 370,
+      "sha256": "b2835d442971e3ab2c51e07705bc07e781db99a2913f494966b86284d19d0ced"
+    },
+    "rules/personal/surge/dns-jp-manual.list": {
+      "bytes": 42,
+      "sha256": "a0b0930775d19bb985efb256bd5af139e70087c4e8186fb711ed0858c8988007"
+    },
+    "rules/personal/surge/dns-microsoft.list": {
+      "bytes": 4827,
+      "sha256": "64a2da7f8653c081f15e29a50772a0148970496548a986c969ddbac9cfebaf37"
+    },
+    "rules/personal/surge/dns-reject-no-drop.list": {
+      "bytes": 1383,
+      "sha256": "bfe67771024143847ed38295b78a7ee66bd0b5d387c8bbe56b9af381e605a42f"
+    },
+    "rules/personal/surge/dns-reject-rules.list": {
+      "bytes": 9460,
+      "sha256": "8f5ca73c7bf5dc2924f25c6d0ea067656dd26eb0432fbe0bac24df99dbd4d7ac"
+    },
+    "rules/personal/surge/dns-sogouinput.set": {
+      "bytes": 192,
+      "sha256": "8f370b7f120b0e1213793533b61e672d579d8b7914da4019983fcbddea1327e0"
+    },
+    "rules/personal/surge/domestic-ip.list": {
+      "bytes": 113,
+      "sha256": "51a548304689becdc323c1fe3828a5954754f5013e773b13cd2a4ee940ab5f56"
+    },
+    "rules/personal/surge/download.list": {
+      "bytes": 412,
+      "sha256": "83f77510b7a34b6942c044e122bab633f0b10cd5fc516c6b0a9c3209fdc06908"
+    },
+    "rules/personal/surge/game-download.set": {
+      "bytes": 46603,
+      "sha256": "5b227f3fb6187ebb34704523a745c9c713aba2dffe578f0eaab03474faaf899a"
+    },
+    "rules/personal/surge/infra-lan.set": {
+      "bytes": 860,
+      "sha256": "800a98968d4626e62925722e67ade6cdcccff2c7ddffa5a11d1b0bad91d69f30"
+    },
+    "rules/personal/surge/jp-manual.list": {
+      "bytes": 37,
+      "sha256": "b80198a085e0ad720b8c233f4b31a07eaeb4df3dd2542ee8d04049fe7de2914e"
+    },
+    "rules/personal/surge/lan-ip.list": {
+      "bytes": 267,
+      "sha256": "5899001dbb629eb6f90d78161e2d206ed283fe4cfa6b99a16c5f86b281d7a5d6"
+    },
+    "rules/personal/surge/microsoft.list": {
+      "bytes": 4998,
+      "sha256": "ba1cb7daf5f3338695fb40b03132eaf43d1dda79b52636e02349679824173b43"
+    },
+    "rules/personal/surge/network-test.set": {
+      "bytes": 4679,
+      "sha256": "100c0f1d04055c174057f09d666e21cc6c099e809fced284acc2a8afbf37e5bc"
+    },
+    "rules/personal/surge/reject-domains.set": {
+      "bytes": 3188600,
+      "sha256": "2dc1c5f538cd2f0c70b1322e3ccb52a6ea6c482b44b80f96ef57576ddc707ed7"
+    },
+    "rules/personal/surge/reject-drop.list": {
+      "bytes": 891,
+      "sha256": "26b2451e9316a3d1054f00cefece1ecbfd1def2a1ef171b6a24bd67602b575d2"
+    },
+    "rules/personal/surge/reject-extra.set": {
+      "bytes": 1553582,
+      "sha256": "043065bc3da21c4b51cee9d1e183dd2d402256349512ca45a7bf7d99344c53e8"
+    },
+    "rules/personal/surge/reject-ip.list": {
+      "bytes": 20033,
+      "sha256": "3e82c967f4dd4f31914db7a4e0a55780c3550ae7c2971cfb374804509d2a878e"
+    },
+    "rules/personal/surge/reject-no-drop.list": {
+      "bytes": 1437,
+      "sha256": "5bad80fa092405cdb87ee924780168e451af55875bf6e98c565a6c4ff17d4abf"
+    },
+    "rules/personal/surge/reject-rules.list": {
+      "bytes": 11302,
+      "sha256": "cea96c5b1fb495f994386f72d23e44a683673cab40e376eced6205809f3a7830"
+    },
+    "rules/personal/surge/sogouinput.list": {
+      "bytes": 458,
+      "sha256": "957e0771982df6f00102c4f98e611815c0b6e44dc3359a6e5d5e71b72137ad42"
+    },
+    "rules/personal/surge/telegram.set": {
+      "bytes": 206,
+      "sha256": "23424aa397563572f7f656da387e238efce561478e3847aee1719eeb6f4af443"
+    }
+  },
+  "profile": {
+    "id": "us-primary",
+    "path": "profiles/us-primary.json",
+    "sha256": "5b578b9b8d76611853844fb68dbd29525b4c84809dc50ade5dfba24c7928243e"
+  },
+  "schema": 1,
+  "sources": {
+    "mihomo.ai_ip": {
+      "archive_path": "upstream/personal/mihomo/ai_ip.txt",
+      "bytes": 1461,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 25,
+      "sha256": "180f0b4aba41239b67de5e7d11ba4380924ecc75db80dd7801988e637f2c8963",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/ai.txt"
+    },
+    "mihomo.apple_cdn": {
+      "archive_path": "upstream/personal/mihomo/apple_cdn.txt",
+      "bytes": 4787,
+      "kind": "domainset",
+      "platform": "mihomo",
+      "rules": 160,
+      "sha256": "353e7f1244fe816019036274f13762ecaf25c29b3f4a01ab952fc3f1281626d3",
+      "url": "https://ruleset-mirror.skk.moe/Clash/domainset/apple_cdn.txt"
+    },
+    "mihomo.apple_cn": {
+      "archive_path": "upstream/personal/mihomo/apple_cn.txt",
+      "bytes": 826,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 10,
+      "sha256": "a31f9e98c5a4fdd585a7c78b6f3a1994015ab54a57a3d82057bd17f278f6a76f",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/apple_cn.txt"
+    },
+    "mihomo.apple_intelligence": {
+      "archive_path": "upstream/personal/mihomo/apple_intelligence.txt",
+      "bytes": 631,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 6,
+      "sha256": "728d4a842e4507e042b929ed599b9a9a3de4e89ba4a29438594470dd40c1a5f8",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/apple_intelligence.txt"
+    },
+    "mihomo.apple_ip": {
+      "archive_path": "upstream/personal/mihomo/apple_ip.txt",
+      "bytes": 814,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 11,
+      "sha256": "1bd5ce680fc1a4858e44e0b402abe9319181d6486a45d1b9196bfd4b44a5c5b8",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/apple_services.txt"
+    },
+    "mihomo.apple_services": {
+      "archive_path": "upstream/personal/mihomo/apple_services.txt",
+      "bytes": 1157,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 26,
+      "sha256": "9c32e8eb6e1d334a85b972791a0afc4b0fc81f57d3a80902a50c9168269f7602",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/apple_services.txt"
+    },
+    "mihomo.cdn": {
+      "archive_path": "upstream/personal/mihomo/cdn.txt",
+      "bytes": 3489,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 85,
+      "sha256": "57df4d858a615a2f1c8654264e1cf7f60da32f4cde983476a9cd94610ce618a0",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/cdn.txt"
+    },
+    "mihomo.cdn_domains": {
+      "archive_path": "upstream/personal/mihomo/cdn_domains.txt",
+      "bytes": 91231,
+      "kind": "domainset",
+      "platform": "mihomo",
+      "rules": 4695,
+      "sha256": "dc4be314a78dab570cc5cf1e30cec9b1a5eba93337131ae560912972bec36134",
+      "url": "https://ruleset-mirror.skk.moe/Clash/domainset/cdn.txt"
+    },
+    "mihomo.cdn_ip": {
+      "archive_path": "upstream/personal/mihomo/cdn_ip.txt",
+      "bytes": 571,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 4,
+      "sha256": "7d692c7f5b3e2c57f0d79ba47b1d541dd30f2b55fd213a582887828fe305d570",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/cdn.txt"
+    },
+    "mihomo.domestic_ip": {
+      "archive_path": "upstream/personal/mihomo/domestic_ip.txt",
+      "bytes": 566,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 3,
+      "sha256": "99fd01e3b16bb3715dc2a07f5e3c4fde213c2031469256282c55aa7e1ed46494",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/domestic.txt"
+    },
+    "mihomo.download": {
+      "archive_path": "upstream/personal/mihomo/download.txt",
+      "bytes": 832,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 10,
+      "sha256": "48734bfe68dbf1e01c68a2b81931e000c50d8b824d3658704802b034908e6510",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/download.txt"
+    },
+    "mihomo.download_domains": {
+      "archive_path": "upstream/personal/mihomo/download_domains.txt",
+      "bytes": 46323,
+      "kind": "domainset",
+      "platform": "mihomo",
+      "rules": 1973,
+      "sha256": "691350a9e86de6869700281c53f3f954f3e54d387f7cbe237157c40ab7b32401",
+      "url": "https://ruleset-mirror.skk.moe/Clash/domainset/download.txt"
+    },
+    "mihomo.download_ip": {
+      "archive_path": "upstream/personal/mihomo/download_ip.txt",
+      "bytes": 894,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 12,
+      "sha256": "649094b68cf54ea2ce890e6f4e4e4540f23c8bb44aa8f18aef61a6d26ddc34ea",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/download.txt"
+    },
+    "mihomo.game_download": {
+      "archive_path": "upstream/personal/mihomo/game_download.txt",
+      "bytes": 1908,
+      "kind": "domainset",
+      "platform": "mihomo",
+      "rules": 53,
+      "sha256": "c3549cee2590fd0f0ccd3febd77159d64cec7335361217f667b5de609248d7a3",
+      "url": "https://ruleset-mirror.skk.moe/Clash/domainset/game-download.txt"
+    },
+    "mihomo.lan": {
+      "archive_path": "upstream/personal/mihomo/lan.txt",
+      "bytes": 1868,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 50,
+      "sha256": "de25958cecccfeb384d58d989ed407f8160575e4aa9a047f9d954eaef68788ae",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/lan.txt"
+    },
+    "mihomo.lan_ip": {
+      "archive_path": "upstream/personal/mihomo/lan_ip.txt",
+      "bytes": 693,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 12,
+      "sha256": "0866aadd6e3a726914b2db4f001c00a2df739bf7639795b475aef4ab3f676806",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/lan.txt"
+    },
+    "mihomo.microsoft": {
+      "archive_path": "upstream/personal/mihomo/microsoft.txt",
+      "bytes": 2714,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 84,
+      "sha256": "1cc7293548c9f251adf9e373a57bfef3501f6e6756d8234aed5415a5ead4e439",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/microsoft.txt"
+    },
+    "mihomo.microsoft_cdn": {
+      "archive_path": "upstream/personal/mihomo/microsoft_cdn.txt",
+      "bytes": 2987,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 51,
+      "sha256": "6c65a1a343202aeab12279c427d72bf8f1508629d6b906f39accbe76fe58434e",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/microsoft_cdn.txt"
+    },
+    "mihomo.neteasemusic": {
+      "archive_path": "upstream/personal/mihomo/neteasemusic.txt",
+      "bytes": 526,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 3,
+      "sha256": "6ccd6d860eff436e54b8b347d7d4de2438b4d74528a9063265629af8bff4245b",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/neteasemusic.txt"
+    },
+    "mihomo.reject": {
+      "archive_path": "upstream/personal/mihomo/reject.txt",
+      "bytes": 13459,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 367,
+      "sha256": "110f1da29a6f37c10ea33598e5833a44192fa4aacbe3020d9b6cf882e5962a53",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/reject.txt"
+    },
+    "mihomo.reject_domains": {
+      "archive_path": "upstream/personal/mihomo/reject_domains.txt",
+      "bytes": 3331617,
+      "kind": "domainset",
+      "platform": "mihomo",
+      "rules": 143052,
+      "sha256": "3905cfaecbbae93dae4a61daa50180a33c5460400f60718b8e82ae28b935e35f",
+      "url": "https://ruleset-mirror.skk.moe/Clash/domainset/reject.txt"
+    },
+    "mihomo.reject_drop": {
+      "archive_path": "upstream/personal/mihomo/reject_drop.txt",
+      "bytes": 1360,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 29,
+      "sha256": "f5f3606947fdcb055fc1c937fc8e89b6692d5f63afc58f8a1bc45438853fcd11",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/reject-drop.txt"
+    },
+    "mihomo.reject_extra": {
+      "archive_path": "upstream/personal/mihomo/reject_extra.txt",
+      "bytes": 1634858,
+      "kind": "domainset",
+      "platform": "mihomo",
+      "rules": 78969,
+      "sha256": "7c9a9f477039928eed68d98ac7ba1dab2ad1a79afe4ae8c83ae40cee17cd8c72",
+      "url": "https://ruleset-mirror.skk.moe/Clash/domainset/reject_extra.txt"
+    },
+    "mihomo.reject_ip": {
+      "archive_path": "upstream/personal/mihomo/reject_ip.txt",
+      "bytes": 22292,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 780,
+      "sha256": "021228be383159d124ebee575c21300e32fbbdedbfb8764a9b11dd9c1aaca717",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/reject.txt"
+    },
+    "mihomo.reject_no_drop": {
+      "archive_path": "upstream/personal/mihomo/reject_no_drop.txt",
+      "bytes": 1854,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 45,
+      "sha256": "60fb84589ea508616e88fa03c02b2bf98763f4bab553373183b9098983924fc7",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/reject-no-drop.txt"
+    },
+    "mihomo.sogouinput": {
+      "archive_path": "upstream/personal/mihomo/sogouinput.txt",
+      "bytes": 812,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 13,
+      "sha256": "6ad7808443a1ec4a3b5b4841d55e24d3a91cb9797eb904a91a13af5f567cab47",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/sogouinput.txt"
+    },
+    "mihomo.telegram": {
+      "archive_path": "upstream/personal/mihomo/telegram.txt",
+      "bytes": 834,
+      "kind": "non_ip",
+      "platform": "mihomo",
+      "rules": 15,
+      "sha256": "bccbd162554d2cb56b16cdd59fbc2d1abec645bd53c9db18460137ffccbbc2a2",
+      "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/telegram.txt"
+    },
+    "mihomo.telegram_asn": {
+      "archive_path": "upstream/personal/mihomo/telegram_asn.txt",
+      "bytes": 685,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 6,
+      "sha256": "d6d8f75ed1cae4c7de00c86a834c5f630abbc614f28f50f0a63e741ffa8d2cf9",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/telegram_asn.txt"
+    },
+    "mihomo.telegram_ip": {
+      "archive_path": "upstream/personal/mihomo/telegram_ip.txt",
+      "bytes": 1116,
+      "kind": "ip",
+      "platform": "mihomo",
+      "rules": 15,
+      "sha256": "27f6bab896e98ec9631fd187ff5147fb101260fc7a322c0dc994bbd27ed0a81f",
+      "url": "https://ruleset-mirror.skk.moe/Clash/ip/telegram.txt"
+    },
+    "surge.ai_ip": {
+      "archive_path": "upstream/personal/surge/ai_ip.conf",
+      "bytes": 1461,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 25,
+      "sha256": "180f0b4aba41239b67de5e7d11ba4380924ecc75db80dd7801988e637f2c8963",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/ai.conf"
+    },
+    "surge.apple_cdn": {
+      "archive_path": "upstream/personal/surge/apple_cdn.conf",
+      "bytes": 4628,
+      "kind": "domainset",
+      "platform": "surge",
+      "rules": 160,
+      "sha256": "0c81cbe6af3a1c3befbe973441bb5667caf817a9447fca55022182d015669180",
+      "url": "https://ruleset-mirror.skk.moe/List/domainset/apple_cdn.conf"
+    },
+    "surge.apple_cn": {
+      "archive_path": "upstream/personal/surge/apple_cn.conf",
+      "bytes": 826,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 10,
+      "sha256": "a31f9e98c5a4fdd585a7c78b6f3a1994015ab54a57a3d82057bd17f278f6a76f",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/apple_cn.conf"
+    },
+    "surge.apple_intelligence": {
+      "archive_path": "upstream/personal/surge/apple_intelligence.conf",
+      "bytes": 631,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 6,
+      "sha256": "728d4a842e4507e042b929ed599b9a9a3de4e89ba4a29438594470dd40c1a5f8",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/apple_intelligence.conf"
+    },
+    "surge.apple_ip": {
+      "archive_path": "upstream/personal/surge/apple_ip.conf",
+      "bytes": 814,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 11,
+      "sha256": "1bd5ce680fc1a4858e44e0b402abe9319181d6486a45d1b9196bfd4b44a5c5b8",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/apple_services.conf"
+    },
+    "surge.apple_services": {
+      "archive_path": "upstream/personal/surge/apple_services.conf",
+      "bytes": 1157,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 26,
+      "sha256": "9c32e8eb6e1d334a85b972791a0afc4b0fc81f57d3a80902a50c9168269f7602",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/apple_services.conf"
+    },
+    "surge.cdn": {
+      "archive_path": "upstream/personal/surge/cdn.conf",
+      "bytes": 3489,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 85,
+      "sha256": "57df4d858a615a2f1c8654264e1cf7f60da32f4cde983476a9cd94610ce618a0",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/cdn.conf"
+    },
+    "surge.cdn_domains": {
+      "archive_path": "upstream/personal/surge/cdn_domains.conf",
+      "bytes": 90000,
+      "kind": "domainset",
+      "platform": "surge",
+      "rules": 4695,
+      "sha256": "a91403d4fbc736b3d0eabf78d2a7ed7b64fa47b28a5874e79a1c8d18f7f7bbdb",
+      "url": "https://ruleset-mirror.skk.moe/List/domainset/cdn.conf"
+    },
+    "surge.cdn_ip": {
+      "archive_path": "upstream/personal/surge/cdn_ip.conf",
+      "bytes": 571,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 4,
+      "sha256": "7d692c7f5b3e2c57f0d79ba47b1d541dd30f2b55fd213a582887828fe305d570",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/cdn.conf"
+    },
+    "surge.domestic_ip": {
+      "archive_path": "upstream/personal/surge/domestic_ip.conf",
+      "bytes": 566,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 3,
+      "sha256": "99fd01e3b16bb3715dc2a07f5e3c4fde213c2031469256282c55aa7e1ed46494",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/domestic.conf"
+    },
+    "surge.download": {
+      "archive_path": "upstream/personal/surge/download.conf",
+      "bytes": 874,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 11,
+      "sha256": "741c1e7dda34bae2dd7611262c15431a66a50f6bdac24b96f070e1529479a594",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/download.conf"
+    },
+    "surge.download_domains": {
+      "archive_path": "upstream/personal/surge/download_domains.conf",
+      "bytes": 45788,
+      "kind": "domainset",
+      "platform": "surge",
+      "rules": 1973,
+      "sha256": "0855cb9678a67207eb29f11577e6d7681c80dbca25670275c9704fc5759e1261",
+      "url": "https://ruleset-mirror.skk.moe/List/domainset/download.conf"
+    },
+    "surge.download_ip": {
+      "archive_path": "upstream/personal/surge/download_ip.conf",
+      "bytes": 894,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 12,
+      "sha256": "649094b68cf54ea2ce890e6f4e4e4540f23c8bb44aa8f18aef61a6d26ddc34ea",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/download.conf"
+    },
+    "surge.game_download": {
+      "archive_path": "upstream/personal/surge/game_download.conf",
+      "bytes": 1892,
+      "kind": "domainset",
+      "platform": "surge",
+      "rules": 53,
+      "sha256": "3a31ec975e1d0a1d0ee588c249f3cd84c77943576f8081c682a7170fcc4ccfcd",
+      "url": "https://ruleset-mirror.skk.moe/List/domainset/game-download.conf"
+    },
+    "surge.lan": {
+      "archive_path": "upstream/personal/surge/lan.conf",
+      "bytes": 1868,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 50,
+      "sha256": "de25958cecccfeb384d58d989ed407f8160575e4aa9a047f9d954eaef68788ae",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/lan.conf"
+    },
+    "surge.lan_ip": {
+      "archive_path": "upstream/personal/surge/lan_ip.conf",
+      "bytes": 693,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 12,
+      "sha256": "0866aadd6e3a726914b2db4f001c00a2df739bf7639795b475aef4ab3f676806",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/lan.conf"
+    },
+    "surge.microsoft": {
+      "archive_path": "upstream/personal/surge/microsoft.conf",
+      "bytes": 2714,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 84,
+      "sha256": "1cc7293548c9f251adf9e373a57bfef3501f6e6756d8234aed5415a5ead4e439",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/microsoft.conf"
+    },
+    "surge.microsoft_cdn": {
+      "archive_path": "upstream/personal/surge/microsoft_cdn.conf",
+      "bytes": 3076,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 53,
+      "sha256": "9cc652e595d6782cae91b3960306777934ae8609b46d474e452c3e9099bcef7f",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/microsoft_cdn.conf"
+    },
+    "surge.neteasemusic": {
+      "archive_path": "upstream/personal/surge/neteasemusic.conf",
+      "bytes": 608,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 5,
+      "sha256": "8e3017a526f50ed80deddf4b26339f25cc0f60ad1c4ef0667ec7080f3ee1215e",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/neteasemusic.conf"
+    },
+    "surge.reject": {
+      "archive_path": "upstream/personal/surge/reject.conf",
+      "bytes": 13524,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 370,
+      "sha256": "0620fd54346f03eb1a17cb18aeff45423cb801845aaa7a0eb7486277a1bff91a",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/reject.conf"
+    },
+    "surge.reject_domains": {
+      "archive_path": "upstream/personal/surge/reject_domains.conf",
+      "bytes": 3189722,
+      "kind": "domainset",
+      "platform": "surge",
+      "rules": 143052,
+      "sha256": "0cc17e9955cf53cc418b69296133ad8b6aaacdaf00c721e9ae0d8621de7fcba0",
+      "url": "https://ruleset-mirror.skk.moe/List/domainset/reject.conf"
+    },
+    "surge.reject_drop": {
+      "archive_path": "upstream/personal/surge/reject_drop.conf",
+      "bytes": 1360,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 29,
+      "sha256": "f5f3606947fdcb055fc1c937fc8e89b6692d5f63afc58f8a1bc45438853fcd11",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/reject-drop.conf"
+    },
+    "surge.reject_extra": {
+      "archive_path": "upstream/personal/surge/reject_extra.conf",
+      "bytes": 1555905,
+      "kind": "domainset",
+      "platform": "surge",
+      "rules": 78969,
+      "sha256": "0445bac7032a5a34e78a825971356da67242bc93d1ad2a7ba9517e1164222327",
+      "url": "https://ruleset-mirror.skk.moe/List/domainset/reject_extra.conf"
+    },
+    "surge.reject_ip": {
+      "archive_path": "upstream/personal/surge/reject_ip.conf",
+      "bytes": 22292,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 780,
+      "sha256": "021228be383159d124ebee575c21300e32fbbdedbfb8764a9b11dd9c1aaca717",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/reject.conf"
+    },
+    "surge.reject_no_drop": {
+      "archive_path": "upstream/personal/surge/reject_no_drop.conf",
+      "bytes": 1908,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 46,
+      "sha256": "e0d48603980bd4c5862b0727e93ab0446d2c22a2a814cf4e2cbb5da28b2b8254",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/reject-no-drop.conf"
+    },
+    "surge.sogouinput": {
+      "archive_path": "upstream/personal/surge/sogouinput.conf",
+      "bytes": 879,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 15,
+      "sha256": "46884691525c0fb7058ff6dd06fb2d78174c8ab2759114ccbaa65de8b4554ccc",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/sogouinput.conf"
+    },
+    "surge.telegram": {
+      "archive_path": "upstream/personal/surge/telegram.conf",
+      "bytes": 834,
+      "kind": "non_ip",
+      "platform": "surge",
+      "rules": 15,
+      "sha256": "bccbd162554d2cb56b16cdd59fbc2d1abec645bd53c9db18460137ffccbbc2a2",
+      "url": "https://ruleset-mirror.skk.moe/List/non_ip/telegram.conf"
+    },
+    "surge.telegram_asn": {
+      "archive_path": "upstream/personal/surge/telegram_asn.conf",
+      "bytes": 685,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 6,
+      "sha256": "d6d8f75ed1cae4c7de00c86a834c5f630abbc614f28f50f0a63e741ffa8d2cf9",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/telegram_asn.conf"
+    },
+    "surge.telegram_ip": {
+      "archive_path": "upstream/personal/surge/telegram_ip.conf",
+      "bytes": 1116,
+      "kind": "ip",
+      "platform": "surge",
+      "rules": 15,
+      "sha256": "27f6bab896e98ec9631fd187ff5147fb101260fc7a322c0dc994bbd27ed0a81f",
+      "url": "https://ruleset-mirror.skk.moe/List/ip/telegram.conf"
+    }
+  },
+  "stages": [
+    {
+      "action": "DIRECT",
+      "dns": "system",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "infra-lan",
+        "surge": "infra-lan"
+      },
+      "id": "infra-lan",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 100,
+      "rule_count_by_platform": {
+        "mihomo": 50,
+        "surge": 50
+      },
+      "sources": [
+        "mihomo.lan",
+        "surge.lan"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "att-us",
+        "surge": "att-us"
+      },
+      "id": "att-us",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 6,
+      "rule_count_by_platform": {
+        "mihomo": 3,
+        "surge": 3
+      },
+      "sources": [
+        "legacy:us"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "TEST",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "network-test",
+        "surge": "network-test"
+      },
+      "id": "network-test",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 632,
+      "rule_count_by_platform": {
+        "mihomo": 316,
+        "surge": 316
+      },
+      "sources": [
+        "legacy:network-test"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "ai-cn",
+        "surge": "ai-cn"
+      },
+      "id": "ai-cn",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 238,
+      "rule_count_by_platform": {
+        "mihomo": 119,
+        "surge": 119
+      },
+      "sources": [
+        "legacy:ai-cn"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "ai-global",
+        "surge": "ai-global"
+      },
+      "id": "ai-global",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 396,
+      "rule_count_by_platform": {
+        "mihomo": 198,
+        "surge": 198
+      },
+      "sources": [
+        "legacy:ai-global"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "foreign",
+      "extended_matching": true,
+      "extended_matching_by_platform": {
+        "mihomo": true,
+        "surge": true
+      },
+      "group_by_platform": {
+        "mihomo": "apple-intelligence",
+        "surge": "apple-intelligence"
+      },
+      "id": "apple-intelligence",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 12,
+      "rule_count_by_platform": {
+        "mihomo": 6,
+        "surge": 6
+      },
+      "sources": [
+        "mihomo.apple_intelligence",
+        "surge.apple_intelligence"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": null,
+        "surge": "ai-process"
+      },
+      "id": "ai-process",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 4,
+      "rule_count_by_platform": {
+        "mihomo": 0,
+        "surge": 4
+      },
+      "sources": [
+        "legacy:ai-process"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "JP",
+      "dns": "jp",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "jp-manual",
+        "surge": "jp-manual"
+      },
+      "id": "jp-manual",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 0,
+      "rule_count_by_platform": {
+        "mihomo": 0,
+        "surge": 0
+      },
+      "sources": [
+        "manual:jp_members"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "reject-drop",
+        "surge": "reject-drop"
+      },
+      "id": "reject-drop",
+      "no_resolve": false,
+      "reject_mode": "drop",
+      "rule_count": 58,
+      "rule_count_by_platform": {
+        "mihomo": 29,
+        "surge": 29
+      },
+      "sources": [
+        "mihomo.reject_drop",
+        "surge.reject_drop"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "foreign",
+      "extended_matching": true,
+      "extended_matching_by_platform": {
+        "mihomo": true,
+        "surge": true
+      },
+      "group_by_platform": {
+        "mihomo": "reject-domains",
+        "surge": "reject-domains"
+      },
+      "id": "reject-domains",
+      "no_resolve": false,
+      "reject_mode": "plain",
+      "rule_count": 286104,
+      "rule_count_by_platform": {
+        "mihomo": 143052,
+        "surge": 143052
+      },
+      "sources": [
+        "mihomo.reject_domains",
+        "surge.reject_domains"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "reject-extra",
+        "surge": "reject-extra"
+      },
+      "id": "reject-extra",
+      "no_resolve": false,
+      "reject_mode": "plain",
+      "rule_count": 157938,
+      "rule_count_by_platform": {
+        "mihomo": 78969,
+        "surge": 78969
+      },
+      "sources": [
+        "mihomo.reject_extra",
+        "surge.reject_extra"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "foreign",
+      "extended_matching": true,
+      "extended_matching_by_platform": {
+        "mihomo": true,
+        "surge": true
+      },
+      "group_by_platform": {
+        "mihomo": "reject-rules",
+        "surge": "reject-rules"
+      },
+      "id": "reject-rules",
+      "no_resolve": false,
+      "reject_mode": "plain",
+      "rule_count": 737,
+      "rule_count_by_platform": {
+        "mihomo": 367,
+        "surge": 370
+      },
+      "sources": [
+        "mihomo.reject",
+        "surge.reject"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "foreign",
+      "extended_matching": true,
+      "extended_matching_by_platform": {
+        "mihomo": true,
+        "surge": true
+      },
+      "group_by_platform": {
+        "mihomo": "reject-no-drop",
+        "surge": "reject-no-drop"
+      },
+      "id": "reject-no-drop",
+      "no_resolve": false,
+      "reject_mode": "no-drop",
+      "rule_count": 91,
+      "rule_count_by_platform": {
+        "mihomo": 45,
+        "surge": 46
+      },
+      "sources": [
+        "mihomo.reject_no_drop",
+        "surge.reject_no_drop"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "sogouinput",
+        "surge": "sogouinput"
+      },
+      "id": "sogouinput",
+      "no_resolve": false,
+      "reject_mode": "plain",
+      "rule_count": 28,
+      "rule_count_by_platform": {
+        "mihomo": 13,
+        "surge": 15
+      },
+      "sources": [
+        "mihomo.sogouinput",
+        "surge.sogouinput"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "apple-services",
+        "surge": "apple-services"
+      },
+      "id": "apple-services",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 392,
+      "rule_count_by_platform": {
+        "mihomo": 196,
+        "surge": 196
+      },
+      "sources": [
+        "mihomo.apple_cn",
+        "surge.apple_cn",
+        "mihomo.apple_cdn",
+        "surge.apple_cdn",
+        "mihomo.apple_services",
+        "surge.apple_services"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "game-download",
+        "surge": "game-download"
+      },
+      "id": "game-download",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 4052,
+      "rule_count_by_platform": {
+        "mihomo": 2026,
+        "surge": 2026
+      },
+      "sources": [
+        "mihomo.game_download",
+        "surge.game_download",
+        "mihomo.download_domains",
+        "surge.download_domains"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "download",
+        "surge": "download"
+      },
+      "id": "download",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 21,
+      "rule_count_by_platform": {
+        "mihomo": 10,
+        "surge": 11
+      },
+      "sources": [
+        "mihomo.download",
+        "surge.download"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "cdn",
+        "surge": "cdn"
+      },
+      "id": "cdn",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 9560,
+      "rule_count_by_platform": {
+        "mihomo": 4780,
+        "surge": 4780
+      },
+      "sources": [
+        "mihomo.cdn_domains",
+        "surge.cdn_domains",
+        "mihomo.cdn",
+        "surge.cdn"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "microsoft",
+        "surge": "microsoft"
+      },
+      "id": "microsoft",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 272,
+      "rule_count_by_platform": {
+        "mihomo": 135,
+        "surge": 137
+      },
+      "sources": [
+        "mihomo.microsoft_cdn",
+        "surge.microsoft_cdn",
+        "mihomo.microsoft",
+        "surge.microsoft"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "netease",
+        "surge": "microsoft"
+      },
+      "id": "netease",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 8,
+      "rule_count_by_platform": {
+        "mihomo": 3,
+        "surge": 5
+      },
+      "sources": [
+        "mihomo.neteasemusic",
+        "surge.neteasemusic"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "foreign",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "telegram",
+        "surge": "telegram"
+      },
+      "id": "telegram",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 30,
+      "rule_count_by_platform": {
+        "mihomo": 15,
+        "surge": 15
+      },
+      "sources": [
+        "mihomo.telegram",
+        "surge.telegram"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "cn-direct-domain",
+        "surge": "cn-direct-domain"
+      },
+      "id": "cn-direct-domain",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 221910,
+      "rule_count_by_platform": {
+        "mihomo": 110955,
+        "surge": 110955
+      },
+      "sources": [
+        "legacy:cn-direct-domain"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "domestic",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "cn-direct-special",
+        "surge": "cn-direct-special"
+      },
+      "id": "cn-direct-special",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 20,
+      "rule_count_by_platform": {
+        "mihomo": 10,
+        "surge": 10
+      },
+      "sources": [
+        "legacy:cn-direct-special"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "cn-direct-process",
+        "surge": "cn-direct-process"
+      },
+      "id": "cn-direct-process",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 76,
+      "rule_count_by_platform": {
+        "mihomo": 36,
+        "surge": 40
+      },
+      "sources": [
+        "legacy:cn-direct-process"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "cn-direct-process",
+        "surge": "lan-ip"
+      },
+      "id": "lan-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 24,
+      "rule_count_by_platform": {
+        "mihomo": 12,
+        "surge": 12
+      },
+      "sources": [
+        "mihomo.lan_ip",
+        "surge.lan_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "REJECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "reject-ip",
+        "surge": "reject-ip"
+      },
+      "id": "reject-ip",
+      "no_resolve": false,
+      "reject_mode": "plain",
+      "rule_count": 1560,
+      "rule_count_by_platform": {
+        "mihomo": 780,
+        "surge": 780
+      },
+      "sources": [
+        "mihomo.reject_ip",
+        "surge.reject_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "ai-ip",
+        "surge": "ai-ip"
+      },
+      "id": "ai-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 50,
+      "rule_count_by_platform": {
+        "mihomo": 25,
+        "surge": 25
+      },
+      "sources": [
+        "mihomo.ai_ip",
+        "surge.ai_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "ai-ip",
+        "surge": "ai-ip"
+      },
+      "id": "telegram-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 42,
+      "rule_count_by_platform": {
+        "mihomo": 21,
+        "surge": 21
+      },
+      "sources": [
+        "mihomo.telegram_ip",
+        "surge.telegram_ip",
+        "mihomo.telegram_asn",
+        "surge.telegram_asn"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "apple-ip",
+        "surge": "apple-ip"
+      },
+      "id": "apple-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 22,
+      "rule_count_by_platform": {
+        "mihomo": 11,
+        "surge": 11
+      },
+      "sources": [
+        "mihomo.apple_ip",
+        "surge.apple_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "apple-ip",
+        "surge": "apple-ip"
+      },
+      "id": "download-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 24,
+      "rule_count_by_platform": {
+        "mihomo": 12,
+        "surge": 12
+      },
+      "sources": [
+        "mihomo.download_ip",
+        "surge.download_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "US",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "cdn-ip",
+        "surge": "cdn-ip"
+      },
+      "id": "cdn-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 8,
+      "rule_count_by_platform": {
+        "mihomo": 4,
+        "surge": 4
+      },
+      "sources": [
+        "mihomo.cdn_ip",
+        "surge.cdn_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": "domestic-ip",
+        "surge": "domestic-ip"
+      },
+      "id": "domestic-ip",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 6,
+      "rule_count_by_platform": {
+        "mihomo": 3,
+        "surge": 3
+      },
+      "sources": [
+        "mihomo.domestic_ip",
+        "surge.domestic_ip"
+      ],
+      "terminal_rule": null
+    },
+    {
+      "action": "DIRECT",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": null,
+        "surge": null
+      },
+      "id": "geoip-cn",
+      "no_resolve": true,
+      "reject_mode": null,
+      "rule_count": 2,
+      "rule_count_by_platform": {
+        "mihomo": 1,
+        "surge": 1
+      },
+      "sources": [
+        "manual:geoip-cn"
+      ],
+      "terminal_rule": {
+        "flags": [
+          "no-resolve"
+        ],
+        "platform": "mihomo",
+        "source": "manual:geoip-cn",
+        "type": "GEOIP",
+        "value": "CN"
+      }
+    },
+    {
+      "action": "US",
+      "dns": "none",
+      "extended_matching": false,
+      "extended_matching_by_platform": {
+        "mihomo": false,
+        "surge": false
+      },
+      "group_by_platform": {
+        "mihomo": null,
+        "surge": null
+      },
+      "id": "default-us",
+      "no_resolve": false,
+      "reject_mode": null,
+      "rule_count": 2,
+      "rule_count_by_platform": {
+        "mihomo": 1,
+        "surge": 1
+      },
+      "sources": [
+        "manual:default"
+      ],
+      "terminal_rule": {
+        "flags": [],
+        "platform": "mihomo",
+        "source": "manual:default-us",
+        "type": "MATCH",
+        "value": "*"
+      }
+    }
+  ]
+}

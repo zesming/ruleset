@@ -79,3 +79,39 @@ GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → 
 回滚需恢复同一版本的代码、policy、全部生成文件和清单，并开启 `publish_hold`，避免自动更新覆盖回滚结果；客户端同步恢复路由和 DNS 引用。构建被强制终止或断电后，从干净 Git 基线重建。
 
 检查结束后可删除 `.build-report/`、`.build-stage-*`、Python 缓存和下载的转换器。保留仓库中的 `upstream/`、`manifest.json` 与第三方许可，它们是离线验证所需的正式发布内容。
+
+## 个人有序分流策略
+
+`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器保留平台来源，合并具有相同动作、解析意图和匹配语义的相邻阶段，输出 `rules/personal/mihomo/` 与 `rules/personal/surge/`。原有 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 接口继续有效。
+
+个人策略默认 US，明确直连、JP 与拦截分别使用 DIRECT、JP、REJECT。网络测试保留独立的 TEST 选择器。JP 的 `jp_members` 初始为空；其路由和 DNS 接口使用支持空集合的 classical 文本，未来添加已复核成员不必更换资源地址。节点、公司内网、DNS 端点和真实 IP 兼容例外由客户端维护。
+
+JP 成员需填写类型、匹配值、来源和理由；DNS 仅采用其中的域名规则。单独添加 IP 或 ASN 不会让未知域名改用 JP 解析器，需配套明确的业务域名。没有明确日本出口需求时继续保持空集合。
+
+### 更新与离线校验
+
+先完成原有构建，再更新个人策略；失败不会发布部分结果：
+
+```sh
+python3 scripts/build.py update
+python3 scripts/personal_profile.py update
+python3 scripts/build.py validate --offline --allow-cross-platform-replay
+python3 scripts/personal_profile.py validate --offline
+python3 scripts/profile_clients.py render
+```
+
+纯域名的 Mihomo 输出使用同一个已注册的 `MIHOMO_CONVERTER`，Surge 使用 DOMAIN-SET；包含通配符、关键词、进程或 IP 的输出保留对应规则类型。拒绝子类型、Surge extended-matching 与 no-resolve 作为语义边界保留，不按出口名称直接压成四个文件。终结 GEOIP/MATCH/FINAL 规则保留在客户端规则段，不嵌入远端集合。
+
+`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、数量门槛或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
+
+普通成员变化允许自动更新。输出路径、动作、DNS 意图、格式、标志或阶段组合发生变化时属于客户端接口迁移，应同步生成、对照并验证新配置后显式接受；不得让日常更新静默删除旧客户端正在订阅的资源。
+
+有意迁移接口时，使用 `python3 scripts/personal_profile.py update --accept-interface-change`，随后重新生成接入片段并部署配套客户端配置。`policy.json` 的 `publish_hold.enabled` 为真时，个人策略更新拒绝写入；离线验证与片段生成仍可使用。日常发布工作流在冻结期间只执行原有审计。
+
+### 行为对照与部署
+
+新旧配置必须使用同一份来源快照，分别按完整顺序求首匹配与业务 DNS 归属；AI 对 Apple/Microsoft 的保护、下载与 CDN、AT&T、网络测试、平台规则和 IP 兜底均需覆盖。真实快照见证与合成匹配器单测分开统计，未覆盖场景明确报告；引用完整性和规则数量不代表行为等价。
+
+本地完整配置包含节点凭据，禁止加入仓库、PR 描述或 CI artifact。只提交无凭据接入片段。Mihomo 实际 DNS 模式应与客户端覆写一致，Surge 需保留规则阶段 DNS 失败转远端解析的 FINAL 处理；先验证空 JP 资源的实际加载，再接入。手机实机、Switch 对局与 HTTP/3 性能需要各自的运行证据，不能由桌面语法检查替代。
+
+PR 未合并时，`main` 上还没有新资源。可以审查和验证候选配置；现用配置只有在引用的远端整版资源已经可用时才切换。多个 main URL 分别刷新可能短暂混版，首次迁移和回退应使用同一提交的完整资源，避免混用不同版本。
