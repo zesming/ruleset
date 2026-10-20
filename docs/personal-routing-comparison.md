@@ -41,6 +41,10 @@ JP 不使用 `.jp`、日本 GeoIP 或全平台 Nintendo 规则自动归类。后
 
 两份完整候选分别通过 Mihomo 与 Surge CLI 校验。JP 的 Mihomo TUIC 节点使用独立的身份与基础协议参数，实际请求返回 HTTP 200，出口检查为 JP；现行 Surge JP TUIC 的 CLI 探测返回 HTTP 204。该单次连通性证据不代表高峰期线路质量或游戏表现。
 
+Surge CLI 另临时激活引用本地完整资源的候选配置，21 项 `rule explain` 抽查全部符合预期，包括默认 US、空 JP、拦截、AI 进程及 SNI／HTTP Host 保护。DoH 端点按其指定出口匹配，同一 IP 的普通 TCP 连接仍走默认 US；JP 的路由和 DNS 资源均以空集合成功加载。这些结果验证桌面客户端的规则匹配，不代表对应应用已完成会话。
+
+候选配置下的 7 项实际 `dns trace` 均选择预期解析器：AI、Apple Intelligence、AT&T、CDN 重叠及未列出的日本域名使用 US 解析器，普通 Microsoft 和 Nintendo 下载域名使用国内解析器。其中 4 项返回地址，3 项仅返回空 DNS 答案；后者只证明解析器选择，不计为解析或访问成功。检查结束后已恢复原配置并删除临时副本。
+
 Surge 的进程集合与会触发解析的 LAN IP 集合保留两条顶层规则边界；不对整个 LAN 集合增加 `no-resolve`。这避免把“匹配结果相同”扩大成未经证明的 DNS 触发时序相同。Mihomo 按子规则匹配，保留其对应顺序。
 
 ## 部署边界
