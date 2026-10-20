@@ -116,6 +116,16 @@ class RendererOrderTests(unittest.TestCase):
         self.assertNotIn("fast-open", node)
         self.assertNotIn("reduce-rtt", node)
 
+    def test_public_surge_snippet_uses_country_groups_without_private_nodes(self):
+        rendered = clients.render_surge_snippet(_candidate(), "https://example.invalid/ref")
+        self.assertIn("AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),🇺🇸 US", rendered)
+        self.assertIn("AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),🇯🇵 JP", rendered)
+        self.assertIn("FINAL,🇺🇸 US,dns-failed", rendered)
+        self.assertNotIn("[Proxy]", rendered)
+        self.assertNotIn("[Proxy Group]", rendered)
+        self.assertNotIn("uuid=", rendered)
+        self.assertNotIn("password=", rendered)
+
 
 class CompactGroupValidationTests(unittest.TestCase):
     def test_compact_allows_fine_source_lan_and_empty_reserved_jp_ip(self):
@@ -288,11 +298,11 @@ class IndependentCaseOracleTests(unittest.TestCase):
         rendered = clients.render_surge_snippet(_candidate(), "https://example.invalid/ref")
         rules = rendered.split("[Rule]\n", 1)[1].split("\n[Host]", 1)[0].splitlines()
         expected = [
-            "AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),US",
-            "DOMAIN-SET,https://example.invalid/ref/rules/personal/surge/att-us.set,US,no-resolve,update-interval=43200",
+            "AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),🇺🇸 US",
+            "DOMAIN-SET,https://example.invalid/ref/rules/personal/surge/att-us.set,🇺🇸 US,no-resolve,update-interval=43200",
             "GEOIP,CN,DIRECT,no-resolve",
             "DOMAIN-SET,https://example.invalid/ref/rules/personal/surge/domestic-ip.set,DIRECT,no-resolve,update-interval=43200",
-            "FINAL,US,dns-failed",
+            "FINAL,🇺🇸 US,dns-failed",
         ]
         positions = [rules.index(value) for value in expected]
         self.assertEqual(positions, sorted(positions))
@@ -331,17 +341,36 @@ class IndependentCaseOracleTests(unittest.TestCase):
         self.assertTrue(clients._surge_endpoint_rules()[-1].endswith(")),TEST"))
         self.assertEqual(clients._resolver_class("https://8.8.4.4/dns-query", "RULE-SET:test"), "TEST")
 
-    def test_surge_host_comment_refresh_keeps_private_mapping_lines(self):
+    def test_surge_host_comment_cleanup_keeps_private_mapping_lines(self):
         section = clients.SurgeSection("Host", "[Host]", [
             "# DNS-Fallback and Apple group route selectors",
             "# CNBanned group resolver note",
             "service.internal.example = 10.0.0.7",
         ])
         clients._rewrite_surge_host_comments(section)
-        self.assertTrue(section.lines[0].startswith("# DNS policy selectors"))
-        self.assertTrue(any("protocol-qualified" in line for line in section.lines))
-        self.assertTrue(any("Resolver ownership" in line for line in section.lines))
-        self.assertIn("service.internal.example = 10.0.0.7", section.lines)
+        self.assertEqual(section.lines, ["service.internal.example = 10.0.0.7"])
+
+    def test_surge_section_render_keeps_only_essential_comments_and_normalizes_spacing(self):
+        sections = [
+            clients.SurgeSection("General", "[General]", [
+                "# old multi-paragraph explanation",
+                "# ePDG real IP exception",
+                'script-path = "https://example.invalid/run#token"',
+                "",
+                "",
+                "always-real-ip = epdg.epc.att.net",
+            ]),
+            clients.SurgeSection("Proxy Group", "[Proxy Group]", [
+                "# JP reserved empty selector",
+                "TEST = select, DIRECT",
+            ]),
+        ]
+        rendered = clients._render_surge_sections([], sections)
+        self.assertNotIn("old multi-paragraph", rendered)
+        self.assertIn("# ePDG real IP exception", rendered)
+        self.assertIn("# JP reserved empty selector", rendered)
+        self.assertIn('script-path = "https://example.invalid/run#token"', rendered)
+        self.assertEqual(rendered.count("\n\n"), 1)
 
     @unittest.skipUnless(shutil.which("ruby"), "system Ruby YAML parser is unavailable")
     def test_public_mihomo_snippet_parses_as_yaml(self):
@@ -366,11 +395,13 @@ class CanonicalGroupTests(unittest.TestCase):
     def test_mihomo_renames_tuic_leaves_and_keeps_only_flat_test_selector(self):
         jp = {
             "name": "JP TUIC", "type": "tuic", "server": "jp.example", "port": 443,
-            "uuid": "jp-uuid", "password": "jp-password", "alpn": ["h3"], "udp-relay-mode": "native",
+            "uuid": "jp-uuid", "password": "jp-password", "sni": "jp.sni.example",
+            "ip": "192.0.2.9", "alpn": ["h3"], "udp-relay-mode": "native",
         }
         us = {
             "name": "US TUIC", "type": "tuic", "server": "us.example", "port": 443,
-            "uuid": "us-uuid", "password": "us-password", "fast-open": True, "reduce-rtt": True,
+            "uuid": "us-uuid", "password": "us-password", "fast-open": True,
+            "reduce-rtt": True, "sni": "us.sni.example", "ip": "192.0.2.8",
         }
         config = {
             "proxies": [
@@ -383,18 +414,46 @@ class CanonicalGroupTests(unittest.TestCase):
                 {"name": "TEST pool", "type": "select", "proxies": ["Mixed Smart", "DIRECT"]},
             ],
         }
+        expected_us = {**us, "name": "US"}
+        expected_us.pop("fast-open")
         clients._canonical_mihomo_groups(config, jp)
         self.assertEqual([item["name"] for item in config["proxy-groups"]], ["TEST"])
         self.assertEqual(config["proxy-groups"][0], {
             "name": "TEST", "type": "select", "proxies": ["US", "JP", "DIRECT"],
         })
         self.assertEqual(len(config["proxies"]), 2)
-        self.assertEqual(config["proxies"][0], {**us, "name": "US"})
-        self.assertEqual(config["proxies"][1], {**jp, "name": "JP"})
+        self.assertEqual(config["proxies"][0], expected_us)
+        self.assertEqual(config["proxies"][1], {
+            **jp, "name": "JP", "congestion-controller": "bbr",
+            "heartbeat-interval": 8000, "disable-sni": False, "udp-relay-mode": "native",
+        })
+        self.assertEqual(config["proxies"][0]["sni"], "us.sni.example")
+        self.assertEqual(config["proxies"][1]["sni"], "jp.sni.example")
         clients._canonical_mihomo_groups(config, jp)
         self.assertEqual([item["name"] for item in config["proxy-groups"]], ["TEST"])
 
-    def test_surge_exposes_only_test_group_with_four_direct_proxy_leaves(self):
+    def test_old_surge_country_display_names_compare_as_logical_actions(self):
+        baseline = """[Proxy]
+🇺🇸 Snell = snell, us-snell.example, 443, psk=fixture, version=6
+🇺🇸 TUIC = tuic-v5, us.example, 443, uuid=u, password=p
+🇯🇵 Snell = snell, jp-snell.example, 443, psk=fixture, version=6
+🇯🇵 TUIC = tuic-v5, jp.example, 443, uuid=j, password=q
+
+[Proxy Group]
+US Smart = smart, 🇺🇸 TUIC, 🇺🇸 Snell, include-other-group=JP Smart
+JP Smart = smart, 🇯🇵 TUIC, 🇯🇵 Snell
+🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC
+🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC
+TEST pool = select, US Smart, JP Smart, DIRECT
+"""
+        targets = clients._known_policy_targets("surge", baseline)
+        self.assertEqual(clients._old_policy("🇺🇸 US", targets), ("US", None))
+        self.assertEqual(clients._old_policy("🇯🇵 JP", targets), ("JP", None))
+        self.assertEqual(clients._old_policy("US Smart", targets), ("US", None))
+        self.assertEqual(clients._old_policy("JP Smart", targets), ("JP", None))
+        self.assertEqual(clients._old_policy("TEST pool", targets), ("TEST", None))
+
+    def test_surge_exposes_country_smart_groups_and_a_flat_test_selector(self):
         section = clients.SurgeSection("Proxy Group", "[Proxy Group]", [
             "US Smart = smart, US TUIC, US Snell, interval=300",
             "JP Smart = smart, JP TUIC, JP Snell, interval=300",
@@ -402,14 +461,18 @@ class CanonicalGroupTests(unittest.TestCase):
             "Test pool = select, Mixed Smart, JP TUIC, 🚀 Direct",
         ])
         proxy_entries = [
-            ("US-TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
-            ("JP-TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
-            ("US", "snell", ["snell", "us-snell.example", "443", "psk=fixture", "version=6"]),
-            ("JP", "snell", ["snell", "jp-snell.example", "443", "psk=fixture", "version=6"]),
+            ("🇺🇸 TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
+            ("🇯🇵 TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
+            ("🇺🇸 Snell", "snell", ["snell", "us-snell.example", "443", "psk=fixture", "version=6"]),
+            ("🇯🇵 Snell", "snell", ["snell", "jp-snell.example", "443", "psk=fixture", "version=6"]),
         ]
         lines = clients._surge_group_aliases(section, proxy_entries)
-        self.assertEqual(lines, ["TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT"])
-        self.assertNotIn("Smart", "\n".join(lines))
+        self.assertEqual(lines, [
+            "🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC",
+            "🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC",
+            "TEST = select, 🇺🇸 US, 🇯🇵 JP, DIRECT",
+        ])
+        self.assertNotIn("include-other-group", "\n".join(lines))
 
     def test_surge_tuic_rename_preserves_entire_proxy_rhs(self):
         _, sections = clients._surge_sections(
@@ -422,7 +485,7 @@ class CanonicalGroupTests(unittest.TestCase):
         before = [line.split("=", 1)[1] for line in sections[0].lines]
         entries = clients._canonical_surge_proxy_names(sections)
         after = [line.split("=", 1)[1] for line in sections[0].lines]
-        self.assertEqual([item[0] for item in entries], ["US-TUIC", "JP-TUIC", "US", "JP"])
+        self.assertEqual([item[0] for item in entries], ["🇺🇸 TUIC", "🇯🇵 TUIC", "🇺🇸 Snell", "🇯🇵 Snell"])
         self.assertEqual(after, before)
 
     def test_surge_discards_dynamic_country_wrappers_when_building_canonical_groups(self):
@@ -432,14 +495,16 @@ class CanonicalGroupTests(unittest.TestCase):
             "Test pool = select, US Smart, DIRECT",
         ])
         proxy_entries = [
-            ("US-TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
-            ("JP-TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
-            ("US", "snell", ["snell", "us-snell.example", "443", "psk=fixture", "version=6"]),
-            ("JP", "snell", ["snell", "jp-snell.example", "443", "psk=fixture", "version=6"]),
+            ("🇺🇸 TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
+            ("🇯🇵 TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
+            ("🇺🇸 Snell", "snell", ["snell", "us-snell.example", "443", "psk=fixture", "version=6"]),
+            ("🇯🇵 Snell", "snell", ["snell", "jp-snell.example", "443", "psk=fixture", "version=6"]),
         ]
         lines = clients._surge_group_aliases(section, proxy_entries)
         self.assertEqual(lines, [
-            "TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT",
+            "🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC",
+            "🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC",
+            "TEST = select, 🇺🇸 US, 🇯🇵 JP, DIRECT",
         ])
 
     def test_surge_migration_is_idempotent_and_preserves_private_host_mapping(self):
@@ -453,9 +518,10 @@ US Snell = snell, us-snell.example.net, 443, psk=us-secret, version=6
 JP Snell = snell, jp-snell.example.net, 443, psk=jp-secret, version=6
 
 [Proxy Group]
-US Smart = smart, US node, US Snell 1
-JP Smart = smart, JP node, JP Snell 1
-TEST pool = select, US Smart, JP Smart, DIRECT
+US Smart = smart, US node, US Snell, interval=300
+JP Smart = smart, JP node, JP Snell, interval=300
+Mixed Smart = smart, US Smart, JP Smart
+TEST pool = select, Mixed Smart, JP node, DIRECT
 
 [Rule]
 FINAL,US,dns-failed
@@ -470,17 +536,51 @@ company.internal = 192.0.2.10
         self.assertEqual(second, first)
         rendered = first.decode("utf-8")
         self.assertEqual(rendered.count("company.internal = 192.0.2.10"), 1)
-        self.assertIn("TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT", rendered)
+        self.assertIn("🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC", rendered)
+        self.assertIn("🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC", rendered)
+        self.assertIn("TEST = select, 🇺🇸 US, 🇯🇵 JP, DIRECT", rendered)
+        self.assertNotIn("Mixed Smart", rendered)
+        self.assertNotIn("DNS-Fallback", rendered)
+        self.assertNotIn("CNBanned", rendered)
+        self.assertEqual(rendered.count("\n\n"), rendered.count("[General]") + rendered.count("[Proxy]") + rendered.count("[Proxy Group]") + rendered.count("[Rule]") + rendered.count("[Host]") - 1)
         _, rendered_sections = clients._surge_sections(rendered)
         rendered_nodes = clients._surge_proxy_entries(rendered_sections)
         self.assertEqual(
             [(name, protocol) for name, protocol, _fields in rendered_nodes],
-            [("US-TUIC", "tuic-v5"), ("JP-TUIC", "tuic-v5"), ("US", "snell"), ("JP", "snell")],
+            [("🇺🇸 TUIC", "tuic-v5"), ("🇯🇵 TUIC", "tuic-v5"), ("🇺🇸 Snell", "snell"), ("🇯🇵 Snell", "snell")],
         )
         self.assertEqual(
             sum(field == "version=6" for _name, protocol, fields in rendered_nodes if protocol == "snell" for field in fields),
             2,
         )
+
+    def test_v2_surge_baseline_without_country_groups_migrates_to_smart_groups(self):
+        baseline = """[General]
+always-real-ip = epdg.epc.att.net
+
+[Proxy]
+US = snell, us-snell.example.net, 443, psk=us-secret, version=6
+JP = snell, jp-snell.example.net, 443, psk=jp-secret, version=6
+US-TUIC = tuic-v5, us.example.net, 443, uuid=u, password=p, alpn=h3, tfo=true
+JP-TUIC = tuic-v5, jp.example.net, 443, uuid=j, password=q, alpn=h3
+
+[Proxy Group]
+TEST = select, US, JP, DIRECT
+
+[Rule]
+FINAL,US,dns-failed
+
+[Host]
+office.internal = 10.0.0.5
+"""
+        rendered = clients._migrate_surge(_candidate(), baseline, "https://example.invalid/ref").decode()
+        self.assertIn("🇺🇸 Snell = snell, us-snell.example.net, 443, psk=us-secret, version=6", rendered)
+        self.assertIn("🇯🇵 Snell = snell, jp-snell.example.net, 443, psk=jp-secret, version=6", rendered)
+        self.assertIn("office.internal = 10.0.0.5", rendered)
+        self.assertIn("🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC", rendered)
+        self.assertIn("🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC", rendered)
+        self.assertIn("FINAL,🇺🇸 US,dns-failed", rendered)
+        self.assertIn("DOMAIN,us.example.net,DIRECT", rendered)
 
 
 class LegacyDnsSelectorTests(unittest.TestCase):
@@ -597,6 +697,25 @@ class LegacyDnsSelectorTests(unittest.TestCase):
             "rules/personal/mihomo/priority-jp-ip-classical.list", aliases, platform="mihomo",
         )
         self.assertEqual(clients._source_rules(candidate, empty_id, "mihomo", aliases), [])
+
+    def test_old_compact_group_basename_replays_current_group_by_manifest_slot(self):
+        candidate = _compact_candidate()
+        current = candidate.manifest["compact"]["groups"]["mihomo"][0]
+        legacy_group = {
+            **current,
+            "id": "priority-att-us-classical",
+            "slot": current["slot"],
+            "path": "rules/personal/mihomo/priority-att-us-classical.mrs",
+            "stages": [],
+            "rule_count": 1,
+        }
+        manifest = {"compact": {"groups": {"mihomo": [legacy_group], "surge": []}}}
+        aliases = clients._source_aliases(candidate, clients._load_api(ROOT), manifest)
+        source_id = clients._resolve_source_reference(legacy_group["path"], aliases, platform="mihomo")
+        replayed = clients._source_rules(candidate, source_id, "mihomo", aliases)
+        self.assertEqual([rule.value for rule in replayed], ["att.example"])
+        source_ids = clients._group_rule_sources(candidate, aliases.group_sources[source_id], "mihomo")
+        self.assertEqual(source_ids, {"fixture"})
 
     def test_v1_manifest_full_github_urls_resolve_exact_platform_group(self):
         candidate = _candidate()

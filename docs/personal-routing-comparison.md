@@ -1,6 +1,6 @@
 # 个人分流与 DNS 对照
 
-客户端使用按优先级与出口组织的 `priority-*` 聚合。原有细分类及旧接口继续发布，便于单独使用；节点、公司内网、DNS 端点和网络接管设置留在客户端。完整配置与原始校验记录包含私有信息，只保存在本地。
+客户端使用 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test` 等按地区和行为命名的聚合。原有细分类及旧接口继续发布，便于单独使用；节点、公司内网、DNS 端点和网络接管设置留在客户端。完整配置与原始校验记录包含私有信息，只保存在本地。
 
 ## 顺序与含义
 
@@ -19,7 +19,7 @@
 
 REJECT 的不同动作、Surge extended-matching、域名格式与解析触发边界是必要的物理拆分。同一业务优先级可能对应多个文件；客户端不再逐项暴露 AT&T、AI、Apple、Microsoft、CDN 分类。远端规则成员改变后客户端可按现有地址刷新；改变地址、格式、动作或匹配标志仍属于需要配套配置的接口迁移。
 
-## 相对上一版的有意变化
+## 已采用的优先级取舍
 
 所有比较使用同一份冻结输入，不将上游更新与本次重排混在一起。以下是规则推演的见证，不是实际流量统计。
 
@@ -28,13 +28,13 @@ REJECT 的不同动作、Surge extended-matching、域名格式与解析触发�
 | TEST 提前 | 测速与拦截重叠的 20 个见证仍走 TEST |
 | US 先于普通直连 | 15 条被原直连完整覆盖的 CDN 规则，以及 17 个部分重叠的下载主机见证由 DIRECT 变 US；例如 `cdn.nintendo.net`、`time.apple.com`、`objects.githubusercontent.com`、`registry-1.docker.io` |
 | REJECT 提前 | 15 个 AI 相关主机见证改为拦截，例如 `r.openai.com`、`statsig.anthropic.com`、`opt.doubao.com`；不据此声称所有子域都改变，也不保证相应应用功能不受影响 |
-| 去掉多余代理组 | Mihomo TUIC 节点直接为 US / JP；Surge Snell 6 节点直接为 US / JP，TUIC 留作 TEST 选项；日常 Surge 从 Smart 协议选择变为固定 Snell 6 |
+| 去掉多余代理组 | Mihomo TUIC 节点直接为 US / JP；Surge 使用 `🇺🇸 US` / `🇯🇵 JP` Smart 组，各组仅包含本地区 Snell 6 与 TUIC；TEST 选择地区组或 DIRECT |
 
 Sukka direct 的关键词、普通业务和进程规则继续归入后段直连；不将整份集合提前，防止 `adp.cnki.net`、`adsp.xunlei.com` 等原拦截项被宽范围直连盖过。
 
 不删除上述重叠源规则。后续若要按具体业务改变选择，应维护远端成员或优先级，并重做对应见证检查。
 
-冻结输入生成的客户端资源数量：Mihomo 从 32（含 4 个专用 DNS 资源）降为 18；Surge 从 36（含 7 个专用 DNS 资源）降为 20。新方案没有专用 DNS 资源。US 在 Mihomo 中为一份集合；Surge 保留普通与 extended-matching 两份，防止扩大 SNI／CNAME 匹配范围。
+冻结输入生成的客户端资源数量：Mihomo 从 32（含 4 个专用 DNS 资源）降为 18；Surge 从 36（含 7 个专用 DNS 资源）降为 20。新方案没有专用 DNS 资源。客户端只引用简名资源，原 `priority-*` 地址已移除。US 在 Mihomo 中为一份集合；Surge 保留普通与 extended-matching 两份，防止扩大 SNI／CNAME 匹配范围。
 
 JP 不通过 `.jp`、日本 GeoIP 或 Nintendo 全平台自动归类。当前没有明确日本出口业务，JP 业务集合保持空；未来只加入有来源与理由的成员。Nintendo STUN 与 AT&T 的真实 IP 兼容例外保留，不因此将 Nintendo 全部导向 JP。
 
@@ -48,11 +48,19 @@ US 保留 Google/Cloudflare 双解析器，国内保留阿里/Tencent 双解析�
 
 DNS 查询只有域名上下文，不能保证进程或 SNI 改写后的每个连接都与该域名 DNS 使用同一出口。Surge 的本地 DNS 选择与 Snell/TUIC 服务器侧解析也不是同一阶段。这里的 DNS 归属指本地配置的解析器及其发送出口。
 
+## 客户端与节点参数
+
+Surge 的 `🇺🇸 US` / `🇯🇵 JP` Smart 组仅包含同地区 Snell 6 与 TUIC，TEST 选择地区组或 DIRECT，不跨国自动切换。[Smart](https://manual.nssurge.com/policy-groups/smart.html) 依据真实连接评分，当前版本也考虑 UDP 响应；已建立会话不保证无缝切换。
+
+Clash JP 显式使用 BBR、8000 毫秒保活和启用 SNI，保留原生 UDP 模式及自己的证书名称；US 继续使用 QUIC stream 中继。QUIC stream 与 native 的可靠性和延迟特性不同，不机械对齐。JP 不复制 US 的 IP、0-RTT 或包大小参数。固定 Mihomo v1.19.17 的 TUIC v5 不使用 `fast-open`，因此移除该无效项；依据见 [TUIC 实现](https://github.com/MetaCubeX/mihomo/blob/v1.19.17/adapter/outbound/tuic.go#L300)。
+
+显式 `enhanced-mode: fake-ip` 是 Mihomo 支持的 DNS 模式，CMFA 和 ClashBox 均支持。CMFA 的 DNS 覆写应保持“不修改”；ClashBox 若开启“覆写 DNS”，会用界面设置替换整段 DNS，包括 nameserver-policy 与过滤名单。保留导入配置时应关闭该覆写；OpenClash 也需核对其覆写后配置。[CMFA 覆写流程](https://github.com/MetaCubeX/ClashMetaForAndroid/blob/3cc102aab3f251ef460a3b6e2835b6c1eb581e73/core/src/main/golang/native/config/process.go#L19)、[ClashBox 覆写流程](https://github.com/xiaobaigroup/ClashBox/blob/e036a6a3097192ff74987ce7306eea2a03d6a3ac/proxy_core/src/flclash/common.go#L266)。这些是公开源码行为，不能代替已安装版本的最终运行配置检查。
+
 ## 验证与部署边界
 
-本次验收包括：旧细分类字节兼容、完整离线重放、实际客户端语法与资源加载、路由和 DNS 选择、TEST 切换、空 JP、DoH 与普通连接的区分、出站请求和全引用闭包。本版冻结输入的 130 项自动检查、42 个独立路由/DNS 用例均通过，两端各完成约 135 万个代表样本的旧版对照。样本数包含派生与重复探测，不是请求量或独立主机数。
+本次验收包括：旧细分类字节兼容、完整离线重放、实际客户端语法与资源加载、路由和 DNS 选择、TEST 切换、空 JP、DoH 与普通连接的区分、出站请求和全引用闭包。本轮需要完成冻结输入自动检查、独立路由/DNS 用例与代表样本对照。样本数包含派生与重复探测，不是请求量或独立主机数；最终结果以本轮 PR 与本地部署记录为准。
 
-桌面运行验证中，Mihomo 的 24 个路由用例、24 个 DNS 选择用例和 18 个资源加载均通过；这 24 个 DNS 选择用例使用真实 provider 与受控本地 UDP 解析器；真实 US/JP TEST 切换返回对应国家出口，普通域名 fake-IP 与 AT&T 真实 IP 解析符合预期。Surge 的 31 个路由用例、9 个 DNS 选择用例和 20 个资源加载均通过，TEST 的两种节点选择均获得 HTTP 成功响应与真实 DNS 答案；DoH 决策链也随选择切换。DNS 选择用例包含不存在域名的空答案，空答案只证明解析器选择，不算成功解析。两端验证均未抓包断言 DoH 实际出口。Snell 6 的两个现用节点均收到 UDP 测试响应。
+桌面运行验证覆盖 Mihomo 的 24 个路由用例、24 个 DNS 选择用例和 18 个资源加载；这 24 个 DNS 选择用例使用真实 provider 与受控本地 UDP 解析器；同时检查真实 US/JP TEST 切换的对应国家出口、普通域名 fake-IP 与 AT&T 真实 IP 解析。Surge 覆盖 31 个路由用例、9 个 DNS 选择用例和 20 个资源加载，检查 TEST 的两种地区选择、真实出口、DNS 答案和 DoH 决策链。DNS 选择用例包含不存在域名的空答案，空答案只证明解析器选择，不算成功解析。两端验证均未抓包断言 DoH 实际出口。Snell 6 与 TUIC 的四个叶子需要分别收到 UDP 测试响应。
 
 现用配置只有在配套 PR 合并、完整远端资源按哈希确认可用后才替换。替换前保存原文件并核验未被其他设备修改；校验失败可恢复同一版配置。一次 Git 提交保证服务端整版发布，不保证客户端同时刷新多个 main URL；接口变更由发布门禁阻止自动迁移。
 

@@ -82,7 +82,7 @@ GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → 
 
 ## 个人有序分流策略
 
-`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器保留平台来源和原有细分类输出；另按优先级组织 `priority-*` 客户端聚合，输出到 `rules/personal/mihomo/` 与 `rules/personal/surge/`。客户端片段仅引用新聚合，细分类仍可单独使用。原有 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 接口继续有效。
+`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器保留平台来源和原有细分类输出；另按地区与行为组织 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test` 等客户端聚合，输出到 `rules/personal/mihomo/route/` 与 `rules/personal/surge/route/`。客户端片段引用简名聚合，细分类仍可单独使用。原有 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 接口继续有效。
 
 个人策略默认 US，明确直连、JP 与拦截分别使用 DIRECT、JP、REJECT。网络测试保留独立的 TEST 选择器。JP 的 `jp_members` 初始为空；其路由和 DNS 接口使用支持空集合的 classical 文本，未来添加已复核成员不必更换资源地址。节点、公司内网、DNS 端点和真实 IP 兼容例外由客户端维护。
 

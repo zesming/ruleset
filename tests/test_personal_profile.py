@@ -74,6 +74,13 @@ def compile_candidate(snapshot: dict[str, bytes] | None = None, profile: dict | 
     )
 
 
+def old_compact_group_id(group: dict, ordinals: dict[tuple[str, str], int]) -> str:
+    key = (group["slot"], group["capability"])
+    ordinals[key] = ordinals.get(key, 0) + 1
+    base = f"priority-{key[0]}-{key[1]}"
+    return base if ordinals[key] == 1 else f"{base}-{ordinals[key]}"
+
+
 class SourceParsingTests(unittest.TestCase):
     def test_unknown_rule_type_empty_source_and_error_page_fail_closed(self) -> None:
         for source in (
@@ -418,6 +425,115 @@ class CompilationAndMatchingTests(unittest.TestCase):
         terminal["terminal_rule"]["flags"] = []
         with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed"):
             personal_profile._require_stable_client_interface(original.manifest, changed_terminal)
+
+    def test_compact_cleanup_handles_two_migrations_and_only_safe_tracked_paths(self) -> None:
+        candidate = compile_candidate()
+        previous_groups = {"mihomo": [], "surge": []}
+        previous_outputs = {}
+        expected: set[str] = set()
+
+        for platform in ("mihomo", "surge"):
+            ordinals: dict[tuple[str, str], int] = {}
+            for group in candidate.manifest["compact"]["groups"][platform]:
+                old_id = old_compact_group_id(group, ordinals)
+                old_path = f"rules/personal/{platform}/{old_id}{Path(group['path']).suffix}"
+                previous_groups[platform].append({
+                    **group, "id": old_id, "path": old_path,
+                    "sha256": group["sha256"], "bytes": group["bytes"],
+                })
+                previous_outputs[old_path] = {"sha256": group["sha256"], "bytes": group["bytes"]}
+                expected.add(old_path)
+
+        untracked = "rules/personal/mihomo/unused-provider.list"
+        first_old_id = previous_groups["mihomo"][0]["id"]
+        malformed_old = f"rules/personal/mihomo/{first_old_id}-extra.list"
+        bad_metadata_path = f"rules/personal/mihomo/{first_old_id}.list"
+        previous_outputs[untracked] = {"sha256": "0" * 64, "bytes": 1}
+        previous_outputs[malformed_old] = {"sha256": "0" * 64, "bytes": 1}
+        previous_outputs[bad_metadata_path] = {"sha256": "0" * 64, "bytes": 1}
+        previous_groups["mihomo"].append({
+            "id": first_old_id, "path": malformed_old,
+        })
+        previous_groups["mihomo"].append({
+            "id": first_old_id, "path": bad_metadata_path,
+            "sha256": "1" * 64, "bytes": 1,
+        })
+        previous = {
+            "groups": {"mihomo": [], "surge": []},
+            "compact": {"groups": previous_groups},
+            "outputs": previous_outputs,
+            "sources": candidate.manifest["sources"],
+        }
+        self.assertEqual(len(expected) + 2, sum(len(groups) for groups in previous_groups.values()))
+        self.assertEqual(
+            set(personal_profile._stale_legacy_compact_paths(previous, candidate.files)),
+            expected,
+        )
+
+        # A later canonical ID/format migration removes the prior route/ output
+        # only when that exact resource is tracked by the previous manifest.
+        canonical_group = next(
+            group for group in candidate.manifest["compact"]["groups"]["mihomo"]
+            if group["id"] == "lan-direct"
+        )
+        migrated_path = "rules/personal/mihomo/route/lan-direct-v2.list"
+        next_generation_files = dict(candidate.files)
+        next_generation_files.pop(canonical_group["path"])
+        next_generation_files[migrated_path] = b"next canonical generation\n"
+        previous_canonical = {
+            "compact": {"groups": {"mihomo": [canonical_group], "surge": []}},
+            "outputs": {canonical_group["path"]: {
+                "sha256": canonical_group["sha256"], "bytes": canonical_group["bytes"],
+            }},
+        }
+        self.assertEqual(
+            personal_profile._stale_legacy_compact_paths(previous_canonical, next_generation_files),
+            [canonical_group["path"]],
+        )
+
+    def test_stale_cleanup_includes_fine_dns_and_source_archives_only_when_owned(self) -> None:
+        fine_data = b"retired fine route\n"
+        dns_data = b"retired dns selector\n"
+        archive_data = b"retired source snapshot\n"
+        fine_path = "rules/personal/mihomo/retired-fine.list"
+        dns_path = "rules/personal/mihomo/dns-retired-fine.list"
+        archive_path = "upstream/personal/mihomo/retired-source.txt"
+        unowned_output = "rules/personal/mihomo/unowned.list"
+        unsafe_output = "rules/personal/mihomo/../mihomo/unsafe.list"
+        shared_legacy_input = "rules/ai-cn.list"
+        outputs = {
+            fine_path: {"sha256": personal_profile.sha256(fine_data), "bytes": len(fine_data)},
+            dns_path: {"sha256": personal_profile.sha256(dns_data), "bytes": len(dns_data)},
+            unowned_output: {"sha256": "a" * 64, "bytes": 1},
+            unsafe_output: {"sha256": "b" * 64, "bytes": 1},
+            shared_legacy_input: {"sha256": "c" * 64, "bytes": 1},
+        }
+        previous = {
+            "groups": {"mihomo": [{
+                "path": fine_path,
+                "sha256": personal_profile.sha256(fine_data),
+                "bytes": len(fine_data),
+                "dns_path": dns_path,
+                "dns_sha256": personal_profile.sha256(dns_data),
+                "dns_bytes": len(dns_data),
+            }], "surge": []},
+            "compact": {"groups": {"mihomo": [], "surge": []}},
+            "outputs": outputs,
+            "sources": {"mihomo.removed": {
+                "platform": "mihomo",
+                "archive_path": archive_path,
+                "sha256": personal_profile.sha256(archive_data),
+                "bytes": len(archive_data),
+            }},
+        }
+        current_files = {
+            "rules/personal/mihomo/retired-fine.mrs": b"new format\n",
+            archive_path.replace("retired-source", "current-source"): b"current snapshot\n",
+        }
+        self.assertEqual(
+            personal_profile._stale_legacy_compact_paths(previous, current_files),
+            sorted((fine_path, dns_path, archive_path)),
+        )
 
     def test_offline_bundle_tamper_is_detected(self) -> None:
         candidate = compile_candidate()

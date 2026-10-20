@@ -935,6 +935,50 @@ CLIENT_INTERFACE_FIELDS = (
     "kind", "behavior", "format", "dns_path", "dns_kind", "dns_behavior", "dns_format",
 )
 
+# Stable canonical compact names, indexed by their former generated IDs so the
+# migration can identify old manifest entries without emitting their URLs.
+LEGACY_COMPACT_GROUP_IDS = {
+    "priority-lan-domain": "lan-direct",
+    "priority-test-domain": "test",
+    "priority-reject-classical": "reject-drop",
+    "priority-reject-domain": "reject",
+    "priority-reject-classical-2": "reject-rules",
+    "priority-reject-domain-2": "reject-extra",
+    "priority-reject-classical-3": "reject-no-drop",
+    "priority-reject-classical-4": "reject-extra-rules",
+    "priority-jp-classical": "jp-proxy",
+    "priority-us-classical": "us-proxy",
+    "priority-us-classical-2": "us-proxy-ext",
+    "priority-cn-direct-domain": "cn-direct",
+    "priority-cn-direct-classical": "cn-direct-extra",
+    "priority-lan-ip-classical": "lan-direct-ip",
+    "priority-reject-ip-classical": "reject-ip",
+    "priority-jp-ip-classical": "jp-proxy-ip",
+    "priority-us-ip-classical": "us-proxy-ip",
+    "priority-direct-ip-classical": "direct-ip",
+    "priority-us-ip-late-classical": "us-proxy-ip-late",
+    "priority-cn-ip-classical": "cn-direct-ip",
+}
+COMPACT_CAPABILITIES = {"domain", "domain-special", "classical"}
+COMPACT_ACTION_NAMES = {
+    "DIRECT": "direct", "TEST": "test", "REJECT": "reject", "JP": "proxy", "US": "proxy",
+}
+
+
+def _compact_group_name(slot: str, action: str, capability: str, ordinal: int) -> tuple[str, bool]:
+    """Return a canonical ID and whether it maps a previously published ID."""
+    if capability not in COMPACT_CAPABILITIES:
+        raise ProfileError(f"unsupported compact group capability {capability!r}")
+    if action not in COMPACT_ACTION_NAMES:
+        raise ProfileError(f"unsupported compact group action {action!r}")
+    legacy_id = f"priority-{slot}-{capability}" + (f"-{ordinal}" if ordinal > 1 else "")
+    canonical_id = LEGACY_COMPACT_GROUP_IDS.get(legacy_id)
+    if canonical_id is not None:
+        return canonical_id, True
+    behavior = COMPACT_ACTION_NAMES[action]
+    base_id = slot if slot == behavior or slot.endswith(f"-{behavior}") else f"{slot}-{behavior}"
+    return base_id, False
+
 
 def _client_interface(manifest: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
     groups = manifest.get("groups")
@@ -1142,6 +1186,8 @@ def _compile_compact(
         group_rule_map: dict[str, list[Rule]] = {}
         pending_ip: dict[str, list[tuple[str, list[Rule]]]] = {}
         id_counts: dict[tuple[str, str], int] = {}
+        used_group_ids: set[str] = set()
+        fallback_name_counts: dict[str, int] = {}
 
         for slot in profile["compact"]["slots"]:
             slot_id = slot["id"]
@@ -1280,7 +1326,25 @@ def _compile_compact(
                     ordinal_key = slot_id, capability
                     id_counts[ordinal_key] = id_counts.get(ordinal_key, 0) + 1
                     ordinal = id_counts[ordinal_key]
-                    group_id = f"priority-{slot_id}-{capability}" + (f"-{ordinal}" if ordinal > 1 else "")
+                    group_id, has_legacy_mapping = _compact_group_name(
+                        slot_id, first["action"], capability, ordinal,
+                    )
+                    if not has_legacy_mapping:
+                        base_id = group_id
+                        name_ordinal = fallback_name_counts.get(base_id, 0) + 1
+                        candidate_id = base_id if name_ordinal == 1 else (
+                            f"{base_id}-extra" if name_ordinal == 2 else f"{base_id}-extra-{name_ordinal}"
+                        )
+                        while candidate_id in used_group_ids:
+                            name_ordinal += 1
+                            candidate_id = (
+                                f"{base_id}-extra" if name_ordinal == 2 else f"{base_id}-extra-{name_ordinal}"
+                            )
+                        fallback_name_counts[base_id] = name_ordinal
+                        group_id = candidate_id
+                    elif group_id in used_group_ids:
+                        raise ProfileError(f"compact groups produce duplicate canonical id {group_id!r} on {platform}")
+                    used_group_ids.add(group_id)
                     group = {
                         "id": group_id, "slot": slot_id, "stages": [], "action": first["action"],
                         "dns": first["dns"], "reject_mode": first["reject_mode"],
@@ -1306,8 +1370,10 @@ def _compile_compact(
             extension = "mrs" if platform == "mihomo" and group["capability"] == "domain" else (
                 "set" if platform == "surge" and group["capability"] == "domain" else "list"
             )
-            path = f"rules/personal/{platform}/{group['id']}.{extension}"
+            path = f"rules/personal/{platform}/route/{group['id']}.{extension}"
             group["path"] = path
+            if path in output_files:
+                raise ProfileError(f"compact groups produce duplicate output path {path}")
             rules = group_rule_map[group["id"]]
             content = _render_compact_group_file(platform, group, rules, root, converter_path, mrs_converter)
             if not content:
@@ -1578,6 +1644,9 @@ def compile(
         normalized_profile, all_stages, root=root_path,
         converter_path=converter_path, mrs_converter=mrs_converter,
     )
+    collisions = set(files) & set(compact_files)
+    if collisions:
+        raise ProfileError(f"compact resources collide with existing personal outputs: {sorted(collisions)}")
     files.update(compact_files)
 
     source_hashes = {path: sha256(data) for path, data in sorted(legacy_inputs.items())}
@@ -1747,6 +1816,130 @@ def _assert_personal_update_allowed(root: Path) -> None:
         raise ProfileError("personal update is blocked by policy.publish_hold" + detail)
 
 
+def _valid_personal_relative_path(path: Any, prefix: str) -> bool:
+    if (
+        not isinstance(path, str) or not path or "\\" in path or "\x00" in path
+        or path.startswith("/") or re.match(r"^[A-Za-z]:", path) is not None
+        or not path.startswith(prefix)
+    ):
+        return False
+    return all(part not in {"", ".", ".."} for part in path.split("/"))
+
+
+def _manifest_digest_size(metadata: Any) -> tuple[str, int] | None:
+    if not isinstance(metadata, Mapping):
+        return None
+    digest = metadata.get("sha256")
+    size = metadata.get("bytes")
+    if (
+        not isinstance(digest, str) or HEX_256.fullmatch(digest) is None
+        or not isinstance(size, int) or isinstance(size, bool) or size <= 0
+    ):
+        return None
+    return digest, size
+
+
+def _stale_legacy_compact_paths(
+    previous: Mapping[str, Any] | None, current_files: Mapping[str, bytes],
+) -> list[str]:
+    """Find absent, manifest-owned personal outputs and source archives safely."""
+    if previous is None:
+        return []
+
+    # Each generated output must be present in both `outputs` and an owning
+    # fine/compact group with the same digest and size. This prevents an
+    # unrelated or malformed output entry from authorizing a deletion.
+    owners: dict[str, set[tuple[str, int]]] = {}
+
+    def add_owner(path: Any, prefix: str, digest: Any, size: Any) -> None:
+        metadata = _manifest_digest_size({"sha256": digest, "bytes": size})
+        if metadata is not None and _valid_personal_relative_path(path, prefix):
+            owners.setdefault(path, set()).add(metadata)
+
+    raw_groups = previous.get("groups")
+    for platform in ("mihomo", "surge"):
+        prefix = f"rules/personal/{platform}/"
+        platform_groups = raw_groups.get(platform) if isinstance(raw_groups, Mapping) else None
+        if isinstance(platform_groups, list):
+            for group in platform_groups:
+                if not isinstance(group, Mapping):
+                    continue
+                add_owner(group.get("path"), prefix, group.get("sha256"), group.get("bytes"))
+                dns_path = group.get("dns_path")
+                if dns_path and dns_path != group.get("path"):
+                    add_owner(dns_path, prefix, group.get("dns_sha256"), group.get("dns_bytes"))
+
+    raw_compact = previous.get("compact")
+    compact_groups = raw_compact.get("groups") if isinstance(raw_compact, Mapping) else None
+    for platform in ("mihomo", "surge"):
+        prefix = f"rules/personal/{platform}/"
+        platform_groups = compact_groups.get(platform) if isinstance(compact_groups, Mapping) else None
+        if not isinstance(platform_groups, list):
+            continue
+        ordinals: dict[tuple[str, str], int] = {}
+        for group in platform_groups:
+            if not isinstance(group, Mapping):
+                continue
+            slot, capability = group.get("slot"), group.get("capability")
+            expected_legacy_id = None
+            if isinstance(slot, str) and isinstance(capability, str):
+                key = (slot, capability)
+                ordinals[key] = ordinals.get(key, 0) + 1
+                expected_legacy_id = f"priority-{slot}-{capability}"
+                if ordinals[key] > 1:
+                    expected_legacy_id += f"-{ordinals[key]}"
+
+            path = group.get("path")
+            if not _valid_personal_relative_path(path, prefix):
+                continue
+            parts = path.split("/")
+            is_route_path = (
+                len(parts) == 5 and parts[:4] == ["rules", "personal", platform, "route"]
+                and re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*\.(?:list|mrs|set)", parts[4]) is not None
+            )
+            is_old_root_path = (
+                len(parts) == 4 and expected_legacy_id is not None
+                and group.get("id") == expected_legacy_id
+                and re.fullmatch(re.escape(expected_legacy_id) + r"\.(?:list|mrs|set)", parts[3]) is not None
+            )
+            if is_route_path or is_old_root_path:
+                add_owner(path, prefix, group.get("sha256"), group.get("bytes"))
+
+    stale: set[str] = set()
+    outputs = previous.get("outputs")
+    if isinstance(outputs, Mapping):
+        for path, tracked in outputs.items():
+            if not isinstance(path, str) or path in current_files:
+                continue
+            platform_prefix = next((
+                f"rules/personal/{platform}/" for platform in ("mihomo", "surge")
+                if _valid_personal_relative_path(path, f"rules/personal/{platform}/")
+            ), None)
+            if platform_prefix is None or not _valid_personal_relative_path(path, platform_prefix):
+                continue
+            metadata = _manifest_digest_size(tracked)
+            if metadata is not None and metadata in owners.get(path, set()):
+                stale.add(path)
+
+    sources = previous.get("sources")
+    if isinstance(sources, Mapping):
+        for source in sources.values():
+            if not isinstance(source, Mapping):
+                continue
+            platform = source.get("platform")
+            if not isinstance(platform, str) or platform not in {"mihomo", "surge"}:
+                continue
+            path = source.get("archive_path")
+            prefix = f"upstream/personal/{platform}/"
+            if (
+                isinstance(path, str) and path not in current_files
+                and _valid_personal_relative_path(path, prefix)
+                and _manifest_digest_size(source) is not None
+            ):
+                stale.add(path)
+    return sorted(stale)
+
+
 def _atomic_write(root: Path, relative: str, content: bytes) -> Path:
     target = root / relative
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1840,10 +2033,7 @@ def update(
     candidate = compile(snapshot, legacy, profile, root=root_path, converter_path=converter_path)
     _source_counts_guard(previous, candidate.manifest["sources"])
     _require_stable_client_interface(previous, candidate.manifest, accept_change=accept_interface_change)
-    stale = []
-    for base in (root_path / "rules/personal", root_path / "upstream/personal"):
-        if base.exists():
-            stale.extend(path.relative_to(root_path).as_posix() for path in base.rglob("*") if path.is_file() and path.relative_to(root_path).as_posix() not in candidate.files)
+    stale = _stale_legacy_compact_paths(previous, candidate.files)
     write_bundle_transactionally(root_path, candidate.files, delete_paths=stale)
     return candidate
 

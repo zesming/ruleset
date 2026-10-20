@@ -1,170 +1,167 @@
-# Generated from profiles/us-primary.json by scripts/profile_clients.py.
-# Bind the canonical US / JP / TEST / DIRECT / REJECT policies to local selectors.
-# No node definitions or credentials are included.
 rule-providers:
-  priority-lan-domain:
+  lan-direct:
     type: http
     behavior: domain
     format: mrs
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-lan-domain.mrs"
-    path: ./ruleset/personal-priority-lan-domain.mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/lan-direct.mrs"
+    path: ./ruleset/personal-lan-direct.mrs
     interval: 43200
     proxy: US
-  priority-test-domain:
+  test:
     type: http
     behavior: domain
     format: mrs
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-test-domain.mrs"
-    path: ./ruleset/personal-priority-test-domain.mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/test.mrs"
+    path: ./ruleset/personal-test.mrs
     interval: 43200
     proxy: US
-  priority-reject-classical:
+  reject-drop:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-reject-classical.list"
-    path: ./ruleset/personal-priority-reject-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-drop.list"
+    path: ./ruleset/personal-reject-drop.text
     interval: 43200
     proxy: US
-  priority-reject-domain:
+  reject:
     type: http
     behavior: domain
     format: mrs
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-reject-domain.mrs"
-    path: ./ruleset/personal-priority-reject-domain.mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject.mrs"
+    path: ./ruleset/personal-reject.mrs
     interval: 43200
     proxy: US
-  priority-reject-classical-2:
+  reject-rules:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-reject-classical-2.list"
-    path: ./ruleset/personal-priority-reject-classical-2.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-rules.list"
+    path: ./ruleset/personal-reject-rules.text
     interval: 43200
     proxy: US
-  priority-reject-classical-3:
+  reject-no-drop:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-reject-classical-3.list"
-    path: ./ruleset/personal-priority-reject-classical-3.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-no-drop.list"
+    path: ./ruleset/personal-reject-no-drop.text
     interval: 43200
     proxy: US
-  priority-reject-classical-4:
+  reject-extra-rules:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-reject-classical-4.list"
-    path: ./ruleset/personal-priority-reject-classical-4.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-extra-rules.list"
+    path: ./ruleset/personal-reject-extra-rules.text
     interval: 43200
     proxy: US
-  priority-jp-classical:
+  jp-proxy:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-jp-classical.list"
-    path: ./ruleset/personal-priority-jp-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/jp-proxy.list"
+    path: ./ruleset/personal-jp-proxy.text
     interval: 43200
     proxy: US
-  priority-us-classical:
+  us-proxy:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-us-classical.list"
-    path: ./ruleset/personal-priority-us-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-proxy.list"
+    path: ./ruleset/personal-us-proxy.text
     interval: 43200
     proxy: US
-  priority-cn-direct-domain:
+  cn-direct:
     type: http
     behavior: domain
     format: mrs
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-cn-direct-domain.mrs"
-    path: ./ruleset/personal-priority-cn-direct-domain.mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/cn-direct.mrs"
+    path: ./ruleset/personal-cn-direct.mrs
     interval: 43200
     proxy: US
-  priority-cn-direct-classical:
+  cn-direct-extra:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-cn-direct-classical.list"
-    path: ./ruleset/personal-priority-cn-direct-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/cn-direct-extra.list"
+    path: ./ruleset/personal-cn-direct-extra.text
     interval: 43200
     proxy: US
-  priority-lan-ip-classical:
+  lan-direct-ip:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-lan-ip-classical.list"
-    path: ./ruleset/personal-priority-lan-ip-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/lan-direct-ip.list"
+    path: ./ruleset/personal-lan-direct-ip.text
     interval: 43200
     proxy: US
-  priority-reject-ip-classical:
+  reject-ip:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-reject-ip-classical.list"
-    path: ./ruleset/personal-priority-reject-ip-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-ip.list"
+    path: ./ruleset/personal-reject-ip.text
     interval: 43200
     proxy: US
-  priority-jp-ip-classical:
+  jp-proxy-ip:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-jp-ip-classical.list"
-    path: ./ruleset/personal-priority-jp-ip-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/jp-proxy-ip.list"
+    path: ./ruleset/personal-jp-proxy-ip.text
     interval: 43200
     proxy: US
-  priority-us-ip-classical:
+  us-proxy-ip:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-us-ip-classical.list"
-    path: ./ruleset/personal-priority-us-ip-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-proxy-ip.list"
+    path: ./ruleset/personal-us-proxy-ip.text
     interval: 43200
     proxy: US
-  priority-direct-ip-classical:
+  direct-ip:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-direct-ip-classical.list"
-    path: ./ruleset/personal-priority-direct-ip-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/direct-ip.list"
+    path: ./ruleset/personal-direct-ip.text
     interval: 43200
     proxy: US
-  priority-us-ip-late-classical:
+  us-proxy-ip-late:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-us-ip-late-classical.list"
-    path: ./ruleset/personal-priority-us-ip-late-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-proxy-ip-late.list"
+    path: ./ruleset/personal-us-proxy-ip-late.text
     interval: 43200
     proxy: US
-  priority-cn-ip-classical:
+  cn-direct-ip:
     type: http
     behavior: classical
     format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/priority-cn-ip-classical.list"
-    path: ./ruleset/personal-priority-cn-ip-classical.text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/cn-direct-ip.list"
+    path: ./ruleset/personal-cn-direct-ip.text
     interval: 43200
     proxy: US
 rules:
-  - RULE-SET,priority-lan-domain,DIRECT
-  - RULE-SET,priority-test-domain,TEST
-  - RULE-SET,priority-reject-classical,REJECT-DROP
-  - RULE-SET,priority-reject-domain,REJECT
-  - RULE-SET,priority-reject-classical-2,REJECT
-  - RULE-SET,priority-reject-classical-3,REJECT
-  - RULE-SET,priority-reject-classical-4,REJECT
-  - RULE-SET,priority-jp-classical,JP
-  - RULE-SET,priority-us-classical,US
-  - RULE-SET,priority-cn-direct-domain,DIRECT
-  - RULE-SET,priority-cn-direct-classical,DIRECT
-  - RULE-SET,priority-lan-ip-classical,DIRECT
-  - RULE-SET,priority-reject-ip-classical,REJECT
-  - RULE-SET,priority-jp-ip-classical,JP
-  - RULE-SET,priority-us-ip-classical,US
-  - RULE-SET,priority-direct-ip-classical,DIRECT
-  - RULE-SET,priority-us-ip-late-classical,US
-  - RULE-SET,priority-cn-ip-classical,DIRECT
+  - RULE-SET,lan-direct,DIRECT
+  - RULE-SET,test,TEST
+  - RULE-SET,reject-drop,REJECT-DROP
+  - RULE-SET,reject,REJECT
+  - RULE-SET,reject-rules,REJECT
+  - RULE-SET,reject-no-drop,REJECT
+  - RULE-SET,reject-extra-rules,REJECT
+  - RULE-SET,jp-proxy,JP
+  - RULE-SET,us-proxy,US
+  - RULE-SET,cn-direct,DIRECT
+  - RULE-SET,cn-direct-extra,DIRECT
+  - RULE-SET,lan-direct-ip,DIRECT
+  - RULE-SET,reject-ip,REJECT
+  - RULE-SET,jp-proxy-ip,JP
+  - RULE-SET,us-proxy-ip,US
+  - RULE-SET,direct-ip,DIRECT
+  - RULE-SET,us-proxy-ip-late,US
+  - RULE-SET,cn-direct-ip,DIRECT
   - GEOIP,CN,DIRECT,no-resolve
   - MATCH,US
 dns:
@@ -174,19 +171,19 @@ dns:
     - https://8.8.8.8/dns-query#US
     - https://1.1.1.1/dns-query#US
   nameserver-policy:
-    "rule-set:priority-lan-domain":
+    "rule-set:lan-direct":
       - "system"
-    "rule-set:priority-test-domain":
+    "rule-set:test":
       - "https://8.8.4.4/dns-query#TEST"
-    "rule-set:priority-reject-classical,priority-reject-domain,priority-reject-classical-2,priority-reject-classical-3,priority-reject-classical-4":
+    "rule-set:reject-drop,reject,reject-rules,reject-no-drop,reject-extra-rules":
       - "https://8.8.8.8/dns-query#US"
       - "https://1.1.1.1/dns-query#US"
-    "rule-set:priority-jp-classical":
+    "rule-set:jp-proxy":
       - "https://1.0.0.1/dns-query#JP"
-    "rule-set:priority-us-classical":
+    "rule-set:us-proxy":
       - "https://8.8.8.8/dns-query#US"
       - "https://1.1.1.1/dns-query#US"
-    "rule-set:priority-cn-direct-domain,priority-cn-direct-classical":
+    "rule-set:cn-direct,cn-direct-extra":
       - "https://223.5.5.5/dns-query#DIRECT"
       - "https://1.12.12.12/dns-query#DIRECT"
   fake-ip-filter-mode: blacklist
