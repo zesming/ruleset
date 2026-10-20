@@ -6,7 +6,7 @@
 
 供 Mihomo、OpenClash 和 Surge 使用的分流规则。个人策略将业务分类组合为有序规则：默认 US、明确直连 DIRECT、明确日本业务 JP、拦截 REJECT。JP 初始为空，不启用全局日本 GeoIP 分流。仓库提供规则和不含节点凭据的接入片段，保留原有 AI、网络测试、固定 US 和国内直连接口。
 
-个人策略定义在 `profiles/us-primary.json`，客户端资源位于 `rules/personal/`，原始输入与发布清单位于 `upstream/personal/`。业务成员与策略映射在远端维护；节点、内网、DNS 服务器和网络接管方式仍由客户端管理。四种出口对应多个有序聚合，保留 AI、拦截、下载、CDN 与通用直连之间的优先级。
+个人策略定义在 `profiles/us-primary.json`，客户端资源位于 `rules/personal/`，原始输入与发布清单位于 `upstream/personal/`。业务成员与策略映射在远端维护；节点、内网、DNS 服务器和网络接管方式仍由客户端管理。远端保留细分类，客户端使用按优先级与出口聚合的资源；不再逐项引入 AI、AT&T、Apple、CDN 等业务 provider。
 
 | 规则 | 用途 | 通常绑定 |
 |---|---|---|
@@ -27,7 +27,7 @@
 
 ## 怎么用
 
-个人完整策略使用 [Mihomo / OpenClash 片段](examples/personal-mihomo.yaml) 或 [Surge 片段](examples/personal-surge.conf)。在客户端定义 `US`、`JP`、`TEST` 策略，合并片段中的规则和 DNS 配置；保留节点、内网和客户端接管设置。遵循片段顺序，JP 首版为空，未命中业务仍走 US。两个国家的出口分别管理，不使用跨国自动切换。
+个人完整策略使用 [Mihomo / OpenClash 片段](examples/personal-mihomo.yaml) 或 [Surge 片段](examples/personal-surge.conf)。在客户端将节点直接命名为 `US`、`JP`，保留一个 `TEST` 选择器，合并片段中的规则和 DNS 配置；保留节点、内网和客户端接管设置。遵循片段顺序，JP 首版为空，未命中业务仍走 US。两个国家的出口分别管理，不使用跨国自动切换。
 
 只接入原有独立分类时，使用以下兼容接口：
 

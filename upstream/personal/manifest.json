@@ -1,4 +1,1931 @@
 {
+  "compact": {
+    "groups": {
+      "mihomo": [
+        {
+          "action": "DIRECT",
+          "behavior": "domain-set",
+          "bytes": 472,
+          "capability": "domain",
+          "dns": "system",
+          "dns_behavior": "domain-set",
+          "dns_format": "mrs",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-lan-domain.mrs",
+          "extended_matching": false,
+          "format": "mrs",
+          "id": "priority-lan-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-lan-domain.mrs",
+          "reject_mode": null,
+          "rule_count": 49,
+          "sha256": "ec5bf92ea989c559c5f259565f6a57095bd85afcffcd3e5e47d3a85e1d99af0e",
+          "slot": "lan",
+          "stages": [
+            "infra-lan"
+          ]
+        },
+        {
+          "action": "TEST",
+          "behavior": "domain-set",
+          "bytes": 2960,
+          "capability": "domain",
+          "dns": "test",
+          "dns_behavior": "domain-set",
+          "dns_format": "mrs",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-test-domain.mrs",
+          "extended_matching": false,
+          "format": "mrs",
+          "id": "priority-test-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-test-domain.mrs",
+          "reject_mode": null,
+          "rule_count": 316,
+          "sha256": "fa04f58f61362782dff8f676fee477f5103fac3460e3935c2e2bda063070107c",
+          "slot": "test",
+          "stages": [
+            "network-test"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 845,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-reject-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-reject-classical.list",
+          "reject_mode": "drop",
+          "rule_count": 28,
+          "sha256": "56cccda8d8ecbcef6fbf78029ce94c9316f7b491ac60464bbb36ccb359e3ee10",
+          "slot": "reject",
+          "stages": [
+            "reject-drop"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "domain-set",
+          "bytes": 2085014,
+          "capability": "domain",
+          "dns": "foreign",
+          "dns_behavior": "domain-set",
+          "dns_format": "mrs",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-reject-domain.mrs",
+          "extended_matching": false,
+          "format": "mrs",
+          "id": "priority-reject-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-reject-domain.mrs",
+          "reject_mode": "plain",
+          "rule_count": 222179,
+          "sha256": "a853c175757d82846b7a9603bb52640f8a2009bac1affb5d2ef710722000ebc6",
+          "slot": "reject",
+          "stages": [
+            "reject-domains",
+            "reject-extra",
+            "reject-rules"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 6637,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-reject-classical-2.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-classical-2",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-reject-classical-2.list",
+          "reject_mode": "plain",
+          "rule_count": 206,
+          "sha256": "b3470b0e0a7996ee52b49c21b5432aa9ad331f07cdf2206d0506dabdb891a991",
+          "slot": "reject",
+          "stages": [
+            "reject-rules"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 1337,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-reject-classical-3.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-classical-3",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-reject-classical-3.list",
+          "reject_mode": "no-drop",
+          "rule_count": 44,
+          "sha256": "22291de0dd6d1a2b86bb6e04acd38b12d8d25842c23d61b839a05813984de7e0",
+          "slot": "reject",
+          "stages": [
+            "reject-no-drop"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 345,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-reject-classical-4.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-classical-4",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-reject-classical-4.list",
+          "reject_mode": "plain",
+          "rule_count": 12,
+          "sha256": "3df6d0fe1c0867bc0194a9b6cec54973d28ee4580f6592794903507dcf962671",
+          "slot": "reject",
+          "stages": [
+            "sogouinput"
+          ]
+        },
+        {
+          "action": "JP",
+          "behavior": "classical",
+          "bytes": 46,
+          "capability": "classical",
+          "dns": "jp",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-jp-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-jp-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-jp-classical.list",
+          "reject_mode": null,
+          "rule_count": 0,
+          "sha256": "4c7a703d6f8285d654bd395d05f7bd0e0403c54d5a1521b59985b6b77fb72ac7",
+          "slot": "jp",
+          "stages": []
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 139381,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-us-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-us-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-us-classical.list",
+          "reject_mode": null,
+          "rule_count": 4998,
+          "sha256": "17c252d4f0cae66c32a4613527ac1be62ec75717a40514f20b32ea864ef47c21",
+          "slot": "us",
+          "stages": [
+            "att-us",
+            "ai-global",
+            "apple-intelligence",
+            "cdn",
+            "telegram"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "domain-set",
+          "bytes": 556565,
+          "capability": "domain",
+          "dns": "domestic",
+          "dns_behavior": "domain-set",
+          "dns_format": "mrs",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-cn-direct-domain.mrs",
+          "extended_matching": false,
+          "format": "mrs",
+          "id": "priority-cn-direct-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-cn-direct-domain.mrs",
+          "reject_mode": null,
+          "rule_count": 113413,
+          "sha256": "e2c5009d1ff0622f0f6e31a215d9e5782e1508b323dd7826e3cece945444d22e",
+          "slot": "cn-direct",
+          "stages": [
+            "ai-cn",
+            "apple-services",
+            "game-download",
+            "microsoft",
+            "netease",
+            "cn-direct-domain"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 1765,
+          "capability": "classical",
+          "dns": "domestic",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-cn-direct-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-cn-direct-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-cn-direct-classical.list",
+          "reject_mode": null,
+          "rule_count": 67,
+          "sha256": "47130c13c38d18ba1eba1c5f07664f95fd57b73b2ead8fdf87085b906956877e",
+          "slot": "cn-direct",
+          "stages": [
+            "apple-services",
+            "download",
+            "microsoft",
+            "cn-direct-special",
+            "cn-direct-process"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 221,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-lan-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-lan-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-lan-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 11,
+          "sha256": "ab0fcbfe9038ce95d6f9ff2afdcd78d2363604bd2306ed63ba675c3b25303ff0",
+          "slot": "lan-ip",
+          "stages": [
+            "lan-ip"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 19987,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-reject-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-reject-ip-classical.list",
+          "reject_mode": "plain",
+          "rule_count": 779,
+          "sha256": "44a072e05237971113e16ec9e73633416c6e624ebe33b23ba77fee098997da54",
+          "slot": "reject-ip",
+          "stages": [
+            "reject-ip"
+          ]
+        },
+        {
+          "action": "JP",
+          "behavior": "classical",
+          "bytes": 49,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-jp-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-jp-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-jp-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 0,
+          "sha256": "ea1807ae2c764c5a8f1ab74ac0def9427735609ec4d6d067ad671997e06ae072",
+          "slot": "jp-ip",
+          "stages": []
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 1410,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-us-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-us-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-us-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 43,
+          "sha256": "099b0c09a6a78806dfc1634e223078e4664132e16e09bc128215b9f902c6ae77",
+          "slot": "us-ip",
+          "stages": [
+            "ai-ip",
+            "telegram-ip"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 733,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-direct-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-direct-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-direct-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 21,
+          "sha256": "178f33998577eef4b46799cbdb79e2a0b08d84aa43649a9dc2b35106765b88af",
+          "slot": "direct-ip",
+          "stages": [
+            "apple-ip",
+            "download-ip"
+          ]
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 77,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-us-ip-late-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-us-ip-late-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-us-ip-late-classical.list",
+          "reject_mode": null,
+          "rule_count": 3,
+          "sha256": "e4e5d4bf9fdf5f0c931403c34abab29ecb39bc4c35085cd27cb49ac2d27527b5",
+          "slot": "us-ip-late",
+          "stages": [
+            "cdn-ip"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 67,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/mihomo/priority-cn-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-cn-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/mihomo/priority-cn-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 2,
+          "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8",
+          "slot": "cn-ip",
+          "stages": [
+            "domestic-ip"
+          ]
+        }
+      ],
+      "surge": [
+        {
+          "action": "DIRECT",
+          "behavior": "domain-set",
+          "bytes": 821,
+          "capability": "domain",
+          "dns": "system",
+          "dns_behavior": "domain-set",
+          "dns_format": "set",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-lan-domain.set",
+          "extended_matching": false,
+          "format": "set",
+          "id": "priority-lan-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-lan-domain.set",
+          "reject_mode": null,
+          "rule_count": 49,
+          "sha256": "0f959020a42bcd7083036547494be023b1dfda30bb4a9f1b05a06ad10ab5b92e",
+          "slot": "lan",
+          "stages": [
+            "infra-lan"
+          ]
+        },
+        {
+          "action": "TEST",
+          "behavior": "domain-set",
+          "bytes": 4679,
+          "capability": "domain",
+          "dns": "test",
+          "dns_behavior": "domain-set",
+          "dns_format": "set",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-test-domain.set",
+          "extended_matching": false,
+          "format": "set",
+          "id": "priority-test-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-test-domain.set",
+          "reject_mode": null,
+          "rule_count": 316,
+          "sha256": "100c0f1d04055c174057f09d666e21cc6c099e809fced284acc2a8afbf37e5bc",
+          "slot": "test",
+          "stages": [
+            "network-test"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 845,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-classical.list",
+          "reject_mode": "drop",
+          "rule_count": 28,
+          "sha256": "56cccda8d8ecbcef6fbf78029ce94c9316f7b491ac60464bbb36ccb359e3ee10",
+          "slot": "reject",
+          "stages": [
+            "reject-drop"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "domain-set",
+          "bytes": 3191455,
+          "capability": "domain",
+          "dns": "foreign",
+          "dns_behavior": "domain-set",
+          "dns_format": "set",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-domain.set",
+          "extended_matching": true,
+          "format": "set",
+          "id": "priority-reject-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-domain.set",
+          "reject_mode": "plain",
+          "rule_count": 143211,
+          "sha256": "277d0892e727321292b60e4591b77ed9f031facbe648bbdafd03c201666ef472",
+          "slot": "reject",
+          "stages": [
+            "reject-domains",
+            "reject-rules"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 6702,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-classical-2.list",
+          "extended_matching": true,
+          "format": "text",
+          "id": "priority-reject-classical-2",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-classical-2.list",
+          "reject_mode": "plain",
+          "rule_count": 209,
+          "sha256": "03e4686702ecb425f8ab87957853d838de930dc6687453e20730662764819ad2",
+          "slot": "reject",
+          "stages": [
+            "reject-rules"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "domain-set",
+          "bytes": 1553543,
+          "capability": "domain",
+          "dns": "foreign",
+          "dns_behavior": "domain-set",
+          "dns_format": "set",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-domain-2.set",
+          "extended_matching": false,
+          "format": "set",
+          "id": "priority-reject-domain-2",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-domain-2.set",
+          "reject_mode": "plain",
+          "rule_count": 78968,
+          "sha256": "8a79a36e4cf77d997f0d10dbd7ffb8c1c3e0b0e111b981e11abd5b7530fc4f9b",
+          "slot": "reject",
+          "stages": [
+            "reject-extra"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 1391,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-classical-3.list",
+          "extended_matching": true,
+          "format": "text",
+          "id": "priority-reject-classical-3",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-classical-3.list",
+          "reject_mode": "no-drop",
+          "rule_count": 45,
+          "sha256": "961b3b0aef3b72ce1efb4efe694d97930f69796343fc4fd259017ec3335ed754",
+          "slot": "reject",
+          "stages": [
+            "reject-no-drop"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 412,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-classical-4.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-classical-4",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-classical-4.list",
+          "reject_mode": "plain",
+          "rule_count": 14,
+          "sha256": "6c872a86b962a11efd0c8071bb5111fd73dff5b1c0d86129f9f08e4ad7eac806",
+          "slot": "reject",
+          "stages": [
+            "sogouinput"
+          ]
+        },
+        {
+          "action": "JP",
+          "behavior": "classical",
+          "bytes": 46,
+          "capability": "classical",
+          "dns": "jp",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-jp-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-jp-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-jp-classical.list",
+          "reject_mode": null,
+          "rule_count": 0,
+          "sha256": "4c7a703d6f8285d654bd395d05f7bd0e0403c54d5a1521b59985b6b77fb72ac7",
+          "slot": "jp",
+          "stages": []
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 139345,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-us-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-us-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-us-classical.list",
+          "reject_mode": null,
+          "rule_count": 4997,
+          "sha256": "5de081fc3cf815ddfae227cd6ba705be6a09f7ff54b2e30eb8b6355dd7c0f3cf",
+          "slot": "us",
+          "stages": [
+            "att-us",
+            "ai-global",
+            "ai-process",
+            "cdn",
+            "telegram"
+          ]
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 154,
+          "capability": "classical",
+          "dns": "foreign",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-us-classical-2.list",
+          "extended_matching": true,
+          "format": "text",
+          "id": "priority-us-classical-2",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-us-classical-2.list",
+          "reject_mode": null,
+          "rule_count": 5,
+          "sha256": "b95bf545f595cd7d4a2cee64cb7a0555d236d10dfca08d53f2b9d3024d1d599e",
+          "slot": "us",
+          "stages": [
+            "apple-intelligence"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "domain-set",
+          "bytes": 1572768,
+          "capability": "domain",
+          "dns": "domestic",
+          "dns_behavior": "domain-set",
+          "dns_format": "set",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-cn-direct-domain.set",
+          "extended_matching": false,
+          "format": "set",
+          "id": "priority-cn-direct-domain",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-cn-direct-domain.set",
+          "reject_mode": null,
+          "rule_count": 113413,
+          "sha256": "5c216909e6c4776097b051c927a457a7e427909e8a5d86b0d06d9d4da2304566",
+          "slot": "cn-direct",
+          "stages": [
+            "ai-cn",
+            "apple-services",
+            "game-download",
+            "microsoft",
+            "netease",
+            "cn-direct-domain"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 2108,
+          "capability": "classical",
+          "dns": "domestic",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-cn-direct-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-cn-direct-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-cn-direct-classical.list",
+          "reject_mode": null,
+          "rule_count": 76,
+          "sha256": "824bfebcd032757efe9569b5ade768848b55a6a5f059ec68413c27034f3eef71",
+          "slot": "cn-direct",
+          "stages": [
+            "apple-services",
+            "download",
+            "microsoft",
+            "netease",
+            "cn-direct-special",
+            "cn-direct-process"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 221,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-lan-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-lan-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-lan-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 11,
+          "sha256": "ab0fcbfe9038ce95d6f9ff2afdcd78d2363604bd2306ed63ba675c3b25303ff0",
+          "slot": "lan-ip",
+          "stages": [
+            "lan-ip"
+          ]
+        },
+        {
+          "action": "REJECT",
+          "behavior": "classical",
+          "bytes": 19987,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-reject-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-reject-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-reject-ip-classical.list",
+          "reject_mode": "plain",
+          "rule_count": 779,
+          "sha256": "44a072e05237971113e16ec9e73633416c6e624ebe33b23ba77fee098997da54",
+          "slot": "reject-ip",
+          "stages": [
+            "reject-ip"
+          ]
+        },
+        {
+          "action": "JP",
+          "behavior": "classical",
+          "bytes": 49,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-jp-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-jp-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-jp-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 0,
+          "sha256": "ea1807ae2c764c5a8f1ab74ac0def9427735609ec4d6d067ad671997e06ae072",
+          "slot": "jp-ip",
+          "stages": []
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 1410,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-us-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-us-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-us-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 43,
+          "sha256": "099b0c09a6a78806dfc1634e223078e4664132e16e09bc128215b9f902c6ae77",
+          "slot": "us-ip",
+          "stages": [
+            "ai-ip",
+            "telegram-ip"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 733,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-direct-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-direct-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-direct-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 21,
+          "sha256": "178f33998577eef4b46799cbdb79e2a0b08d84aa43649a9dc2b35106765b88af",
+          "slot": "direct-ip",
+          "stages": [
+            "apple-ip",
+            "download-ip"
+          ]
+        },
+        {
+          "action": "US",
+          "behavior": "classical",
+          "bytes": 77,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-us-ip-late-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-us-ip-late-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-us-ip-late-classical.list",
+          "reject_mode": null,
+          "rule_count": 3,
+          "sha256": "e4e5d4bf9fdf5f0c931403c34abab29ecb39bc4c35085cd27cb49ac2d27527b5",
+          "slot": "us-ip-late",
+          "stages": [
+            "cdn-ip"
+          ]
+        },
+        {
+          "action": "DIRECT",
+          "behavior": "classical",
+          "bytes": 67,
+          "capability": "classical",
+          "dns": "none",
+          "dns_behavior": "classical",
+          "dns_format": "text",
+          "dns_kind": "route",
+          "dns_path": "rules/personal/surge/priority-cn-ip-classical.list",
+          "extended_matching": false,
+          "format": "text",
+          "id": "priority-cn-ip-classical",
+          "kind": "route",
+          "no_resolve": false,
+          "path": "rules/personal/surge/priority-cn-ip-classical.list",
+          "reject_mode": null,
+          "rule_count": 2,
+          "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8",
+          "slot": "cn-ip",
+          "stages": [
+            "domestic-ip"
+          ]
+        }
+      ]
+    },
+    "schema": 1,
+    "stages": {
+      "mihomo": [
+        {
+          "action": "DIRECT",
+          "dns": "system",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-lan-domain",
+            "surge": null
+          },
+          "id": "priority-lan-domain",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 49,
+          "slot": "lan",
+          "stages": [
+            "infra-lan"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "TEST",
+          "dns": "test",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-test-domain",
+            "surge": null
+          },
+          "id": "priority-test-domain",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 316,
+          "slot": "test",
+          "stages": [
+            "network-test"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-reject-classical",
+            "surge": null
+          },
+          "id": "priority-reject-classical",
+          "no_resolve": false,
+          "reject_mode": "drop",
+          "rule_count": 28,
+          "slot": "reject",
+          "stages": [
+            "reject-drop"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-reject-domain",
+            "surge": null
+          },
+          "id": "priority-reject-domain",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 222179,
+          "slot": "reject",
+          "stages": [
+            "reject-domains",
+            "reject-extra",
+            "reject-rules"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-reject-classical-2",
+            "surge": null
+          },
+          "id": "priority-reject-classical-2",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 206,
+          "slot": "reject",
+          "stages": [
+            "reject-rules"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-reject-classical-3",
+            "surge": null
+          },
+          "id": "priority-reject-classical-3",
+          "no_resolve": false,
+          "reject_mode": "no-drop",
+          "rule_count": 44,
+          "slot": "reject",
+          "stages": [
+            "reject-no-drop"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-reject-classical-4",
+            "surge": null
+          },
+          "id": "priority-reject-classical-4",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 12,
+          "slot": "reject",
+          "stages": [
+            "sogouinput"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "JP",
+          "dns": "jp",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-jp-classical",
+            "surge": null
+          },
+          "id": "priority-jp-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 0,
+          "slot": "jp",
+          "stages": [],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-us-classical",
+            "surge": null
+          },
+          "id": "priority-us-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 4998,
+          "slot": "us",
+          "stages": [
+            "att-us",
+            "ai-global",
+            "apple-intelligence",
+            "cdn",
+            "telegram"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "domestic",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-cn-direct-domain",
+            "surge": null
+          },
+          "id": "priority-cn-direct-domain",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 113413,
+          "slot": "cn-direct",
+          "stages": [
+            "ai-cn",
+            "apple-services",
+            "game-download",
+            "microsoft",
+            "netease",
+            "cn-direct-domain"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "domestic",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-cn-direct-classical",
+            "surge": null
+          },
+          "id": "priority-cn-direct-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 67,
+          "slot": "cn-direct",
+          "stages": [
+            "apple-services",
+            "download",
+            "microsoft",
+            "cn-direct-special",
+            "cn-direct-process"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-lan-ip-classical",
+            "surge": null
+          },
+          "id": "priority-lan-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 11,
+          "slot": "lan-ip",
+          "stages": [
+            "lan-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-reject-ip-classical",
+            "surge": null
+          },
+          "id": "priority-reject-ip-classical",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 779,
+          "slot": "reject-ip",
+          "stages": [
+            "reject-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "JP",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-jp-ip-classical",
+            "surge": null
+          },
+          "id": "priority-jp-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 0,
+          "slot": "jp-ip",
+          "stages": [],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-us-ip-classical",
+            "surge": null
+          },
+          "id": "priority-us-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 43,
+          "slot": "us-ip",
+          "stages": [
+            "ai-ip",
+            "telegram-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-direct-ip-classical",
+            "surge": null
+          },
+          "id": "priority-direct-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 21,
+          "slot": "direct-ip",
+          "stages": [
+            "apple-ip",
+            "download-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-us-ip-late-classical",
+            "surge": null
+          },
+          "id": "priority-us-ip-late-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 3,
+          "slot": "us-ip-late",
+          "stages": [
+            "cdn-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": "priority-cn-ip-classical",
+            "surge": null
+          },
+          "id": "priority-cn-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 2,
+          "slot": "cn-ip",
+          "stages": [
+            "domestic-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": null
+          },
+          "id": "geoip-cn",
+          "no_resolve": true,
+          "reject_mode": null,
+          "rule_count": 1,
+          "stages": [
+            "geoip-cn"
+          ],
+          "terminal_rule": {
+            "flags": [
+              "no-resolve"
+            ],
+            "platform": "mihomo",
+            "source": "manual:geoip-cn",
+            "type": "GEOIP",
+            "value": "CN"
+          }
+        },
+        {
+          "action": "US",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": null
+          },
+          "id": "default-us",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 1,
+          "stages": [
+            "default-us"
+          ],
+          "terminal_rule": {
+            "flags": [],
+            "platform": "mihomo",
+            "source": "manual:default-us",
+            "type": "MATCH",
+            "value": "*"
+          }
+        }
+      ],
+      "surge": [
+        {
+          "action": "DIRECT",
+          "dns": "system",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-lan-domain"
+          },
+          "id": "priority-lan-domain",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 49,
+          "slot": "lan",
+          "stages": [
+            "infra-lan"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "TEST",
+          "dns": "test",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-test-domain"
+          },
+          "id": "priority-test-domain",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 316,
+          "slot": "test",
+          "stages": [
+            "network-test"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-classical"
+          },
+          "id": "priority-reject-classical",
+          "no_resolve": false,
+          "reject_mode": "drop",
+          "rule_count": 28,
+          "slot": "reject",
+          "stages": [
+            "reject-drop"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": true,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": true
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-domain"
+          },
+          "id": "priority-reject-domain",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 143211,
+          "slot": "reject",
+          "stages": [
+            "reject-domains",
+            "reject-rules"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": true,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": true
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-classical-2"
+          },
+          "id": "priority-reject-classical-2",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 209,
+          "slot": "reject",
+          "stages": [
+            "reject-rules"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-domain-2"
+          },
+          "id": "priority-reject-domain-2",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 78968,
+          "slot": "reject",
+          "stages": [
+            "reject-extra"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": true,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": true
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-classical-3"
+          },
+          "id": "priority-reject-classical-3",
+          "no_resolve": false,
+          "reject_mode": "no-drop",
+          "rule_count": 45,
+          "slot": "reject",
+          "stages": [
+            "reject-no-drop"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-classical-4"
+          },
+          "id": "priority-reject-classical-4",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 14,
+          "slot": "reject",
+          "stages": [
+            "sogouinput"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "JP",
+          "dns": "jp",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-jp-classical"
+          },
+          "id": "priority-jp-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 0,
+          "slot": "jp",
+          "stages": [],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "foreign",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-us-classical"
+          },
+          "id": "priority-us-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 4997,
+          "slot": "us",
+          "stages": [
+            "att-us",
+            "ai-global",
+            "ai-process",
+            "cdn",
+            "telegram"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "foreign",
+          "extended_matching": true,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": true
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-us-classical-2"
+          },
+          "id": "priority-us-classical-2",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 5,
+          "slot": "us",
+          "stages": [
+            "apple-intelligence"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "domestic",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-cn-direct-domain"
+          },
+          "id": "priority-cn-direct-domain",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 113413,
+          "slot": "cn-direct",
+          "stages": [
+            "ai-cn",
+            "apple-services",
+            "game-download",
+            "microsoft",
+            "netease",
+            "cn-direct-domain"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "domestic",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-cn-direct-classical"
+          },
+          "id": "priority-cn-direct-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 76,
+          "slot": "cn-direct",
+          "stages": [
+            "apple-services",
+            "download",
+            "microsoft",
+            "netease",
+            "cn-direct-special",
+            "cn-direct-process"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-lan-ip-classical"
+          },
+          "id": "priority-lan-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 11,
+          "slot": "lan-ip",
+          "stages": [
+            "lan-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "REJECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-reject-ip-classical"
+          },
+          "id": "priority-reject-ip-classical",
+          "no_resolve": false,
+          "reject_mode": "plain",
+          "rule_count": 779,
+          "slot": "reject-ip",
+          "stages": [
+            "reject-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "JP",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-jp-ip-classical"
+          },
+          "id": "priority-jp-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 0,
+          "slot": "jp-ip",
+          "stages": [],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-us-ip-classical"
+          },
+          "id": "priority-us-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 43,
+          "slot": "us-ip",
+          "stages": [
+            "ai-ip",
+            "telegram-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-direct-ip-classical"
+          },
+          "id": "priority-direct-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 21,
+          "slot": "direct-ip",
+          "stages": [
+            "apple-ip",
+            "download-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "US",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-us-ip-late-classical"
+          },
+          "id": "priority-us-ip-late-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 3,
+          "slot": "us-ip-late",
+          "stages": [
+            "cdn-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": "priority-cn-ip-classical"
+          },
+          "id": "priority-cn-ip-classical",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 2,
+          "slot": "cn-ip",
+          "stages": [
+            "domestic-ip"
+          ],
+          "terminal_rule": null
+        },
+        {
+          "action": "DIRECT",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": null
+          },
+          "id": "geoip-cn",
+          "no_resolve": true,
+          "reject_mode": null,
+          "rule_count": 1,
+          "stages": [
+            "geoip-cn"
+          ],
+          "terminal_rule": {
+            "flags": [
+              "no-resolve"
+            ],
+            "platform": "mihomo",
+            "source": "manual:geoip-cn",
+            "type": "GEOIP",
+            "value": "CN"
+          }
+        },
+        {
+          "action": "US",
+          "dns": "none",
+          "extended_matching": false,
+          "extended_matching_by_platform": {
+            "mihomo": false,
+            "surge": false
+          },
+          "group_by_platform": {
+            "mihomo": null,
+            "surge": null
+          },
+          "id": "default-us",
+          "no_resolve": false,
+          "reject_mode": null,
+          "rule_count": 1,
+          "stages": [
+            "default-us"
+          ],
+          "terminal_rule": {
+            "flags": [],
+            "platform": "mihomo",
+            "source": "manual:default-us",
+            "type": "MATCH",
+            "value": "*"
+          }
+        }
+      ]
+    }
+  },
   "groups": {
     "mihomo": [
       {
@@ -1503,6 +3430,78 @@
       "bytes": 2960,
       "sha256": "fa04f58f61362782dff8f676fee477f5103fac3460e3935c2e2bda063070107c"
     },
+    "rules/personal/mihomo/priority-cn-direct-classical.list": {
+      "bytes": 1765,
+      "sha256": "47130c13c38d18ba1eba1c5f07664f95fd57b73b2ead8fdf87085b906956877e"
+    },
+    "rules/personal/mihomo/priority-cn-direct-domain.mrs": {
+      "bytes": 556565,
+      "sha256": "e2c5009d1ff0622f0f6e31a215d9e5782e1508b323dd7826e3cece945444d22e"
+    },
+    "rules/personal/mihomo/priority-cn-ip-classical.list": {
+      "bytes": 67,
+      "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8"
+    },
+    "rules/personal/mihomo/priority-direct-ip-classical.list": {
+      "bytes": 733,
+      "sha256": "178f33998577eef4b46799cbdb79e2a0b08d84aa43649a9dc2b35106765b88af"
+    },
+    "rules/personal/mihomo/priority-jp-classical.list": {
+      "bytes": 46,
+      "sha256": "4c7a703d6f8285d654bd395d05f7bd0e0403c54d5a1521b59985b6b77fb72ac7"
+    },
+    "rules/personal/mihomo/priority-jp-ip-classical.list": {
+      "bytes": 49,
+      "sha256": "ea1807ae2c764c5a8f1ab74ac0def9427735609ec4d6d067ad671997e06ae072"
+    },
+    "rules/personal/mihomo/priority-lan-domain.mrs": {
+      "bytes": 472,
+      "sha256": "ec5bf92ea989c559c5f259565f6a57095bd85afcffcd3e5e47d3a85e1d99af0e"
+    },
+    "rules/personal/mihomo/priority-lan-ip-classical.list": {
+      "bytes": 221,
+      "sha256": "ab0fcbfe9038ce95d6f9ff2afdcd78d2363604bd2306ed63ba675c3b25303ff0"
+    },
+    "rules/personal/mihomo/priority-reject-classical-2.list": {
+      "bytes": 6637,
+      "sha256": "b3470b0e0a7996ee52b49c21b5432aa9ad331f07cdf2206d0506dabdb891a991"
+    },
+    "rules/personal/mihomo/priority-reject-classical-3.list": {
+      "bytes": 1337,
+      "sha256": "22291de0dd6d1a2b86bb6e04acd38b12d8d25842c23d61b839a05813984de7e0"
+    },
+    "rules/personal/mihomo/priority-reject-classical-4.list": {
+      "bytes": 345,
+      "sha256": "3df6d0fe1c0867bc0194a9b6cec54973d28ee4580f6592794903507dcf962671"
+    },
+    "rules/personal/mihomo/priority-reject-classical.list": {
+      "bytes": 845,
+      "sha256": "56cccda8d8ecbcef6fbf78029ce94c9316f7b491ac60464bbb36ccb359e3ee10"
+    },
+    "rules/personal/mihomo/priority-reject-domain.mrs": {
+      "bytes": 2085014,
+      "sha256": "a853c175757d82846b7a9603bb52640f8a2009bac1affb5d2ef710722000ebc6"
+    },
+    "rules/personal/mihomo/priority-reject-ip-classical.list": {
+      "bytes": 19987,
+      "sha256": "44a072e05237971113e16ec9e73633416c6e624ebe33b23ba77fee098997da54"
+    },
+    "rules/personal/mihomo/priority-test-domain.mrs": {
+      "bytes": 2960,
+      "sha256": "fa04f58f61362782dff8f676fee477f5103fac3460e3935c2e2bda063070107c"
+    },
+    "rules/personal/mihomo/priority-us-classical.list": {
+      "bytes": 139381,
+      "sha256": "17c252d4f0cae66c32a4613527ac1be62ec75717a40514f20b32ea864ef47c21"
+    },
+    "rules/personal/mihomo/priority-us-ip-classical.list": {
+      "bytes": 1410,
+      "sha256": "099b0c09a6a78806dfc1634e223078e4664132e16e09bc128215b9f902c6ae77"
+    },
+    "rules/personal/mihomo/priority-us-ip-late-classical.list": {
+      "bytes": 77,
+      "sha256": "e4e5d4bf9fdf5f0c931403c34abab29ecb39bc4c35085cd27cb49ac2d27527b5"
+    },
     "rules/personal/mihomo/reject-domains.mrs": {
       "bytes": 1438052,
       "sha256": "dca47d5606cd61a57b5d1a6b01e34b7045e0127428a07a5472dea6d2cd64da9d"
@@ -1647,6 +3646,86 @@
       "bytes": 4679,
       "sha256": "100c0f1d04055c174057f09d666e21cc6c099e809fced284acc2a8afbf37e5bc"
     },
+    "rules/personal/surge/priority-cn-direct-classical.list": {
+      "bytes": 2108,
+      "sha256": "824bfebcd032757efe9569b5ade768848b55a6a5f059ec68413c27034f3eef71"
+    },
+    "rules/personal/surge/priority-cn-direct-domain.set": {
+      "bytes": 1572768,
+      "sha256": "5c216909e6c4776097b051c927a457a7e427909e8a5d86b0d06d9d4da2304566"
+    },
+    "rules/personal/surge/priority-cn-ip-classical.list": {
+      "bytes": 67,
+      "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8"
+    },
+    "rules/personal/surge/priority-direct-ip-classical.list": {
+      "bytes": 733,
+      "sha256": "178f33998577eef4b46799cbdb79e2a0b08d84aa43649a9dc2b35106765b88af"
+    },
+    "rules/personal/surge/priority-jp-classical.list": {
+      "bytes": 46,
+      "sha256": "4c7a703d6f8285d654bd395d05f7bd0e0403c54d5a1521b59985b6b77fb72ac7"
+    },
+    "rules/personal/surge/priority-jp-ip-classical.list": {
+      "bytes": 49,
+      "sha256": "ea1807ae2c764c5a8f1ab74ac0def9427735609ec4d6d067ad671997e06ae072"
+    },
+    "rules/personal/surge/priority-lan-domain.set": {
+      "bytes": 821,
+      "sha256": "0f959020a42bcd7083036547494be023b1dfda30bb4a9f1b05a06ad10ab5b92e"
+    },
+    "rules/personal/surge/priority-lan-ip-classical.list": {
+      "bytes": 221,
+      "sha256": "ab0fcbfe9038ce95d6f9ff2afdcd78d2363604bd2306ed63ba675c3b25303ff0"
+    },
+    "rules/personal/surge/priority-reject-classical-2.list": {
+      "bytes": 6702,
+      "sha256": "03e4686702ecb425f8ab87957853d838de930dc6687453e20730662764819ad2"
+    },
+    "rules/personal/surge/priority-reject-classical-3.list": {
+      "bytes": 1391,
+      "sha256": "961b3b0aef3b72ce1efb4efe694d97930f69796343fc4fd259017ec3335ed754"
+    },
+    "rules/personal/surge/priority-reject-classical-4.list": {
+      "bytes": 412,
+      "sha256": "6c872a86b962a11efd0c8071bb5111fd73dff5b1c0d86129f9f08e4ad7eac806"
+    },
+    "rules/personal/surge/priority-reject-classical.list": {
+      "bytes": 845,
+      "sha256": "56cccda8d8ecbcef6fbf78029ce94c9316f7b491ac60464bbb36ccb359e3ee10"
+    },
+    "rules/personal/surge/priority-reject-domain-2.set": {
+      "bytes": 1553543,
+      "sha256": "8a79a36e4cf77d997f0d10dbd7ffb8c1c3e0b0e111b981e11abd5b7530fc4f9b"
+    },
+    "rules/personal/surge/priority-reject-domain.set": {
+      "bytes": 3191455,
+      "sha256": "277d0892e727321292b60e4591b77ed9f031facbe648bbdafd03c201666ef472"
+    },
+    "rules/personal/surge/priority-reject-ip-classical.list": {
+      "bytes": 19987,
+      "sha256": "44a072e05237971113e16ec9e73633416c6e624ebe33b23ba77fee098997da54"
+    },
+    "rules/personal/surge/priority-test-domain.set": {
+      "bytes": 4679,
+      "sha256": "100c0f1d04055c174057f09d666e21cc6c099e809fced284acc2a8afbf37e5bc"
+    },
+    "rules/personal/surge/priority-us-classical-2.list": {
+      "bytes": 154,
+      "sha256": "b95bf545f595cd7d4a2cee64cb7a0555d236d10dfca08d53f2b9d3024d1d599e"
+    },
+    "rules/personal/surge/priority-us-classical.list": {
+      "bytes": 139345,
+      "sha256": "5de081fc3cf815ddfae227cd6ba705be6a09f7ff54b2e30eb8b6355dd7c0f3cf"
+    },
+    "rules/personal/surge/priority-us-ip-classical.list": {
+      "bytes": 1410,
+      "sha256": "099b0c09a6a78806dfc1634e223078e4664132e16e09bc128215b9f902c6ae77"
+    },
+    "rules/personal/surge/priority-us-ip-late-classical.list": {
+      "bytes": 77,
+      "sha256": "e4e5d4bf9fdf5f0c931403c34abab29ecb39bc4c35085cd27cb49ac2d27527b5"
+    },
     "rules/personal/surge/reject-domains.set": {
       "bytes": 3188600,
       "sha256": "2dc1c5f538cd2f0c70b1322e3ccb52a6ea6c482b44b80f96ef57576ddc707ed7"
@@ -1683,7 +3762,7 @@
   "profile": {
     "id": "us-primary",
     "path": "profiles/us-primary.json",
-    "sha256": "5b578b9b8d76611853844fb68dbd29525b4c84809dc50ade5dfba24c7928243e"
+    "sha256": "7e5db5e376ed66cc211df7dc1ca58b8dfb026cceb579d3662af74a998981673c"
   },
   "schema": 1,
   "sources": {

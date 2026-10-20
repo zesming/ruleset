@@ -46,6 +46,7 @@ RULE_TYPES = DOMAIN_MATCH_TYPES | {
 SOURCE_TYPES = RULE_TYPES - {"GEOIP", "MATCH"}
 SUKKA_IP_CANARY = ("DOMAIN", "7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe")
 DNS_INTENTS = {"system", "domestic", "foreign", "jp", "none"}
+COMPACT_DNS_INTENTS = DNS_INTENTS | {"test"}
 ROUTE_ACTIONS = {"US", "DIRECT", "JP", "REJECT", "TEST"}
 REJECT_MODES = {None, "plain", "drop", "no-drop"}
 
@@ -571,7 +572,7 @@ def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(profile, Mapping):
         raise ProfileError("profile must be an object")
     value = dict(profile)
-    required = {"schema", "id", "routes", "jp_members", "stages"}
+    required = {"schema", "id", "routes", "jp_members", "stages", "compact"}
     if set(value) != required:
         raise ProfileError(f"profile keys mismatch; missing={sorted(required - set(value))}, unknown={sorted(set(value) - required)}")
     if value["schema"] != SCHEMA or value["id"] != "us-primary":
@@ -700,6 +701,78 @@ def validate_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
     jp_stage = next(stage for stage in stages if "manual:jp_members" in stage["sources"])
     if jp_stage["action"] != "JP" or jp_stage.get("members") != "jp_members" or jp_stage["dns"] != "jp":
         raise ProfileError("the manual JP stage must route jp_members to JP and use the JP DNS intent")
+
+    compact = value["compact"]
+    if not isinstance(compact, Mapping) or set(compact) != {"slots"}:
+        raise ProfileError("profile.compact must contain only an ordered slots array")
+    slots = compact["slots"]
+    if not isinstance(slots, list) or not slots:
+        raise ProfileError("profile.compact.slots must be a non-empty ordered array")
+    slot_ids: set[str] = set()
+    compact_stage_refs: list[str] = []
+    slot_tiers: list[str] = []
+    slot_by_id: dict[str, Mapping[str, Any]] = {}
+    for index, slot in enumerate(slots):
+        label = f"profile.compact.slots[{index}]"
+        required_slot = {"id", "stages"}
+        optional_slot = {"action", "dns", "tier", "ip_slot", "reserve", "format"}
+        if not isinstance(slot, Mapping) or not required_slot <= set(slot) or set(slot) - required_slot - optional_slot:
+            raise ProfileError(f"{label} has missing or unknown fields")
+        slot_id = slot["id"]
+        if not isinstance(slot_id, str) or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slot_id) or slot_id in slot_ids:
+            raise ProfileError(f"{label}.id must be a unique lowercase slug")
+        slot_ids.add(slot_id)
+        slot_by_id[slot_id] = slot
+        stage_ids = slot["stages"]
+        if not isinstance(stage_ids, list) or any(not isinstance(item, str) for item in stage_ids):
+            raise ProfileError(f"{label}.stages must be an array of fine stage IDs")
+        if len(stage_ids) != len(set(stage_ids)):
+            raise ProfileError(f"{label}.stages must be unique")
+        compact_stage_refs.extend(stage_ids)
+        tier = slot.get("tier", "domain")
+        if tier not in {"domain", "ip"}:
+            raise ProfileError(f"{label}.tier must be domain or ip")
+        slot_tiers.append(tier)
+        if "reserve" in slot and not isinstance(slot["reserve"], bool):
+            raise ProfileError(f"{label}.reserve must be boolean")
+        if slot.get("format") not in (None, "domain", "domain-special", "classical"):
+            raise ProfileError(f"{label}.format is unsupported")
+        if not stage_ids:
+            if not {"action", "dns"} <= set(slot):
+                raise ProfileError(f"{label} needs action and dns for a reserved empty slot")
+            if slot["action"] not in ROUTE_ACTIONS:
+                raise ProfileError(f"{label}.action is unsupported")
+        elif "action" in slot:
+            raise ProfileError(f"{label}.action may be defined only for an empty reserved slot")
+        if "dns" in slot and slot["dns"] not in COMPACT_DNS_INTENTS:
+            raise ProfileError(f"{label}.dns is unsupported")
+        if "ip_slot" in slot and (not isinstance(slot["ip_slot"], str) or not slot["ip_slot"]):
+            raise ProfileError(f"{label}.ip_slot must name a later IP-tier slot")
+    expected_compact_stages = {
+        stage["id"] for stage in stages if stage.get("rule", {}).get("type") not in {"GEOIP", "MATCH"}
+    }
+    if set(compact_stage_refs) != expected_compact_stages or len(compact_stage_refs) != len(expected_compact_stages):
+        raise ProfileError("compact slots must classify each non-terminal fine stage exactly once")
+    fine_actions = {stage["id"]: stage["action"] for stage in stages}
+    for slot in slots:
+        if slot.get("dns") == "test":
+            assigned_actions = {fine_actions[stage_id] for stage_id in slot["stages"]}
+            if "action" in slot:
+                assigned_actions.add(slot["action"])
+            if assigned_actions != {"TEST"}:
+                raise ProfileError(f"compact slot {slot['id']} dns=test is only valid for TEST stages")
+    first_ip_tier = next((index for index, tier in enumerate(slot_tiers) if tier == "ip"), len(slot_tiers))
+    if any(tier == "domain" for tier in slot_tiers[first_ip_tier:]):
+        raise ProfileError("all domain-tier slots must precede the post-IP tier")
+    for index, slot in enumerate(slots):
+        target = slot.get("ip_slot")
+        if target is None:
+            continue
+        if target not in slot_by_id:
+            raise ProfileError(f"profile compact slot {slot['id']} refers to an unknown IP slot {target!r}")
+        target_index = next(i for i, candidate in enumerate(slots) if candidate["id"] == target)
+        if target_index <= index or slot_by_id[target].get("tier", "domain") != "ip":
+            raise ProfileError(f"profile compact slot {slot['id']} ip_slot must be a later IP-tier slot")
     return value
 
 
@@ -919,6 +992,74 @@ def _client_interface(manifest: Mapping[str, Any]) -> dict[str, list[dict[str, A
     return result
 
 
+# Compact group source-stage IDs are provenance only; they may grow when an
+# intentionally empty reserved selector such as JP receives its first rules.
+COMPACT_CLIENT_INTERFACE_FIELDS = tuple(
+    field for field in CLIENT_INTERFACE_FIELDS if field != "stages"
+) + ("slot", "capability")
+
+
+def _compact_client_interface(manifest: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]] | None:
+    compact = manifest.get("compact")
+    if compact is None:
+        return None
+    if not isinstance(compact, Mapping) or compact.get("schema") != 1:
+        raise ProfileError("previous compact manifest has an unsupported schema")
+    groups = compact.get("groups")
+    stages = compact.get("stages")
+    if not isinstance(groups, Mapping) or not isinstance(stages, Mapping):
+        raise ProfileError("compact manifest has no platform groups or ordered stages")
+    result: dict[str, list[dict[str, Any]]] = {}
+    for platform in ("mihomo", "surge"):
+        raw_groups = groups.get(platform)
+        raw_stages = stages.get(platform)
+        if not isinstance(raw_groups, list) or not isinstance(raw_stages, list):
+            raise ProfileError(f"compact manifest has no ordered {platform} groups and stages")
+        by_id: dict[str, Mapping[str, Any]] = {}
+        for index, group in enumerate(raw_groups):
+            if not isinstance(group, Mapping) or any(key not in group for key in COMPACT_CLIENT_INTERFACE_FIELDS):
+                raise ProfileError(f"compact manifest {platform} group {index} lacks its client interface fields")
+            group_id = group.get("id")
+            if not isinstance(group_id, str) or group_id in by_id:
+                raise ProfileError(f"compact manifest {platform} has an invalid or duplicate group id")
+            by_id[group_id] = group
+        normalized: list[dict[str, Any]] = []
+        emitted: set[str] = set()
+        for stage_index, stage in enumerate(raw_stages):
+            if not isinstance(stage, Mapping) or not isinstance(stage.get("id"), str):
+                raise ProfileError(f"compact manifest {platform} stage {stage_index} is malformed")
+            mappings = stage.get("group_by_platform")
+            if not isinstance(mappings, Mapping):
+                raise ProfileError(f"compact manifest stage {stage['id']} has no platform group mapping")
+            group_id = mappings.get(platform)
+            if group_id is not None:
+                if group_id in emitted or group_id not in by_id:
+                    raise ProfileError(f"compact manifest stage {stage['id']} has an invalid {platform} group reference")
+                group = by_id[group_id]
+                normalized.append({
+                    "entry": "group",
+                    **{key: group[key] for key in COMPACT_CLIENT_INTERFACE_FIELDS},
+                })
+                emitted.add(group_id)
+            terminal = stage.get("terminal_rule")
+            if terminal is not None:
+                if not isinstance(terminal, Mapping) or not {"type", "value", "flags"} <= set(terminal):
+                    raise ProfileError(f"compact terminal rule for {stage['id']} is malformed")
+                normalized.append({
+                    "entry": "terminal", "position": stage_index, "stage_id": stage["id"],
+                    "action": stage.get("action"), "dns": stage.get("dns"),
+                    "reject_mode": stage.get("reject_mode"),
+                    "extended_matching": stage.get("extended_matching"),
+                    "extended_matching_by_platform": stage.get("extended_matching_by_platform"),
+                    "no_resolve": stage.get("no_resolve"),
+                    "rule": {key: terminal[key] for key in ("type", "value", "flags")},
+                })
+        if emitted != set(by_id):
+            raise ProfileError(f"compact manifest {platform} has an unreferenced client group")
+        result[platform] = normalized
+    return result
+
+
 def _require_stable_client_interface(
     previous: Mapping[str, Any] | None, current: Mapping[str, Any], *, accept_change: bool = False,
 ) -> None:
@@ -926,7 +1067,14 @@ def _require_stable_client_interface(
         return
     before = _client_interface(previous)
     after = _client_interface(current)
+    before_compact = _compact_client_interface(previous)
+    after_compact = _compact_client_interface(current)
     changed = [platform for platform in before if before[platform] != after[platform]]
+    changed.extend(
+        f"{platform} compact" for platform in ("mihomo", "surge")
+        if before_compact is None or after_compact is None
+        or before_compact[platform] != after_compact[platform]
+    )
     if changed and not accept_change:
         raise ProfileError(
             "client resource interface changed for " + ", ".join(changed)
@@ -943,6 +1091,283 @@ def _requires_rule_dns(rules: Iterable[Rule], no_resolve: bool) -> bool:
         rule.type in {"IP-CIDR", "IP-CIDR6", "IP-ASN"} and "no-resolve" not in rule.flags
         for rule in rules
     )
+
+
+def _render_compact_group_file(
+    platform: str, group: Mapping[str, Any], rules: list[Rule], root: Path,
+    converter_path: str | Path | None, mrs_converter: Callable[[bytes], bytes] | None,
+) -> bytes:
+    if not rules:
+        return f"# Compact {group['slot']} selector is intentionally empty.\n".encode("utf-8")
+    if group["capability"] == "domain":
+        domain_data = _domain_text(rules)
+        if platform == "surge":
+            return _surge_domain_set(rules)
+        return _convert_mrs(domain_data, root, converter_path) if mrs_converter is None else mrs_converter(domain_data)
+    return ("\n".join(rule.render() for rule in rules) + "\n").encode("utf-8")
+
+
+def _compile_compact(
+    profile: Mapping[str, Any], all_stages: list[dict[str, Any]], *, root: Path,
+    converter_path: str | Path | None, mrs_converter: Callable[[bytes], bytes] | None,
+) -> tuple[
+    dict[str, bytes], dict[str, list[dict[str, Any]]],
+    dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]],
+]:
+    """Build the priority interface while leaving fine stages and resources intact."""
+    output_files: dict[str, bytes] = {}
+    groups_by_platform: dict[str, list[dict[str, Any]]] = {"mihomo": [], "surge": []}
+    stages_by_platform: dict[str, list[dict[str, Any]]] = {"mihomo": [], "surge": []}
+    manifest_stages: dict[str, list[dict[str, Any]]] = {"mihomo": [], "surge": []}
+    fine_by_id = {stage["id"]: stage for stage in all_stages}
+    ip_types = {"IP-CIDR", "IP-CIDR6", "IP-ASN"}
+
+    def split_ip_rules(
+        rules: list[Rule], slot: Mapping[str, Any], *, stage_no_resolve: bool,
+    ) -> tuple[list[Rule], list[Rule]]:
+        if slot.get("tier", "domain") == "ip":
+            return rules, []
+        if slot["id"] == "jp":
+            deferred = [rule for rule in rules if rule.type in ip_types]
+        else:
+            deferred = [
+                rule for rule in rules
+                if rule.type in ip_types and not stage_no_resolve and "no-resolve" not in rule.flags
+            ]
+        deferred_ids = {id(rule) for rule in deferred}
+        return [rule for rule in rules if id(rule) not in deferred_ids], deferred
+
+    for platform in ("mihomo", "surge"):
+        groups = groups_by_platform[platform]
+        group_rule_map: dict[str, list[Rule]] = {}
+        pending_ip: dict[str, list[tuple[str, list[Rule]]]] = {}
+        id_counts: dict[tuple[str, str], int] = {}
+
+        for slot in profile["compact"]["slots"]:
+            slot_id = slot["id"]
+            entries: list[dict[str, Any]] = []
+            for fine_id in slot["stages"]:
+                fine = fine_by_id[fine_id]
+                rules = [
+                    rule for rule in fine["rules"]
+                    if rule.platform == platform and (rule.type, rule.value) != SUKKA_IP_CANARY
+                ]
+                kept_rules, ip_rules = split_ip_rules(
+                    rules, slot, stage_no_resolve=fine["no_resolve"],
+                )
+                if ip_rules:
+                    target = slot.get("ip_slot")
+                    if target is None:
+                        raise ProfileError(f"compact slot {slot_id} contains resolving IP rules without an ip_slot")
+                    pending_ip.setdefault(target, []).append((fine_id, ip_rules))
+                rules = kept_rules
+                if rules:
+                    entries.append({
+                        "source": fine_id, "rules": rules, "action": fine["action"], "dns": slot.get("dns", fine["dns"]),
+                        "reject_mode": fine["reject_mode"],
+                        "extended_matching": fine["extended_matching_by_platform"][platform] if platform == "surge" else False,
+                        "no_resolve": fine["no_resolve"],
+                    })
+
+            deferred = pending_ip.pop(slot_id, [])
+            for source_id, rules in reversed(deferred):
+                entries.insert(0, {
+                    "source": source_id, "rules": rules, "action": slot["action"], "dns": slot["dns"],
+                    "reject_mode": None, "extended_matching": False, "no_resolve": False,
+                })
+
+            if not entries and (slot.get("reserve", False) or not slot["stages"]):
+                reserved_stage = fine_by_id[slot["stages"][0]] if slot["stages"] else {}
+                entries.append({
+                    "source": None, "rules": [], "action": slot.get("action", reserved_stage.get("action")),
+                    "dns": slot.get("dns", reserved_stage.get("dns")),
+                    "reject_mode": None, "extended_matching": False, "no_resolve": False,
+                })
+
+            # First preserve contiguous action/DNS/reject/extended/no-resolve
+            # runs. A change only in Surge extended-matching can be bucketed
+            # within the same action/DNS/reject/no-resolve and DNS-resolution
+            # run; this collects US ordinary rules on both sides of the Apple
+            # Intelligence extended-matching source without crossing a route
+            # or resolver boundary.
+            ordered_entries: list[dict[str, Any]] = []
+            cursor = 0
+            while cursor < len(entries):
+                first_entry = entries[cursor]
+                resolve_boundary = _requires_rule_dns(first_entry["rules"], first_entry["no_resolve"]) if platform == "surge" else None
+                base_key = (
+                    first_entry["action"], first_entry["dns"], first_entry["reject_mode"],
+                    first_entry["no_resolve"], resolve_boundary,
+                )
+                end = cursor + 1
+                while end < len(entries):
+                    entry = entries[end]
+                    entry_resolve_boundary = _requires_rule_dns(entry["rules"], entry["no_resolve"]) if platform == "surge" else None
+                    entry_base_key = (
+                        entry["action"], entry["dns"], entry["reject_mode"],
+                        entry["no_resolve"], entry_resolve_boundary,
+                    )
+                    if entry_base_key != base_key:
+                        break
+                    end += 1
+                semantic_run = entries[cursor:end]
+                extended_values = list(dict.fromkeys(entry["extended_matching"] for entry in semantic_run))
+                for extended in extended_values:
+                    ordered_entries.extend(
+                        entry for entry in semantic_run if entry["extended_matching"] == extended
+                    )
+                cursor = end
+            entries = ordered_entries
+
+            # Within each compatible run, aggregate by output format so large
+            # pure domain data keeps MRS/Surge-set while complex rules share a
+            # classical resource.
+            semantic_runs: list[dict[str, Any]] = []
+            for entry in entries:
+                resolve_boundary = _requires_rule_dns(entry["rules"], entry["no_resolve"]) if platform == "surge" else None
+                semantic_key = (
+                    entry["action"], entry["dns"], entry["reject_mode"], entry["extended_matching"],
+                    entry["no_resolve"], resolve_boundary,
+                )
+                if not semantic_runs or semantic_runs[-1]["key"] != semantic_key:
+                    semantic_runs.append({"key": semantic_key, "entries": []})
+                semantic_runs[-1]["entries"].append(entry)
+
+            for run in semantic_runs:
+                run_entries = run["entries"]
+                first = run_entries[0]
+                if slot.get("format"):
+                    format_buckets = [(slot["format"], run_entries)]
+                else:
+                    domain_entries = [
+                        (entry, [rule for rule in entry["rules"] if rule.type in DOMAIN_TYPES])
+                        for entry in run_entries
+                    ]
+                    complex_entries = [
+                        (entry, [rule for rule in entry["rules"] if rule.type not in DOMAIN_TYPES])
+                        for entry in run_entries
+                    ]
+                    domain_count = sum(len(rules) for _, rules in domain_entries)
+                    complex_count = sum(len(rules) for _, rules in complex_entries)
+                    if 0 < domain_count <= 1000 and complex_count:
+                        # Tiny mixed selectors are cheaper as one classical
+                        # resource; large pure-domain payloads keep MRS/sets.
+                        format_buckets = [("classical", [
+                            (entry, list(entry["rules"])) for entry in run_entries
+                        ])]
+                    else:
+                        format_buckets = [
+                            ("domain", [(entry, rules) for entry, rules in domain_entries if rules]),
+                            ("classical", [(entry, rules) for entry, rules in complex_entries if rules]),
+                        ]
+                    if not any(entry["rules"] for entry in run_entries):
+                        format_buckets = [("classical", [(run_entries[0], [])])]
+
+                for capability, bucket in format_buckets:
+                    if not bucket:
+                        continue
+                    if slot.get("format"):
+                        rules_with_sources = [
+                            (entry, list(entry["rules"])) for entry in bucket
+                        ]
+                    else:
+                        rules_with_sources = bucket
+                    all_bucket_rules = [rule for _, rules in rules_with_sources for rule in rules]
+                    if capability == "domain" and any(rule.type not in DOMAIN_TYPES for rule in all_bucket_rules):
+                        raise ProfileError(f"compact slot {slot_id} forces domain format for non-domain rules")
+                    if capability == "domain-special" and any(rule.type not in DOMAIN_MATCH_TYPES for rule in all_bucket_rules):
+                        raise ProfileError(f"compact slot {slot_id} forces domain-special format for non-domain rules")
+                    ordinal_key = slot_id, capability
+                    id_counts[ordinal_key] = id_counts.get(ordinal_key, 0) + 1
+                    ordinal = id_counts[ordinal_key]
+                    group_id = f"priority-{slot_id}-{capability}" + (f"-{ordinal}" if ordinal > 1 else "")
+                    group = {
+                        "id": group_id, "slot": slot_id, "stages": [], "action": first["action"],
+                        "dns": first["dns"], "reject_mode": first["reject_mode"],
+                        "extended_matching": first["extended_matching"], "no_resolve": first["no_resolve"],
+                        "capability": capability, "rule_count": 0, "path": "", "dns_path": None,
+                        "dns_kind": None, "dns_behavior": None, "dns_format": None,
+                    }
+                    groups.append(group)
+                    group_rule_map[group_id] = []
+                    for source_entry, source_rules in rules_with_sources:
+                        if source_entry["source"] is not None and source_entry["source"] not in group["stages"]:
+                            group["stages"].append(source_entry["source"])
+                        group["rule_count"] += len(source_rules)
+                        group_rule_map[group_id].extend(source_rules)
+
+            if slot_id == "jp" and not any(group["slot"] == slot_id for group in groups):
+                raise ProfileError("compact JP slot must reserve its stable route resource")
+
+        if pending_ip:
+            raise ProfileError(f"compact IP rules refer to unavailable later slots: {sorted(pending_ip)}")
+
+        for group in groups:
+            extension = "mrs" if platform == "mihomo" and group["capability"] == "domain" else (
+                "set" if platform == "surge" and group["capability"] == "domain" else "list"
+            )
+            path = f"rules/personal/{platform}/{group['id']}.{extension}"
+            group["path"] = path
+            rules = group_rule_map[group["id"]]
+            content = _render_compact_group_file(platform, group, rules, root, converter_path, mrs_converter)
+            if not content:
+                raise ProfileError(f"generated compact resource {path} is empty")
+            output_files[path] = content
+            digest = sha256(content)
+            group["sha256"] = digest
+            group["bytes"] = len(content)
+            group["kind"] = "route"
+            group["behavior"] = "domain-set" if extension in {"mrs", "set"} else "classical"
+            group["format"] = extension if extension in {"mrs", "set"} else "text"
+            group["dns_path"] = path
+            group["dns_kind"] = "route"
+            group["dns_behavior"] = group["behavior"]
+            group["dns_format"] = group["format"]
+
+            platform_map = {"mihomo": None, "surge": None}
+            platform_map[platform] = group["id"]
+            stage = {
+                "id": group["id"], "slot": group["slot"], "action": group["action"], "dns": group["dns"],
+                "reject_mode": group["reject_mode"], "extended_matching": group["extended_matching"],
+                "extended_matching_by_platform": {
+                    "mihomo": False, "surge": group["extended_matching"] if platform == "surge" else False,
+                },
+                "no_resolve": group["no_resolve"], "sources": list(group["stages"]),
+                "rules": list(group_rule_map[group["id"]]), "group_by_platform": platform_map,
+            }
+            stages_by_platform[platform].append(stage)
+            manifest_stages[platform].append({
+                "id": stage["id"], "slot": stage["slot"], "action": stage["action"], "dns": stage["dns"],
+                "reject_mode": stage["reject_mode"], "extended_matching": stage["extended_matching"],
+                "extended_matching_by_platform": dict(stage["extended_matching_by_platform"]),
+                "no_resolve": stage["no_resolve"], "stages": list(stage["sources"]),
+                "rule_count": len(stage["rules"]), "group_by_platform": dict(platform_map),
+                "terminal_rule": None,
+            })
+
+        for fine in all_stages:
+            terminal = next((rule for rule in fine["rules"] if rule.type in {"GEOIP", "MATCH"}), None)
+            if terminal is None:
+                continue
+            platform_rules = [rule for rule in fine["rules"] if rule.platform == platform]
+            stage = {
+                "id": fine["id"], "action": fine["action"], "dns": fine["dns"],
+                "reject_mode": fine["reject_mode"], "extended_matching": False,
+                "extended_matching_by_platform": {"mihomo": False, "surge": False},
+                "no_resolve": fine["no_resolve"], "sources": list(fine["sources"]),
+                "rules": platform_rules, "group_by_platform": dict(fine["group_by_platform"]),
+            }
+            stages_by_platform[platform].append(stage)
+            manifest_stages[platform].append({
+                "id": stage["id"], "action": stage["action"], "dns": stage["dns"],
+                "reject_mode": stage["reject_mode"], "extended_matching": False,
+                "extended_matching_by_platform": {"mihomo": False, "surge": False},
+                "no_resolve": stage["no_resolve"], "stages": [stage["id"]],
+                "rule_count": len(platform_rules), "group_by_platform": dict(stage["group_by_platform"]),
+                "terminal_rule": terminal.as_dict(include_line=False),
+            })
+
+    return output_files, groups_by_platform, stages_by_platform, manifest_stages
 
 
 def _render_group_file(platform: str, group: Mapping[str, Any], rules: list[Rule], legacy_inputs: Mapping[str, bytes], root: Path, converter_path: str | Path | None) -> bytes:
@@ -965,6 +1390,7 @@ class PersonalCandidate:
     manifest: dict[str, Any]
     stages: list[dict[str, Any]]
     source_rules: dict[str, list[Rule]] = field(default_factory=dict)
+    compact_stages: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
 
 
 def compile(
@@ -1148,8 +1574,15 @@ def compile(
             if group.get("dns_path") and group["dns_path"] != path:
                 group_hashes[platform][group["dns_path"]] = group["dns_sha256"]
 
+    compact_files, compact_groups, compact_stages, compact_manifest_stages = _compile_compact(
+        normalized_profile, all_stages, root=root_path,
+        converter_path=converter_path, mrs_converter=mrs_converter,
+    )
+    files.update(compact_files)
+
     source_hashes = {path: sha256(data) for path, data in sorted(legacy_inputs.items())}
     output_hashes = {path: digest for platform_hashes in group_hashes.values() for path, digest in platform_hashes.items()}
+    output_hashes.update({path: sha256(data) for path, data in compact_files.items()})
     profile_hash = sha256(canonical_bytes(normalized_profile))
     manifest = {
         "schema": SCHEMA,
@@ -1173,10 +1606,11 @@ def compile(
             for stage in all_stages
         ],
         "groups": groups_by_platform,
+        "compact": {"schema": 1, "groups": compact_groups, "stages": compact_manifest_stages},
         "outputs": {path: {"sha256": digest, "bytes": len(files[path])} for path, digest in sorted(output_hashes.items())},
     }
     files[MANIFEST_PATH] = pretty_json_bytes(manifest)
-    return PersonalCandidate(files, manifest, all_stages, source_rules)
+    return PersonalCandidate(files, manifest, all_stages, source_rules, compact_stages)
 
 
 def replay(snapshot: Mapping[str, bytes], legacy_inputs: Mapping[str, bytes], profile: Mapping[str, Any], **kwargs: Any) -> PersonalCandidate:

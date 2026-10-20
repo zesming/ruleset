@@ -32,20 +32,30 @@ DEFAULT_BASE_URL = "https://raw.githubusercontent.com/zesming/ruleset/main"
 PRIVATE_BASELINE = Path(".devflow/personal-routing")
 CLASH_BASELINE = "clash.before.yaml"
 SURGE_BASELINE = "surge.before.conf"
+V1_CLASH_BASELINE = "clash.v1.yaml"
+V1_SURGE_BASELINE = "surge.v1.conf"
+BASELINE_FILE_PAIRS = ((CLASH_BASELINE, SURGE_BASELINE), (V1_CLASH_BASELINE, V1_SURGE_BASELINE))
 CASE_PATH = "tests/fixtures/personal-route-cases.json"
 
 MIHOMO_US_DOH = ("https://8.8.8.8/dns-query#US", "https://1.1.1.1/dns-query#US")
-MIHOMO_JP_DOH = ("https://1.0.0.1/dns-query#JP", "https://8.8.4.4/dns-query#JP")
+MIHOMO_JP_DOH = ("https://1.0.0.1/dns-query#JP",)
+MIHOMO_TEST_DOH = ("https://8.8.4.4/dns-query#TEST",)
 MIHOMO_DOMESTIC_DOH = ("https://223.5.5.5/dns-query#DIRECT", "https://1.12.12.12/dns-query#DIRECT")
 SURGE_US_DOH = ("https://8.8.8.8/dns-query", "https://1.1.1.1/dns-query")
-SURGE_JP_DOH = ("https://1.0.0.1/dns-query", "https://8.8.4.4/dns-query")
+SURGE_JP_DOH = ("https://1.0.0.1/dns-query",)
+SURGE_TEST_DOH = ("https://8.8.4.4/dns-query",)
 SURGE_DOMESTIC_DOH = ("https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query")
 ATT_REAL_IP = ("epdg.epc.att.net", "epdg.epc.att-idns.net")
 NINTENDO_REAL_IP = ("+.srv.nintendo.net", "*.n.n.srv.nintendo.net")
 SURGE_NINTENDO_REAL_IP = ("*.srv.nintendo.net", "*.n.n.srv.nintendo.net")
+DOH_ENDPOINT_ACTIONS = {
+    "8.8.8.8": {"US"}, "1.1.1.1": {"US"},
+    "1.0.0.1": {"JP"}, "8.8.4.4": {"JP", "TEST"},
+    "223.5.5.5": {"DIRECT"}, "1.12.12.12": {"DIRECT"},
+}
 
 VALID_ACTIONS = {"US", "DIRECT", "JP", "REJECT", "TEST"}
-VALID_DNS = {"system", "domestic", "foreign", "jp", "none"}
+VALID_DNS = {"system", "domestic", "foreign", "jp", "test", "none"}
 VALID_PLATFORMS = {"mihomo", "surge"}
 DOMAIN_RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD"}
 IP_RULE_TYPES = {"IP-CIDR", "IP-CIDR6", "IP-ASN", "GEOIP"}
@@ -98,31 +108,106 @@ def _safe_id(value: Any, label: str) -> str:
 def _groups(candidate: Any, platform: str) -> list[dict[str, Any]]:
     if platform not in VALID_PLATFORMS:
         raise ProfileClientsError(f"unsupported client platform {platform!r}")
-    groups = candidate.manifest.get("groups", {}).get(platform)
+    compact_manifest = candidate.manifest.get("compact")
+    compact = isinstance(compact_manifest, Mapping)
+    if compact:
+        compact_groups = compact_manifest.get("groups")
+        groups = compact_groups.get(platform) if isinstance(compact_groups, Mapping) else None
+        stage_map = getattr(candidate, "compact_stages", None)
+        if not isinstance(stage_map, Mapping):
+            stage_map = compact_manifest.get("stages")
+        stages = stage_map.get(platform) if isinstance(stage_map, Mapping) else None
+    else:
+        groups = candidate.manifest.get("groups", {}).get(platform)
+        stages = candidate.stages
     if not isinstance(groups, list):
         raise ProfileClientsError(f"manifest.groups.{platform} must be an ordered array")
+    if not isinstance(stages, list):
+        raise ProfileClientsError(f"manifest stages for {platform} must be an ordered array")
     result: list[dict[str, Any]] = []
     previous_stage_order = -1
-    stage_order = {stage["id"]: index for index, stage in enumerate(candidate.stages)}
+    source_stage_ids = {stage.get("id") for stage in candidate.stages if isinstance(stage, Mapping)}
+    stage_order: dict[str, int] = {}
+    physical_group_order: list[str] = []
+    for stage_index, stage in enumerate(stages):
+        if not isinstance(stage, Mapping) or not isinstance(stage.get("id"), str):
+            raise ProfileClientsError(f"manifest stage {stage_index} for {platform} must have a string id")
+        stage_id = stage["id"]
+        if stage_id in stage_order:
+            raise ProfileClientsError(f"manifest stages for {platform} have duplicate ids")
+        stage_order[stage_id] = stage_index
+        if compact:
+            group_map = stage.get("group_by_platform")
+            if not isinstance(group_map, Mapping):
+                raise ProfileClientsError(f"compact stage {stage_id} has no platform group mapping")
+            group_id = group_map.get(platform)
+            if group_id is not None:
+                if group_id != stage_id:
+                    raise ProfileClientsError(f"compact stage {stage_id} does not match its {platform} group id")
+                physical_group_order.append(group_id)
+            stage_rules = stage.get("rules", [])
+            if not isinstance(stage_rules, list):
+                raise ProfileClientsError(f"compact stage {stage_id} has an invalid rules array")
+            for rule in stage_rules:
+                rule_platform = getattr(rule, "platform", None)
+                if rule_platform is None and isinstance(rule, Mapping):
+                    rule_platform = rule.get("platform")
+                if rule_platform != platform:
+                    raise ProfileClientsError(f"compact stage {stage_id} contains a rule for another platform")
+            if len(stages) >= 2 and stage_index >= len(stages) - 2 and group_map.get(platform) is not None:
+                raise ProfileClientsError("compact route groups must precede the two terminal stages")
+    compact_group_ids: list[str] = []
     for index, raw in enumerate(groups):
         if not isinstance(raw, Mapping):
             raise ProfileClientsError(f"manifest.groups.{platform}[{index}] must be an object")
         group = dict(raw)
         group_id = _safe_id(group.get("id"), f"{platform} group id")
+        if compact:
+            if group_id not in stage_order:
+                raise ProfileClientsError(f"compact group {group_id} has no physical stage")
+            slot = group.get("slot")
+            if not isinstance(slot, str):
+                raise ProfileClientsError(f"compact group {group_id} has no logical slot")
+            _safe_id(slot, f"{platform} group slot")
+            physical = stages[stage_order[group_id]]
+            if physical.get("group_by_platform", {}).get(platform) != group_id:
+                raise ProfileClientsError(f"compact group {group_id} has no matching physical stage")
+            if physical.get("slot") != slot:
+                raise ProfileClientsError(f"compact group {group_id} has a mismatched physical slot")
+            if any(physical.get(key) != group.get(key) for key in ("action", "dns", "reject_mode", "extended_matching", "no_resolve")):
+                raise ProfileClientsError(f"compact group {group_id} metadata does not match its physical stage")
+            compact_group_ids.append(group_id)
         action = group.get("action")
         dns = group.get("dns")
         if action not in VALID_ACTIONS or dns not in VALID_DNS:
             raise ProfileClientsError(f"group {group_id} has unsupported action/DNS intent")
         stage_ids = group.get("stages")
-        if not isinstance(stage_ids, list) or not stage_ids:
-            raise ProfileClientsError(f"group {group_id} has no ordered stage list")
-        try:
-            first_stage_order = stage_order[stage_ids[0]]
-        except (KeyError, TypeError) as exc:
-            raise ProfileClientsError(f"group {group_id} references an unknown stage") from exc
-        if first_stage_order <= previous_stage_order:
-            raise ProfileClientsError(f"groups for {platform} are not in profile order")
-        previous_stage_order = first_stage_order
+        if not isinstance(stage_ids, list) or any(not isinstance(stage_id, str) for stage_id in stage_ids):
+            raise ProfileClientsError(f"group {group_id} has an invalid source-stage list")
+        if compact:
+            if len(stage_ids) != len(set(stage_ids)):
+                raise ProfileClientsError(f"compact group {group_id} has duplicate source references")
+            allowed_sources = source_stage_ids
+            if any(stage_id not in allowed_sources for stage_id in stage_ids):
+                raise ProfileClientsError(f"compact group {group_id} references an unknown source stage")
+            count = group.get("rule_count")
+            if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+                raise ProfileClientsError(f"compact group {group_id} has an invalid rule count")
+            physical_rules = stages[stage_order[group_id]].get("rules", [])
+            if not isinstance(physical_rules, list) or len(physical_rules) != count:
+                raise ProfileClientsError(f"compact group {group_id} rule count does not match its physical stage")
+            if not stage_ids and (count != 0 or group.get("slot") not in {"jp", "jp-ip"}):
+                raise ProfileClientsError(f"compact group {group_id} may be empty only for a reserved JP slot")
+        else:
+            if not stage_ids:
+                raise ProfileClientsError(f"group {group_id} has no ordered stage list")
+            try:
+                first_stage_order = stage_order[stage_ids[0]]
+            except (KeyError, TypeError) as exc:
+                raise ProfileClientsError(f"group {group_id} references an unknown stage") from exc
+            if first_stage_order <= previous_stage_order:
+                raise ProfileClientsError(f"groups for {platform} are not in profile order")
+            previous_stage_order = first_stage_order
         if group.get("kind") != "route":
             raise ProfileClientsError(f"group {group_id} is not a route resource")
         behavior = group.get("behavior")
@@ -160,7 +245,38 @@ def _groups(candidate: Any, platform: str) -> list[dict[str, Any]]:
             if group.get("dns_sha256") and group["dns_sha256"] != sha256(dns_content):
                 raise ProfileClientsError(f"candidate DNS selector hash mismatch for {dns_path}")
         result.append(group)
+    if compact and physical_group_order != compact_group_ids:
+        raise ProfileClientsError(f"compact {platform} groups do not match physical stage order")
+    if compact:
+        if len(stages) < 2:
+            raise ProfileClientsError(f"compact {platform} profile is missing its terminal stages")
+        terminal_types: list[str] = []
+        for stage in stages[-2:]:
+            if stage.get("group_by_platform", {}).get(platform) is not None:
+                raise ProfileClientsError(f"compact {platform} terminal stages cannot map to route groups")
+            for rule in stage.get("rules", []):
+                rule_type = getattr(rule, "type", None)
+                if rule_type is None and isinstance(rule, Mapping):
+                    rule_type = rule.get("type")
+                if rule_type in {"GEOIP", "MATCH"}:
+                    terminal_types.append(rule_type)
+        if terminal_types != ["GEOIP", "MATCH"]:
+            raise ProfileClientsError(f"compact {platform} terminal stages must end with GEOIP then MATCH")
     return result
+
+
+def _candidate_stages(candidate: Any, platform: str) -> list[dict[str, Any]] | list[Mapping[str, Any]]:
+    """Return the physical compact stages when the replay exposes that interface."""
+    compact_manifest = candidate.manifest.get("compact")
+    if isinstance(compact_manifest, Mapping):
+        stage_map = getattr(candidate, "compact_stages", None)
+        if not isinstance(stage_map, Mapping):
+            stage_map = compact_manifest.get("stages")
+        stages = stage_map.get(platform) if isinstance(stage_map, Mapping) else None
+        if not isinstance(stages, list):
+            raise ProfileClientsError(f"compact profile has no ordered {platform} stages")
+        return stages
+    return candidate.stages
 
 
 def _resource_url(base_url: str, path: str) -> str:
@@ -179,6 +295,8 @@ def _dns_endpoints(group: Mapping[str, Any], platform: str) -> tuple[str, ...]:
         return ("system",) if platform == "mihomo" else ("system",)
     if intent == "domestic":
         return MIHOMO_DOMESTIC_DOH if platform == "mihomo" else SURGE_DOMESTIC_DOH
+    if intent == "test":
+        return MIHOMO_TEST_DOH if platform == "mihomo" else SURGE_TEST_DOH
     if intent in {"foreign", "jp"}:
         is_jp = intent == "jp" or (intent == "foreign" and action == "JP")
         if platform == "mihomo":
@@ -295,7 +413,7 @@ def render_mihomo_snippet(candidate: Any, base_url: str) -> str:
     base_url = _validate_base_url(base_url)
     groups = _groups(candidate, "mihomo")
     provider_blocks: dict[str, list[str]] = {}
-    policies: dict[str, tuple[str, ...]] = {}
+    policy_members: dict[tuple[str, tuple[str, ...]], list[str]] = {}
     for group in groups:
         group_id = _safe_id(group["id"], "Mihomo group id")
         provider_blocks[group_id] = _mihomo_provider(group, base_url)
@@ -307,10 +425,15 @@ def render_mihomo_snippet(candidate: Any, base_url: str) -> str:
                 dns_provider_id = group_id if selector_path == group.get("path") else group_id + "-dns"
                 if dns_provider_id not in provider_blocks:
                     provider_blocks[dns_provider_id] = dns_provider
-                policies[f"rule-set:{dns_provider_id}"] = dns_values
+                slot = str(group.get("slot") or group_id)
+                policy_members.setdefault((slot, dns_values), []).append(dns_provider_id)
     if not provider_blocks:
         raise ProfileClientsError("profile produced no Mihomo rule providers")
     ordered_rules = ["  - " + line for line in _mihomo_route_lines(candidate, base_url)]
+    policies = {
+        "rule-set:" + ",".join(provider_ids): endpoints
+        for (_slot, endpoints), provider_ids in policy_members.items()
+    }
     policy_lines: list[str] = []
     for selector, values in policies.items():
         policy_lines.append(f"    {_yaml_quote(selector)}:")
@@ -336,11 +459,16 @@ def render_surge_snippet(candidate: Any, base_url: str) -> str:
     base_url = _validate_base_url(base_url)
     groups = _groups(candidate, "surge")
     host_lines: list[str] = []
+    last_slot: str | None = None
     for group in groups:
         dns_selector = _surge_dns_selector(group, base_url)
         dns_endpoints = _dns_endpoints(group, "surge")
         if dns_selector and dns_endpoints:
             # Keep system resolution explicit; encrypted endpoints use server: URLs.
+            slot = str(group.get("slot", group["id"]))
+            if slot != last_slot:
+                host_lines.append(f"# slot: {slot}")
+                last_slot = slot
             if dns_endpoints == ("system",):
                 host_lines.append(f"{dns_selector} = server:system")
             else:
@@ -372,19 +500,23 @@ def _surge_endpoint_rules() -> list[str]:
         "AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),US",
         "AND,((PROTOCOL,DOH),(DOMAIN,1.1.1.1)),US",
         "AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),JP",
-        "AND,((PROTOCOL,DOH),(DOMAIN,8.8.4.4)),JP",
+        "AND,((PROTOCOL,DOH),(DOMAIN,8.8.4.4)),TEST",
     ]
 
 
 def _surge_route_lines(candidate: Any, base_url: str, node_rules: Sequence[str] = (), local_stages: Sequence[Mapping[str, Any]] = ()) -> list[str]:
     """Render the single ordered Surge route program used by snippets and migration."""
     groups = _groups(candidate, "surge")
+    compact = isinstance(candidate.manifest.get("compact"), Mapping)
     by_stage: dict[str, dict[str, Any]] = {}
     for group in groups:
-        for stage_id in group["stages"]:
-            if stage_id in by_stage:
-                raise ProfileClientsError(f"Surge stage {stage_id} maps to multiple route groups")
-            by_stage[stage_id] = group
+        if compact:
+            by_stage[group["id"]] = group
+        else:
+            for stage_id in group["stages"]:
+                if stage_id in by_stage:
+                    raise ProfileClientsError(f"Surge stage {stage_id} maps to multiple route groups")
+                by_stage[stage_id] = group
     lines = [*node_rules]
     for stage in local_stages:
         for rule in stage.get("rules", []):
@@ -396,8 +528,9 @@ def _surge_route_lines(candidate: Any, base_url: str, node_rules: Sequence[str] 
     lines.extend(_surge_endpoint_rules())
     emitted: set[str] = set()
     terminal_seen = False
-    for stage in candidate.stages:
-        group = by_stage.get(stage["id"])
+    for stage in _candidate_stages(candidate, "surge"):
+        group_id = stage.get("group_by_platform", {}).get("surge") if compact else stage["id"]
+        group = by_stage.get(group_id)
         if group is not None:
             if terminal_seen:
                 raise ProfileClientsError("Surge route group appears after the terminal stage")
@@ -590,13 +723,20 @@ def _node_region(name: str) -> str | None:
 
 
 def _extract_jp_tuic(surge_sections: Sequence[SurgeSection], mihomo_proxies: list[dict[str, Any]]) -> dict[str, Any]:
+    templates = [item for item in mihomo_proxies if isinstance(item, dict) and item.get("type") == "tuic"]
+    existing_jp_nodes = [item for item in templates if _node_region(str(item.get("name", ""))) == "JP"]
+    if len(existing_jp_nodes) > 1:
+        raise ProfileClientsError("private Mihomo baseline has more than one JP TUIC node")
+    if existing_jp_nodes:
+        # A deployed v1 baseline already contains the JP leaf. Keep its complete
+        # Mihomo definition byte-for-value and only canonicalize its name later.
+        return existing_jp_nodes[0]
     nodes = [entry for entry in _surge_proxy_entries(surge_sections) if entry[1] in {"tuic-v5", "tuic"}]
     jp_nodes = [entry for entry in nodes if _node_region(entry[0]) == "JP"]
     if len(jp_nodes) != 1:
         raise ProfileClientsError("private Surge baseline must contain exactly one identifiable JP TUIC node")
-    if not mihomo_proxies:
+    if not templates:
         raise ProfileClientsError("private Mihomo baseline has no TUIC template node")
-    templates = [item for item in mihomo_proxies if isinstance(item, dict) and item.get("type") == "tuic"]
     if len(templates) != 1:
         raise ProfileClientsError("private Mihomo baseline must contain exactly one TUIC template node")
     name, protocol, fields = jp_nodes[0]
@@ -635,73 +775,54 @@ def _canonical_mihomo_groups(config: dict[str, Any], jp_node: dict[str, Any]) ->
     groups = config.get("proxy-groups")
     if not isinstance(proxies, list) or not isinstance(groups, list):
         raise ProfileClientsError("private Mihomo baseline has invalid proxy arrays")
-    us_nodes = [item for item in proxies if isinstance(item, dict) and item.get("type") == "tuic"]
+    tuic_nodes = [item for item in proxies if isinstance(item, dict) and item.get("type") == "tuic"]
+    us_nodes = [item for item in tuic_nodes if _node_region(str(item.get("name", ""))) == "US"]
+    jp_nodes = [item for item in tuic_nodes if _node_region(str(item.get("name", ""))) == "JP"]
     if len(us_nodes) != 1:
         raise ProfileClientsError("private Mihomo baseline must contain exactly one US TUIC node")
-    if _node_region(str(us_nodes[0].get("name", ""))) != "US":
-        raise ProfileClientsError("private Mihomo TUIC node is not identifiable as the US node")
-    jp_nodes = [item for item in proxies if isinstance(item, dict) and item.get("name") == jp_node["name"]]
-    if jp_nodes:
-        if jp_nodes[0] != jp_node:
+    if len(jp_nodes) > 1:
+        raise ProfileClientsError("private Mihomo baseline must contain at most one JP TUIC node")
+    if not jp_nodes:
+        if any(isinstance(item, Mapping) and item.get("name") == jp_node.get("name") for item in proxies):
             raise ProfileClientsError("private Mihomo baseline already has a conflicting JP TUIC node")
-    else:
         proxies.append(jp_node)
+        jp_nodes = [jp_node]
+    elif jp_nodes[0] is not jp_node and jp_nodes[0] != jp_node:
+        raise ProfileClientsError("private Mihomo baseline already has a conflicting JP TUIC node")
 
-    proxy_by_name: dict[str, Mapping[str, Any]] = {}
+    if len(proxies) != 2:
+        raise ProfileClientsError("private Mihomo profile must contain exactly the US and JP TUIC leaves")
+
+    selected_nodes = {id(us_nodes[0]), id(jp_nodes[0])}
+    proxy_names: set[str] = set()
     for proxy in proxies:
         if not isinstance(proxy, Mapping) or not isinstance(proxy.get("name"), str):
             raise ProfileClientsError("private Mihomo proxies contain an unsupported entry")
-        if proxy["name"] in proxy_by_name:
+        if proxy["name"] in proxy_names:
             raise ProfileClientsError("private Mihomo proxy names are not unique")
-        proxy_by_name[proxy["name"]] = proxy
-    if {"US", "JP", "TEST"} & set(proxy_by_name):
-        raise ProfileClientsError("private Mihomo proxy name conflicts with a canonical selector")
-    group_by_name: dict[str, Mapping[str, Any]] = {}
+        proxy_names.add(proxy["name"])
+    for proxy in proxies:
+        if id(proxy) not in selected_nodes and proxy.get("name") in {"US", "JP"}:
+            raise ProfileClientsError("private Mihomo proxy name conflicts with a canonical TUIC leaf")
+    # Rename the two country TUIC definitions in place. Credentials and all
+    # transport fields remain exactly as supplied by the baseline.
+    us_nodes[0]["name"] = "US"
+    jp_nodes[0]["name"] = "JP"
+
+    group_names: set[str] = set()
     for group in groups:
         if not isinstance(group, Mapping) or not isinstance(group.get("name"), str):
             raise ProfileClientsError("private Mihomo proxy-groups contain an unsupported entry")
-        if group["name"] in group_by_name:
+        if group["name"] in group_names:
             raise ProfileClientsError("private Mihomo proxy-group names are not unique")
-        group_by_name[group["name"]] = group
+        group_names.add(group["name"])
     test_groups = [
         item for item in groups if isinstance(item, Mapping)
-        and any(marker in str(item.get("name", "")).casefold() for marker in ("test", "测速", "网络测试"))
+        and (str(item.get("name", "")).upper() == "TEST" or any(marker in str(item.get("name", "")).casefold() for marker in ("test", "测速", "网络测试")))
     ]
     if len(test_groups) != 1 or not isinstance(test_groups[0].get("proxies"), list):
         raise ProfileClientsError("private Mihomo baseline must contain exactly one reusable TEST selector")
-
-    def expand(name: str, visiting: set[str]) -> list[str]:
-        if name in {"DIRECT", "REJECT"}:
-            return [name]
-        if name in proxy_by_name:
-            return [name]
-        group = group_by_name.get(name)
-        if group is None:
-            raise ProfileClientsError("Mihomo TEST group references an unknown proxy or group")
-        if name in visiting:
-            raise ProfileClientsError("private Mihomo TEST proxy-groups contain a cycle")
-        members = group.get("proxies")
-        if not isinstance(members, list) or not members:
-            raise ProfileClientsError("private Mihomo TEST references an empty or unsupported group")
-        expanded: list[str] = []
-        for member in members:
-            if not isinstance(member, str):
-                raise ProfileClientsError("private Mihomo TEST group contains a non-string member")
-            expanded.extend(expand(member, visiting | {name}))
-        return expanded
-
-    test_members = ["US"]
-    for member in test_groups[0]["proxies"]:
-        if not isinstance(member, str):
-            raise ProfileClientsError("private Mihomo TEST group contains a non-string member")
-        test_members.extend(expand(member, set()))
-    test_members.append("DIRECT")
-    test_members = list(dict.fromkeys(test_members))
-    groups[:] = [
-        {"name": "US", "type": "select", "proxies": [us_nodes[0]["name"]]},
-        {"name": "JP", "type": "select", "proxies": [jp_node["name"]]},
-        {"name": "TEST", "type": "select", "proxies": test_members},
-    ]
+    groups[:] = [{"name": "TEST", "type": "select", "proxies": ["US", "JP", "DIRECT"]}]
 
 
 def _node_endpoint_rules(nodes: Iterable[Mapping[str, Any]], *, platform: str, root: Path = ROOT) -> list[str]:
@@ -743,33 +864,55 @@ def _node_endpoint_rules(nodes: Iterable[Mapping[str, Any]], *, platform: str, r
 def _mihomo_route_lines(candidate: Any, base_url: str, node_rules: Sequence[str] = (), local_stages: Sequence[Mapping[str, Any]] = ()) -> list[str]:
     groups = _groups(candidate, "mihomo")
     _ = base_url
+    compact = isinstance(candidate.manifest.get("compact"), Mapping)
     route_by_stage: dict[str, dict[str, Any]] = {}
     for group in groups:
-        for stage_id in group["stages"]:
-            route_by_stage[stage_id] = group
-    rules: list[str] = list(node_rules)
+        if compact:
+            route_by_stage[group["id"]] = group
+        else:
+            for stage_id in group["stages"]:
+                route_by_stage[stage_id] = group
+    rules: list[str] = []
+    direct_inline_seen: set[str] = set()
+
+    def append_rule(line: str, *, dedupe_direct: bool = True) -> None:
+        if dedupe_direct:
+            fields = _split_rule_fields(line)
+            if (
+                len(fields) >= 3 and fields[0].upper() in DOMAIN_RULE_TYPES | IP_RULE_TYPES | {"PROCESS-NAME", "USER-AGENT"}
+                and fields[2].upper() == "DIRECT"
+            ):
+                key = ",".join(fields)
+                if key in direct_inline_seen:
+                    return
+                direct_inline_seen.add(key)
+        rules.append(line)
+
+    for line in node_rules:
+        append_rule(line)
     for stage in local_stages:
         for rule in stage.get("rules", []):
             if rule.platform != "mihomo":
                 continue
             if rule.type in {"GEOIP", "MATCH"}:
                 raise ProfileClientsError("private inline stages may not replace profile terminal rules")
-            rules.append(_render_inline_rule(rule, stage, "mihomo"))
+            append_rule(_render_inline_rule(rule, stage, "mihomo"))
     emitted: set[str] = set()
-    for stage in candidate.stages:
-        group = route_by_stage.get(stage["id"])
+    for stage in _candidate_stages(candidate, "mihomo"):
+        group_id = stage.get("group_by_platform", {}).get("mihomo") if compact else stage["id"]
+        group = route_by_stage.get(group_id)
         if group is not None:
             if group["id"] not in emitted:
-                rules.append(f"RULE-SET,{group['id']},{_mihomo_target(group)}" + (",no-resolve" if group.get("no_resolve") else ""))
+                append_rule(f"RULE-SET,{group['id']},{_mihomo_target(group)}" + (",no-resolve" if group.get("no_resolve") else ""), dedupe_direct=False)
                 emitted.add(group["id"])
             continue
         for rule in stage.get("rules", []):
             if rule.platform != "mihomo":
                 continue
             if rule.type == "GEOIP":
-                rules.append(f"GEOIP,{rule.value},{_mihomo_target(stage)}" + (",no-resolve" if "no-resolve" in rule.flags else ""))
+                append_rule(f"GEOIP,{rule.value},{_mihomo_target(stage)}" + (",no-resolve" if "no-resolve" in rule.flags else ""), dedupe_direct=False)
             elif rule.type == "MATCH":
-                rules.append(f"MATCH,{_mihomo_target(stage)}")
+                append_rule(f"MATCH,{_mihomo_target(stage)}", dedupe_direct=False)
             elif rule.type not in DOMAIN_RULE_TYPES | IP_RULE_TYPES | {"PROCESS-NAME", "USER-AGENT"}:
                 raise ProfileClientsError(f"unsupported Mihomo inline route rule {rule.type}")
             elif stage.get("group_by_platform", {}).get("mihomo") is None:
@@ -791,6 +934,7 @@ def _mihomo_provider_data(group: Mapping[str, Any], base_url: str, provider_id: 
 def _set_mihomo_providers(
     config: dict[str, Any], candidate: Any, base_url: str, root: Path = ROOT,
     local_stages: Sequence[Mapping[str, Any]] = (), known_targets: set[str] | None = None,
+    baseline_manifest: Mapping[str, Any] | None = None,
 ) -> None:
     groups = _groups(candidate, "mihomo")
     old_providers = config.get("rule-providers", {})
@@ -805,10 +949,10 @@ def _set_mihomo_providers(
         raise ProfileClientsError("private Mihomo nameserver-policy must be a mapping")
     old_dns_policy = dict(old_dns_policy)
     api = _load_api(root)
-    aliases = _source_aliases(candidate, api)
+    aliases = _source_aliases(candidate, api, baseline_manifest)
     profile_dns_sources = {
         rule.source
-        for stage in candidate.stages if stage.get("dns") != "none"
+        for stage in _candidate_stages(candidate, "mihomo") if stage.get("dns") != "none"
         for rule in stage.get("rules", [])
         if rule.platform == "mihomo" and rule.type in DOMAIN_RULE_TYPES
     }
@@ -833,7 +977,16 @@ def _set_mihomo_providers(
                     retained_names.append(name)
                     retained_providers[name] = dict(provider)
                     continue
-                if source_id not in profile_dns_sources:
+                migrated_sources = {source_id}
+                group = aliases.group_sources.get(source_id)
+                if isinstance(group, Mapping):
+                    migrated_sources.update(_group_rule_sources(candidate, group, "mihomo"))
+                reserved_empty_jp = (
+                    isinstance(group, Mapping) and group.get("rule_count") == 0
+                    and group.get("action") == "JP" and group.get("dns") == "jp"
+                    and any(item.get("action") == "JP" and item.get("dns") == "jp" for item in groups)
+                )
+                if not migrated_sources & profile_dns_sources and not reserved_empty_jp:
                     retained_names.append(name)
                     retained_providers[name] = dict(provider)
             if retained_names:
@@ -843,7 +996,7 @@ def _set_mihomo_providers(
             retained_policy[selector_text] = normalized_target
 
     providers: dict[str, Any] = {}
-    policies: dict[str, list[str]] = {}
+    policy_members: dict[tuple[str, tuple[str, ...]], list[str]] = {}
     for group in groups:
         group_id = _safe_id(group["id"], "Mihomo provider name")
         behavior = "domain" if group["behavior"] == "domain-set" else "classical"
@@ -857,12 +1010,17 @@ def _set_mihomo_providers(
                 providers[selector_id] = _mihomo_provider_data(
                     group, base_url, selector_id, selector, dns_behavior, str(group.get("dns_format"))
                 )
-            policies[f"rule-set:{selector_id}"] = list(endpoints)
+            slot = str(group.get("slot") or group_id)
+            policy_members.setdefault((slot, endpoints), []).append(selector_id)
     collision = set(providers) & set(retained_providers)
     if collision:
         raise ProfileClientsError("new Mihomo providers collide with a preserved local DNS provider")
     providers.update(retained_providers)
-    policies = {**retained_policy, **policies}
+    policies = {**retained_policy}
+    policies.update({
+        "rule-set:" + ",".join(provider_ids): list(endpoints)
+        for (_slot, endpoints), provider_ids in policy_members.items()
+    })
     config["rule-providers"] = providers
     proxies = config.get("proxies", [])
     if not isinstance(proxies, list):
@@ -936,81 +1094,136 @@ def _surge_group_references(fields: Sequence[str], known_names: set[str]) -> tup
     return members, options
 
 
-def _surge_group_aliases(section: SurgeSection, proxy_entries: Sequence[tuple[str, str, list[str]]]) -> list[str]:
-    """Build only same-country Smart groups and canonical US/JP/TEST selectors."""
-    groups = _surge_group_index(section)
-    proxy_by_name = {entry[0]: entry for entry in proxy_entries}
-    all_names = set(groups) | set(proxy_by_name)
-    members_by_group = {
-        name: _surge_group_references(fields, all_names)[0]
-        for name, (_kind, fields) in groups.items()
+def _is_surge_snell_v6(protocol: str, fields: Sequence[str]) -> bool:
+    if protocol == "snell-v6":
+        return True
+    if protocol != "snell":
+        return False
+    _positional, options = _surge_options(fields)
+    return options.get("version") == "6"
+
+
+def _canonical_surge_proxy_names(sections: Sequence[SurgeSection]) -> list[tuple[str, str, list[str]]]:
+    """Rename the two Snell v6 and two TUIC leaves without touching their RHS."""
+    proxy = _section(list(sections), "Proxy")
+    entries = _surge_proxy_entries(sections)
+    by_region: dict[str, dict[str, list[str]]] = {
+        region: {"tuic": [], "snell": []} for region in ("US", "JP")
     }
-
-    def expand(name: str, visiting: set[str]) -> list[str]:
-        if name.upper() in _SURGE_BUILTIN_POLICIES:
-            return [name.upper()]
-        if name in proxy_by_name:
-            return [name]
-        if name not in groups:
-            raise ProfileClientsError("Surge proxy-group references an unknown proxy or group")
-        if name in visiting:
-            raise ProfileClientsError("private Surge proxy-groups contain a cycle")
-        result: list[str] = []
-        for member in members_by_group[name]:
-            result.extend(expand(member, visiting | {name}))
-        return result
-
-    country_smart_lines: list[str] = []
-    country_smart_names: dict[str, str] = {}
+    for name, protocol, fields in entries:
+        region = _node_region(name)
+        if region not in by_region:
+            continue
+        if protocol in {"tuic", "tuic-v5"}:
+            by_region[region]["tuic"].append(name)
+        elif protocol in {"snell", "snell-v6"}:
+            if not _is_surge_snell_v6(protocol, fields):
+                raise ProfileClientsError(f"private Surge {region} Snell node must use protocol version 6")
+            by_region[region]["snell"].append(name)
+    selected: dict[str, str] = {}
     for region in ("US", "JP"):
-        candidates = [name for name, (kind, _fields) in groups.items() if kind == "smart" and _node_region(name) == region]
-        if len(candidates) != 1:
-            raise ProfileClientsError(f"private Surge baseline must have exactly one {region} Smart group")
-        name = candidates[0]
-        kind, fields = groups[name]
-        _original_members, options = _surge_group_references(fields, all_names)
-        expanded = [member for ref in members_by_group[name] for member in expand(ref, {name})]
-        local_nodes = [
-            member for member in expanded
-            if member in proxy_by_name and _node_region(member) == region
-        ]
-        local_nodes = list(dict.fromkeys(local_nodes))
-        if not local_nodes:
-            raise ProfileClientsError(f"private Surge {region} Smart group has no same-country proxy nodes")
-        # Do not retain a nested proxy-group reference: that can silently reintroduce
-        # a cross-country Smart selector into this country-specific group.
-        csv_buffer = io.StringIO()
-        csv.writer(csv_buffer, lineterminator="").writerow([kind, *local_nodes, *options])
-        country_smart_lines.append(f"{name} = {csv_buffer.getvalue()}")
-        country_smart_names[region] = name
+        for kind in ("tuic", "snell"):
+            if len(by_region[region][kind]) != 1:
+                expected = "TUIC" if kind == "tuic" else "Snell version 6"
+                raise ProfileClientsError(f"private Surge baseline must contain exactly one {region} {expected} node")
+        selected[by_region[region]["snell"][0]] = region
+        selected[by_region[region]["tuic"][0]] = f"{region}-TUIC"
+    if len(entries) != 4:
+        raise ProfileClientsError("private Surge profile must contain exactly four proxy leaves")
+    for name, protocol, _fields in entries:
+        canonical = {"US", "JP", "US-TUIC", "JP-TUIC"}
+        if name in canonical and name not in selected:
+            raise ProfileClientsError("private Surge proxy name conflicts with a canonical leaf")
+    for index, line in enumerate(proxy.lines):
+        parsed = _parse_surge_proxy_line(line)
+        if parsed is None or parsed[0] not in selected:
+            continue
+        target_name = selected[parsed[0]]
+        if target_name != parsed[0]:
+            # Keep the entire right-hand side, including exact credentials,
+            # endpoint formatting, and transport tuning, byte-for-value.
+            proxy.lines[index] = target_name + line[line.index("="):]
+    return _surge_proxy_entries(sections)
 
+
+def _surge_group_aliases(section: SurgeSection, proxy_entries: Sequence[tuple[str, str, list[str]]]) -> list[str]:
+    """Keep the four direct proxy leaves and expose only the TEST selector."""
+    groups = _surge_group_index(section)
+    tuic_by_region = {
+        region: [name for name, protocol, _fields in proxy_entries if protocol in {"tuic", "tuic-v5"} and _node_region(name) == region]
+        for region in ("US", "JP")
+    }
+    if any(len(names) != 1 for names in tuic_by_region.values()):
+        raise ProfileClientsError("private Surge baseline must contain exactly one TUIC leaf per country")
+    expected = {
+        "us": {"snell"}, "jp": {"snell"},
+        "us-tuic": {"tuic", "tuic-v5"}, "jp-tuic": {"tuic", "tuic-v5"},
+    }
+    observed = {name.casefold(): protocol for name, protocol, _fields in proxy_entries}
+    if len(observed) != 4 or set(observed) != set(expected):
+        raise ProfileClientsError("private Surge profile must retain exactly US/JP Snell and TUIC leaves")
+    if any(observed[name] not in protocols for name, protocols in expected.items()):
+        raise ProfileClientsError("private Surge country leaves must be Snell v6 and TUIC")
+    for name, protocol, fields in proxy_entries:
+        if name.casefold() in {"us", "jp"} and not _is_surge_snell_v6(protocol, fields):
+            raise ProfileClientsError("private Surge country leaves must use Snell protocol version 6")
     test_candidates = [
         name for name in groups
-        if any(marker in name.casefold() for marker in ("test", "测速", "网络测试"))
+        if name.upper() == "TEST" or any(marker in name.casefold() for marker in ("test", "测速", "网络测试"))
     ]
     if len(test_candidates) != 1:
         raise ProfileClientsError("private Surge baseline must have exactly one reusable TEST group")
-    test_name = test_candidates[0]
-    test_members: list[str] = ["US"]
-    for member in members_by_group[test_name]:
-        test_members.extend(expand(member, {test_name}))
-    test_members.append("DIRECT")
-    test_members = list(dict.fromkeys(test_members))
-
-    aliases = [
-        f"US = select, {country_smart_names['US']}",
-        f"JP = select, {country_smart_names['JP']}",
-        "TEST = select, " + ", ".join(test_members),
-    ]
-    return [*country_smart_lines, *aliases]
+    return ["TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT"]
 
 
-def _surge_dns(host_section: SurgeSection, candidate: Any, base_url: str, root: Path = ROOT) -> list[str]:
+def _rewrite_surge_host_comments(host_section: SurgeSection) -> None:
+    """Refresh generated Host guidance while preserving user mappings and notes."""
+    title = "# DNS policy selectors for this profile and retained private mappings."
+    rewritten: list[str] = []
+    title_written = False
+    for line in host_section.lines:
+        stripped = line.strip()
+        if stripped.startswith(("#", ";")):
+            lowered = stripped.casefold()
+            refreshed: list[str] = []
+            if "dns-fallback" in lowered:
+                refreshed.append("DoH endpoint routing uses explicit protocol-qualified rules in [Rule].")
+            if "cnbanned" in lowered:
+                refreshed.append("Resolver ownership follows this ordered Host selector, independent of proxy choices.")
+            if "apple" in lowered and any(token in lowered for token in ("组", "group", "选择")):
+                refreshed.append("Apple resolver policy is fixed by the matching Host selectors.")
+            if refreshed:
+                rewritten.append("# " + " ".join(refreshed))
+            elif not title_written and (
+                ("dns" in lowered and any(token in lowered for token in ("分流", "selector", "policy", "host", "解析", "域名", "配置", "标题", "策略")))
+                or ("host" in lowered and any(token in lowered for token in ("selector", "policy", "mapping", "解析", "域名", "配置", "标题", "策略")))
+            ):
+                rewritten.append(title)
+                title_written = True
+            else:
+                rewritten.append(line)
+            continue
+        rewritten.append(line)
+    if not title_written:
+        rewritten.insert(0, title)
+    host_section.lines = rewritten
+
+
+def _surge_dns(
+    host_section: SurgeSection, candidate: Any, base_url: str, root: Path = ROOT,
+    baseline_manifest: Mapping[str, Any] | None = None,
+) -> list[str]:
     lines = []
-    for group in _groups(candidate, "surge"):
+    last_slot: str | None = None
+    profile_groups = _groups(candidate, "surge")
+    for group in profile_groups:
         selector = _surge_dns_selector(group, base_url)
         endpoints = _dns_endpoints(group, "surge")
         if selector and endpoints:
+            slot = str(group.get("slot", group["id"]))
+            if slot != last_slot:
+                lines.append(f"# slot: {slot}")
+                last_slot = slot
             if endpoints == ("system",):
                 server_value = "server:system"
             else:
@@ -1019,10 +1232,10 @@ def _surge_dns(host_section: SurgeSection, candidate: Any, base_url: str, root: 
     # Preserve inline mappings and unrelated selectors; replace only selectors
     # whose archived source now has a profile DNS policy.
     api = _load_api(root)
-    aliases = _source_aliases(candidate, api)
+    aliases = _source_aliases(candidate, api, baseline_manifest)
     profile_dns_sources = {
         rule.source
-        for stage in candidate.stages if stage.get("dns") != "none"
+        for stage in _candidate_stages(candidate, "surge") if stage.get("dns") != "none"
         for rule in stage.get("rules", [])
         if rule.platform == "surge" and rule.type in DOMAIN_RULE_TYPES
     }
@@ -1040,14 +1253,26 @@ def _surge_dns(host_section: SurgeSection, candidate: Any, base_url: str, root: 
             except ProfileClientsError:
                 explicit.append(line)
                 continue
-            if source_id in profile_dns_sources:
+            migrated_sources = {source_id}
+            group = aliases.group_sources.get(source_id)
+            if isinstance(group, Mapping):
+                migrated_sources.update(_group_rule_sources(candidate, group, "surge"))
+            reserved_empty_jp = (
+                isinstance(group, Mapping) and group.get("rule_count") == 0
+                and group.get("action") == "JP" and group.get("dns") == "jp"
+                and any(item.get("action") == "JP" and item.get("dns") == "jp" for item in profile_groups)
+            )
+            if migrated_sources & profile_dns_sources or reserved_empty_jp:
                 continue
         explicit.append(line)
     host_section.lines = [*explicit, *lines]
     return lines
 
 
-def _migrate_surge(candidate: Any, surge_text: str, base_url: str, *, root: Path = ROOT, local_stages: Sequence[Mapping[str, Any]] = ()) -> bytes:
+def _migrate_surge(
+    candidate: Any, surge_text: str, base_url: str, *, root: Path = ROOT,
+    local_stages: Sequence[Mapping[str, Any]] = (), baseline_manifest: Mapping[str, Any] | None = None,
+) -> bytes:
     preamble, sections = _surge_sections(surge_text)
     general = _section(sections, "General")
     proxy_group = _section(sections, "Proxy Group")
@@ -1076,24 +1301,71 @@ def _migrate_surge(candidate: Any, surge_text: str, base_url: str, *, root: Path
         protocols = protocol_by_region[region]
         if not any(item.startswith("tuic") for item in protocols) or not any(item.startswith("snell") for item in protocols):
             raise ProfileClientsError(f"private Surge baseline must preserve {region} TUIC and Snell nodes")
-    proxy_entries = _surge_proxy_entries(sections)
-    original_group_lines = list(proxy_group.lines)
+    proxy_entries = _canonical_surge_proxy_names(sections)
     generated_groups = _surge_group_aliases(proxy_group, proxy_entries)
-    preserved_comments = [line for line in original_group_lines if not line.strip() or line.lstrip().startswith(("#", ";"))]
-    proxy_group.lines = [*preserved_comments, *generated_groups]
+    proxy_group.lines = [
+        "# TEST lists the four direct Snell v6 and TUIC proxy leaves.",
+        *generated_groups,
+    ]
     node_rules = _node_endpoint_rules(proxy_nodes, platform="surge", root=root)
     _replace_section_rules(route, _surge_route_lines(candidate, base_url, node_rules, local_stages), "# Personal profile route, generated from the ordered manifest and retained local exceptions.")
-    _surge_dns(host, candidate, base_url, root)
+    _rewrite_surge_host_comments(host)
+    _surge_dns(host, candidate, base_url, root, baseline_manifest)
     return _render_surge_sections(preamble, sections).encode("utf-8")
 
 
-def _migrate_mihomo(candidate: Any, clash: Mapping[str, Any], surge_sections: Sequence[SurgeSection], base_url: str, *, root: Path = ROOT, local_stages: Sequence[Mapping[str, Any]] = ()) -> bytes:
+def _migrate_mihomo(
+    candidate: Any, clash: Mapping[str, Any], surge_sections: Sequence[SurgeSection], base_url: str, *,
+    root: Path = ROOT, local_stages: Sequence[Mapping[str, Any]] = (),
+    baseline_manifest: Mapping[str, Any] | None = None,
+) -> bytes:
     config = json.loads(json.dumps(clash))
     jp_node = _extract_jp_tuic(surge_sections, config.get("proxies", []))
     old_policy_targets = _known_policy_targets("mihomo", config)
     _canonical_mihomo_groups(config, jp_node)
-    _set_mihomo_providers(config, candidate, base_url, root, local_stages, old_policy_targets)
+    _set_mihomo_providers(config, candidate, base_url, root, local_stages, old_policy_targets, baseline_manifest)
     return _dump_yaml_private(config)
+
+
+def _resolve_baseline_dir(root: Path, value: str | Path | None = None) -> Path:
+    path = Path(value) if value is not None else root / PRIVATE_BASELINE
+    if not path.is_absolute():
+        path = root / path
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError:
+        raise ProfileClientsError("private baseline directory is unavailable") from None
+    if not resolved.is_dir():
+        raise ProfileClientsError("private baseline path is not a directory")
+    return resolved
+
+
+def _baseline_paths(baseline_dir: Path) -> tuple[Path, Path]:
+    matches = []
+    for clash_name, surge_name in BASELINE_FILE_PAIRS:
+        clash_path, surge_path = baseline_dir / clash_name, baseline_dir / surge_name
+        if clash_path.is_file() and surge_path.is_file():
+            matches.append((clash_path, surge_path))
+    if len(matches) > 1:
+        raise ProfileClientsError("private baseline directory contains multiple supported input pairs")
+    if matches:
+        return matches[0]
+    raise ProfileClientsError("private baseline inputs are unavailable")
+
+
+def _load_baseline_manifest(baseline_dir: Path) -> Mapping[str, Any] | None:
+    for name in ("manifest.v1.json", "manifest.json"):
+        path = baseline_dir / name
+        if not path.is_file():
+            continue
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            raise ProfileClientsError("private baseline manifest cannot be read") from None
+        if not isinstance(value, Mapping):
+            raise ProfileClientsError("private baseline manifest has an invalid root")
+        return value
+    return None
 
 
 def _ensure_private_dir(root: Path, value: str | Path) -> Path:
@@ -1128,28 +1400,41 @@ def _write_private(path: Path, data: bytes) -> None:
     os.chmod(path, 0o600)
 
 
-def private_migrate(root: str | Path, private_dir: str | Path, base_url: str, *, converter_path: str | None = None) -> dict[str, Path]:
+def private_migrate(
+    root: str | Path, private_dir: str | Path, base_url: str, *,
+    converter_path: str | None = None, baseline_dir: str | Path | None = None,
+) -> dict[str, Path]:
     root = Path(root).resolve()
     base_url = _validate_base_url(base_url)
     target_dir = _ensure_private_dir(root, private_dir)
     candidate = _replay(root, converter_path)
-    baseline_dir = root / PRIVATE_BASELINE
+    baseline_dir = _resolve_baseline_dir(root, baseline_dir)
+    clash_path, surge_path = _baseline_paths(baseline_dir)
+    baseline_manifest = _load_baseline_manifest(baseline_dir)
+    if clash_path.name == V1_CLASH_BASELINE and baseline_manifest is None:
+        raise ProfileClientsError("deployed v1 baseline needs its manifest for safe provider source replay")
     try:
-        clash_raw = (baseline_dir / CLASH_BASELINE).read_bytes()
-        surge_raw = (baseline_dir / SURGE_BASELINE).read_bytes()
+        clash_raw = clash_path.read_bytes()
+        surge_raw = surge_path.read_bytes()
     except OSError:
-        raise ProfileClientsError("private baseline inputs are unavailable under .devflow/personal-routing") from None
+        raise ProfileClientsError("private baseline inputs are unavailable") from None
     clash = _load_yaml_private(clash_raw)
     surge_text = surge_raw.decode("utf-8")
     api = _load_api(root)
-    aliases = _source_aliases(candidate, api)
+    aliases = _source_aliases(candidate, api, baseline_manifest)
     migration_unsupported: list[dict[str, Any]] = []
     local_stages = {
         "mihomo": _private_inline_stages(api, "mihomo", clash, aliases, migration_unsupported),
         "surge": _private_inline_stages(api, "surge", surge_text, aliases, migration_unsupported),
     }
-    clash_candidate = _migrate_mihomo(candidate, clash, _surge_sections(surge_text)[1], base_url, root=root, local_stages=local_stages["mihomo"])
-    surge_candidate = _migrate_surge(candidate, surge_text, base_url, root=root, local_stages=local_stages["surge"])
+    clash_candidate = _migrate_mihomo(
+        candidate, clash, _surge_sections(surge_text)[1], base_url, root=root,
+        local_stages=local_stages["mihomo"], baseline_manifest=baseline_manifest,
+    )
+    surge_candidate = _migrate_surge(
+        candidate, surge_text, base_url, root=root, local_stages=local_stages["surge"],
+        baseline_manifest=baseline_manifest,
+    )
     report = compare_private(root, candidate, baseline_dir, _load_cases(root / CASE_PATH), local_stages=local_stages)
     report["unsupported_cases"].extend(migration_unsupported)
     outputs = {
@@ -1325,8 +1610,14 @@ def _rule_key(rule: Any, stage_id: str) -> tuple[str, str, str, str, int, str]:
     return (stage_id, str(rule.source), str(rule.type), str(rule.value), int(rule.line), str(rule.platform))
 
 
-def _source_aliases(candidate: Any, api: Any) -> dict[str, set[str]]:
-    aliases: dict[str, set[str]] = {}
+class _SourceAliases(dict[str, set[str]]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.group_sources: dict[str, dict[str, Any]] = {}
+
+
+def _source_aliases(candidate: Any, api: Any, baseline_manifest: Mapping[str, Any] | None = None) -> _SourceAliases:
+    aliases = _SourceAliases()
 
     def add(alias: str, source: str) -> None:
         normalized = urllib.parse.unquote(alias).replace("\\", "/").lstrip("/")
@@ -1380,16 +1671,101 @@ def _source_aliases(candidate: Any, api: Any) -> dict[str, set[str]]:
         add("rules/mihomo/cn-direct-domain.mrs", domain_text_source)
     elif "legacy:cn-direct-domain" in source_ids:
         add("rules/mihomo/cn-direct-domain.mrs", "legacy:cn-direct-domain")
+    if baseline_manifest is not None:
+        for manifest_key, source_prefix in (
+            ("groups", "baseline-group"), ("compact", "baseline-compact-group"),
+        ):
+            group_root = baseline_manifest.get(manifest_key, {})
+            if manifest_key == "compact" and isinstance(group_root, Mapping):
+                group_root = group_root.get("groups", {})
+            if not isinstance(group_root, Mapping):
+                continue
+            for platform in VALID_PLATFORMS:
+                groups = group_root.get(platform, [])
+                if not isinstance(groups, list):
+                    continue
+                for raw_group in groups:
+                    if not isinstance(raw_group, Mapping):
+                        continue
+                    group_id = raw_group.get("id")
+                    path = raw_group.get("path")
+                    stage_ids = raw_group.get("stages")
+                    if not isinstance(group_id, str) or not isinstance(path, str) or not isinstance(stage_ids, list):
+                        continue
+                    source_id = f"{source_prefix}:{platform}:{group_id}"
+                    aliases.group_sources[source_id] = {
+                        "id": group_id,
+                        "platform": platform,
+                        "compact": manifest_key == "compact",
+                        "stages": [stage_id for stage_id in stage_ids if isinstance(stage_id, str)],
+                        "rule_count": raw_group.get("rule_count"),
+                        "action": raw_group.get("action"),
+                        "dns": raw_group.get("dns"),
+                        "slot": raw_group.get("slot"),
+                    }
+                    add(path, source_id)
+                    dns_path = raw_group.get("dns_path")
+                    if isinstance(dns_path, str):
+                        add(dns_path, source_id)
     return aliases
 
 
+def _normalized_repository_reference(reference: str) -> tuple[str | None, bool]:
+    """Resolve only recognized repository URL shapes to a repo-relative path."""
+    raw = reference.strip().strip('"')
+    parsed = urllib.parse.urlsplit(raw)
+    path = urllib.parse.unquote(parsed.path if parsed.scheme else raw).replace("\\", "/").lstrip("/")
+    parts = [part for part in path.split("/") if part]
+    host = (parsed.hostname or "").casefold() if parsed.scheme else ""
+    repo_ref = False
+
+    def valid_ref(value: str) -> bool:
+        return value == "main" or bool(re.fullmatch(r"[0-9a-fA-F]{7,40}", value))
+
+    rest: list[str] = []
+    if host == "raw.githubusercontent.com":
+        if parsed.port is not None or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            return None, True
+        repo_ref = True
+        if [part.casefold() for part in parts[:2]] != ["zesming", "ruleset"]:
+            return None, True
+        parts = parts[2:]
+        if parts and valid_ref(parts[0]):
+            rest = parts[1:]
+    elif host == "github.com" or (not parsed.scheme and parts[:2] == ["zesming", "ruleset"]):
+        if parsed.scheme and (parsed.port is not None or parsed.username or parsed.password or parsed.query or parsed.fragment):
+            return None, True
+        repo_ref = True
+        if [part.casefold() for part in parts[:2]] != ["zesming", "ruleset"]:
+            return None, True
+        parts = parts[2:]
+        if parts and parts[0] == "raw":
+            parts = parts[1:]
+            if parts[:2] == ["refs", "heads"]:
+                parts = parts[2:]
+            elif parts[:2] == ["refs", "tags"]:
+                return None, True
+        if parts and valid_ref(parts[0]):
+            rest = parts[1:]
+    else:
+        return None, False
+
+    if not rest or any(part in {".", ".."} for part in rest):
+        return None, repo_ref
+    return "/".join(rest), repo_ref
+
+
 def _resolve_source_reference(reference: str, aliases: Mapping[str, set[str]], *, platform: str | None = None) -> str:
-    parsed = urllib.parse.urlsplit(reference.strip().strip('"'))
-    path = urllib.parse.unquote(parsed.path if parsed.scheme else reference.strip().strip('"')).replace("\\", "/").lstrip("/")
+    path, is_repository_reference = _normalized_repository_reference(reference)
+    if path is None:
+        if is_repository_reference:
+            raise ProfileClientsError("baseline repository URL is outside the archived source map")
+        parsed = urllib.parse.urlsplit(reference.strip().strip('"'))
+        path = urllib.parse.unquote(parsed.path if parsed.scheme else reference.strip().strip('"')).replace("\\", "/").lstrip("/")
     while path.startswith("./"):
         path = path[2:]
     exact = aliases.get(path.casefold())
-    if exact is None and path:
+    if exact is None and path and not is_repository_reference:
         exact = aliases.get(Path(path).name.casefold())
     if not exact:
         raise ProfileClientsError("baseline references a rule source outside the archived source map")
@@ -1397,6 +1773,8 @@ def _resolve_source_reference(reference: str, aliases: Mapping[str, set[str]], *
         preferred = {
             source for source in exact
             if source.startswith(f"rules/{platform}/") or source.startswith(f"{platform}.")
+            or source.startswith(f"baseline-group:{platform}:")
+            or source.startswith(f"baseline-compact-group:{platform}:")
         }
         if len(preferred) == 1:
             exact = preferred
@@ -1405,7 +1783,32 @@ def _resolve_source_reference(reference: str, aliases: Mapping[str, set[str]], *
     return next(iter(exact))
 
 
-def _source_rules(candidate: Any, source_id: str, platform: str) -> list[Any]:
+def _source_rules(candidate: Any, source_id: str, platform: str, aliases: Mapping[str, set[str]] | None = None) -> list[Any]:
+    group_sources = getattr(aliases, "group_sources", {}) if aliases is not None else {}
+    group = group_sources.get(source_id) if isinstance(group_sources, Mapping) else None
+    if isinstance(group, Mapping):
+        if group.get("platform") != platform:
+            raise ProfileClientsError("baseline group source belongs to another platform")
+        if group.get("compact") is True:
+            physical = next(
+                (stage for stage in _candidate_stages(candidate, platform) if stage.get("id") == group.get("id")),
+                None,
+            )
+            if physical is not None:
+                rules = [rule for rule in physical.get("rules", []) if rule.platform == platform]
+                if group.get("rule_count") != len(rules):
+                    raise ProfileClientsError("baseline compact group rule count does not match its physical candidate group")
+                return rules
+        stages_by_id = {stage.get("id"): stage for stage in candidate.stages if isinstance(stage, Mapping)}
+        result = []
+        for stage_id in dict.fromkeys(group.get("stages", [])):
+            stage = stages_by_id.get(stage_id)
+            if stage is None:
+                raise ProfileClientsError("baseline group references an unknown fine stage")
+            result.extend(rule for rule in stage.get("rules", []) if rule.platform == platform)
+        if result or group.get("rule_count") == 0:
+            return result
+        raise ProfileClientsError("baseline group maps to no archived rules for this platform")
     result: list[Any] = []
     for stage in candidate.stages:
         for rule in stage.get("rules", []):
@@ -1414,6 +1817,27 @@ def _source_rules(candidate: Any, source_id: str, platform: str) -> list[Any]:
     if not result:
         raise ProfileClientsError("baseline source maps to no archived rules for this platform")
     return result
+
+
+def _group_rule_sources(candidate: Any, group: Mapping[str, Any], platform: str) -> set[str]:
+    """Return exact source IDs represented by one manifest resource."""
+    if group.get("compact") is True:
+        physical = next(
+            (stage for stage in _candidate_stages(candidate, platform) if stage.get("id") == group.get("id")),
+            None,
+        )
+        if physical is not None:
+            return {
+                rule.source for rule in physical.get("rules", [])
+                if rule.platform == platform and isinstance(getattr(rule, "source", None), str)
+            }
+    stages_by_id = {stage.get("id"): stage for stage in candidate.stages if isinstance(stage, Mapping)}
+    sources: set[str] = set()
+    for stage_id in group.get("stages", []):
+        stage = stages_by_id.get(stage_id)
+        if stage is not None:
+            sources.update(rule.source for rule in stage.get("rules", []) if rule.platform == platform)
+    return sources
 
 
 def _split_rule_fields(line: str) -> list[str]:
@@ -1513,13 +1937,9 @@ def _private_inline_stages(api: Any, platform: str, baseline: Any, aliases: Mapp
                     endpoint_ip = str(ipaddress.ip_address(compound[1]))
                 except ValueError:
                     endpoint_ip = ""
-                expected_action = {
-                    "8.8.8.8": "US", "1.1.1.1": "US",
-                    "1.0.0.1": "JP", "8.8.4.4": "JP",
-                    "223.5.5.5": "DIRECT", "1.12.12.12": "DIRECT",
-                }.get(endpoint_ip)
+                expected_actions = DOH_ENDPOINT_ACTIONS.get(endpoint_ip, set())
                 actual_action, actual_reject = _old_policy(fields[2], known_targets)
-                if expected_action == actual_action and actual_reject is None:
+                if actual_action in expected_actions and actual_reject is None:
                     continue
             if platform != "surge" or len(fields) < 3:
                 raise ProfileClientsError("baseline has an unsupported inline AND route rule")
@@ -1599,7 +2019,7 @@ def _baseline_route_rule(
         if any(flag and flag != "no-resolve" and flag != "extended-matching" and not flag.startswith("update-interval=") for flag in flags):
             unsupported.append({"id": source_label, "reason": "unrecognized rule-set option", "rule_type": kind})
         source_id = _resolve_source_reference(reference, aliases, platform=platform)
-        rules = _source_rules(candidate, source_id, platform)
+        rules = _source_rules(candidate, source_id, platform, aliases)
         rule_stage = _stage(action, reject_mode, rules, stage_id=source_label, extended=extended)
         return rule_stage, {"line": line_no, "source": source_id, "action": action, "reject_mode": reject_mode, "extended_matching": extended}
 
@@ -1619,12 +2039,8 @@ def _baseline_route_rule(
                 unsupported.append({"id": source_label, "reason": "DoH route endpoint is not a literal IP", "rule_type": kind})
                 return None, None
             action, reject_mode = _old_policy(fields[2], known_targets)
-            expected_action = {
-                "8.8.8.8": "US", "1.1.1.1": "US",
-                "1.0.0.1": "JP", "8.8.4.4": "JP",
-                "223.5.5.5": "DIRECT", "1.12.12.12": "DIRECT",
-            }.get(endpoint)
-            if expected_action == action and reject_mode is None:
+            expected_actions = DOH_ENDPOINT_ACTIONS.get(endpoint, set())
+            if action in expected_actions and reject_mode is None:
                 return None, {"endpoint_ip": endpoint, "action": action, "reject_mode": reject_mode, "protocol": "DOH"}
         if platform == "surge" and len(fields) >= 3:
             action, reject_mode = _old_policy(fields[2], known_targets)
@@ -1712,13 +2128,15 @@ def _parse_old_routes(api: Any, platform: str, candidate: Any, baseline: Any, al
     return stages, endpoint_routes
 
 
-def _resolver_class(value: str) -> str | None:
+def _resolver_class(value: str, selector: str = "") -> str | None:
     raw = value.strip().strip('"')
     if raw.startswith("server:"):
         raw = raw[len("server:"):]
     lowered = raw.casefold()
     if lowered in {"system", "system://"}:
         return "system"
+    if "#test" in lowered:
+        return "TEST"
     if "#jp" in lowered:
         return "JP"
     if "#direct" in lowered:
@@ -1727,6 +2145,8 @@ def _resolver_class(value: str) -> str | None:
         return "US"
     parsed = urllib.parse.urlsplit(raw)
     host = (parsed.hostname or raw.split("#", 1)[0]).casefold()
+    if host == "8.8.4.4" and any(token in selector.casefold() for token in ("test", "测速", "网络测试")):
+        return "TEST"
     if host in {"1.0.0.1", "8.8.4.4"}:
         return "JP"
     if host in {"8.8.8.8", "1.1.1.1", "dns.google", "cloudflare-dns.com"}:
@@ -1747,7 +2167,7 @@ def _resolver_policy(values: Any, unsupported: list[dict[str, Any]], selector: s
     if not raw_values:
         unsupported.append({"id": selector, "reason": "resolver selector has no endpoints"})
         return "unsupported", []
-    classes = [_resolver_class(value) for value in raw_values]
+    classes = [_resolver_class(value, selector) for value in raw_values]
     if any(value is None for value in classes):
         unsupported.append({"id": selector, "reason": "resolver endpoint is outside the known US/JP/DIRECT/system map"})
         return "unsupported", raw_values
@@ -1794,7 +2214,7 @@ def _selector_rules(api: Any, platform: str, selector: str, candidate: Any, alia
     if value.startswith(("RULE-SET:", "DOMAIN-SET:")):
         reference = value.split(":", 1)[1]
         source_id = _resolve_source_reference(reference, aliases, platform=platform)
-        rules = _source_rules(candidate, source_id, platform)
+        rules = _source_rules(candidate, source_id, platform, aliases)
         return [rule for rule in rules if rule.type in DOMAIN_RULE_TYPES], False
     rule_type = "DOMAIN"
     if value.startswith("domain:"):
@@ -1850,7 +2270,7 @@ def _parse_old_dns(api: Any, platform: str, candidate: Any, baseline: Any, alias
                         raise ProfileClientsError("Mihomo DNS selector references an undefined provider")
                     try:
                         source_id = _resolve_source_reference(_provider_reference(provider), aliases, platform=platform)
-                        source_rules = _source_rules(candidate, source_id, platform)
+                        source_rules = _source_rules(candidate, source_id, platform, aliases)
                     except ProfileClientsError:
                         unsupported.append({
                             "id": f"{selector}:{name}",
@@ -1933,12 +2353,13 @@ def _result_route(result: Any) -> dict[str, Any] | None:
         reject_mode = "plain"
     return {
         "stage": result.stage.get("id"), "action": result.action,
+        "slot": result.stage.get("slot"), "stage_index": result.stage_index,
         "reject_mode": reject_mode,
     }
 
 
 def _dns_default_dns(intent: str) -> str:
-    return intent if intent in {"US", "JP", "DIRECT", "system"} else "unsupported"
+    return intent if intent in {"US", "JP", "TEST", "DIRECT", "system"} else "unsupported"
 
 
 def _dns_match(index: Any, stages: Sequence[Mapping[str, Any]], subject: Mapping[str, Any], platform: str, default: str):
@@ -1953,6 +2374,8 @@ def _dns_match(index: Any, stages: Sequence[Mapping[str, Any]], subject: Mapping
             intent = "DIRECT"
         elif intent == "jp":
             intent = "JP"
+        elif intent in {"us", "jp", "test", "direct", "system"}:
+            intent = intent.upper() if intent != "system" else "system"
         return intent, stage.get("selector"), matches[0]
     return _dns_default_dns(default), None, None
 
@@ -1996,6 +2419,8 @@ def _subject_examples(rule: Any) -> list[tuple[dict[str, Any], str]]:
 
 
 def _matching_representatives(rule: Any, api: Any) -> list[tuple[dict[str, Any], str]]:
+    if (rule.type, rule.value) == getattr(api, "SUKKA_IP_CANARY", None):
+        return []
     result = []
     for subject, evidence in _subject_examples(rule):
         try:
@@ -2012,8 +2437,8 @@ def _route_signature(route: Mapping[str, Any] | None) -> tuple[str, str | None] 
     action = str(route.get("action"))
     if action == "REJECT":
         return action, route.get("reject_mode")
-    # The old TEST policy selector defaults to US; its ability to be changed by
-    # the user remains a client control rather than a network-dependent result.
+    # TEST remains a user-selectable policy. A baseline's remembered choice is
+    # not evidence of the selection that will be active after deployment.
     return action, None
 
 
@@ -2034,7 +2459,7 @@ def _public_subject(subject: Mapping[str, Any]) -> dict[str, Any]:
 
 def _make_dns_stages(candidate: Any, platform: str) -> list[dict[str, Any]]:
     result = []
-    for stage in _domain_only_stages(candidate.stages, platform):
+    for stage in _domain_only_stages(_candidate_stages(candidate, platform), platform):
         if stage.get("dns") == "none":
             continue
         result.append(stage)
@@ -2045,7 +2470,7 @@ def _retained_dns_stages(old_stages: Sequence[Mapping[str, Any]], candidate: Any
     """Keep baseline local/unrelated DNS selectors while replacing migrated sources."""
     profile_sources = {
         rule.source
-        for stage in candidate.stages if stage.get("dns") != "none"
+        for stage in _candidate_stages(candidate, platform) if stage.get("dns") != "none"
         for rule in stage.get("rules", [])
         if rule.platform == platform and rule.type in DOMAIN_RULE_TYPES
     }
@@ -2089,8 +2514,13 @@ def _stage_witness(stage: Mapping[str, Any], platform: str, *, family: int | Non
     return None
 
 
-def _compare_independent_cases(report: dict[str, Any], platform: str, api: Any, candidate: Any, new_route_index: Any, old_route_index: Any, new_dns_index: Any, old_dns_index: Any, new_dns_stages: Sequence[Mapping[str, Any]], old_dns_stages: Sequence[Mapping[str, Any]], new_default_dns: str, old_default_dns: str, cases: Mapping[str, Any]) -> None:
+def _compare_independent_cases(report: dict[str, Any], platform: str, api: Any, candidate: Any, new_route_index: Any, new_route_stages: Sequence[Mapping[str, Any]], old_route_index: Any, new_dns_index: Any, old_dns_index: Any, new_dns_stages: Sequence[Mapping[str, Any]], old_dns_stages: Sequence[Mapping[str, Any]], new_default_dns: str, old_default_dns: str, cases: Mapping[str, Any]) -> None:
     stages = candidate.stages
+    physical_stages = _candidate_stages(candidate, platform)
+    try:
+        source_index = api.RuleIndex(stages, platform)
+    except Exception as exc:
+        raise ProfileClientsError(f"cannot index source membership rules for {platform}: {type(exc).__name__}") from exc
     results = report["independent_cases"]
     for case in cases["independent_cases"]:
         if platform not in case.get("platforms", []):
@@ -2147,23 +2577,33 @@ def _compare_independent_cases(report: dict[str, Any], platform: str, api: Any, 
             raise ProfileClientsError(f"case {case_id} has unsupported kind {kind!r}")
 
         for subject, evidence in samples:
-            new_result = _first_route(new_route_index, stages, subject, platform, api)
+            new_result = _first_route(new_route_index, physical_stages, subject, platform, api)
             old_result = _first_route(old_route_index, report["_old_stages"][platform], subject, platform, api)
             new_route = _result_route(new_result)
             old_route = _result_route(old_result)
             new_dns, new_selector, _ = _dns_match(new_dns_index, new_dns_stages, subject, platform, new_default_dns)
             old_dns, old_selector, _ = _dns_match(old_dns_index, old_dns_stages, subject, platform, old_default_dns)
             expected_stage = case.get("expected_new_stage")
+            expected_slot = case.get("expected_new_slot")
+            expected_stage_last = case.get("expected_new_stage_last")
             expected_action = case.get("expected_new_action")
             expected_old_action = case.get("expected_old_action")
             expected_dns = case.get("expected_new_dns")
             expected_stage_match = case.get("expected_stage_match")
             expected_membership = case.get("expected_membership", [])
+            if expected_slot is not None and not isinstance(expected_slot, str):
+                raise ProfileClientsError(f"case {case_id} has invalid expected_new_slot")
+            if expected_stage_last is not None and not isinstance(expected_stage_last, bool):
+                raise ProfileClientsError(f"case {case_id} has invalid expected_new_stage_last")
             if not isinstance(expected_membership, list) or not all(isinstance(item, str) for item in expected_membership):
                 raise ProfileClientsError(f"case {case_id} has invalid expected_membership")
-            matching_stage_ids = {match.stage.get("id") for match in _match_results(new_route_index, subject, platform)}
+            matching_stage_ids = {match.stage.get("id") for match in _match_results(source_index, subject, platform)}
             failed = (
                 (isinstance(expected_stage, str) and (new_route or {}).get("stage") != expected_stage)
+                or (isinstance(expected_slot, str) and (new_route or {}).get("slot") != expected_slot)
+                or (expected_stage_last is True and (
+                    new_result is None or not new_route_stages or new_result.stage is not new_route_stages[-1]
+                ))
                 or (isinstance(expected_action, str) and (new_route or {}).get("action") != expected_action)
                 or (isinstance(expected_old_action, str) and (old_route or {}).get("action") != expected_old_action)
                 or (isinstance(expected_dns, str) and new_dns != expected_dns)
@@ -2175,7 +2615,8 @@ def _compare_independent_cases(report: dict[str, Any], platform: str, api: Any, 
                 "subject": _public_subject(subject), "old_first": old_route,
                 "new_first": new_route, "old_dns": old_dns, "new_dns": new_dns,
                 "old_dns_selector": old_selector, "new_dns_selector": new_selector,
-                "expected_new_stage": expected_stage, "expected_new_action": expected_action,
+                "expected_new_stage": expected_stage, "expected_new_slot": expected_slot,
+                "expected_new_stage_last": expected_stage_last, "expected_new_action": expected_action,
                 "expected_old_action": expected_old_action, "expected_new_dns": expected_dns,
                 "expected_stage_match": expected_stage_match,
                 "expected_membership": expected_membership,
@@ -2213,12 +2654,17 @@ def _representative_evidence_class(evidence: str) -> str:
 def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mapping[str, Any], *, local_stages: Mapping[str, Sequence[Mapping[str, Any]]] | None = None) -> dict[str, Any]:
     """Compare full ordered route and DNS selectors using indexed first matches."""
     api = _load_api(root)
+    baseline_dir = _resolve_baseline_dir(root, baseline_dir)
+    clash_path, surge_path = _baseline_paths(baseline_dir)
+    baseline_manifest = _load_baseline_manifest(baseline_dir)
+    if clash_path.name == V1_CLASH_BASELINE and baseline_manifest is None:
+        raise ProfileClientsError("deployed v1 baseline needs its manifest for safe provider source replay")
     try:
-        clash = _load_yaml_private((baseline_dir / CLASH_BASELINE).read_bytes())
-        surge = (baseline_dir / SURGE_BASELINE).read_text(encoding="utf-8")
+        clash = _load_yaml_private(clash_path.read_bytes())
+        surge = surge_path.read_text(encoding="utf-8")
     except OSError:
         raise ProfileClientsError("private baseline inputs are unavailable") from None
-    aliases = _source_aliases(candidate, api)
+    aliases = _source_aliases(candidate, api, baseline_manifest)
     unsupported: list[dict[str, Any]] = list(cases.get("unsupported_cases", []))
     if local_stages is None:
         local_unsupported: list[dict[str, Any]] = []
@@ -2252,7 +2698,7 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
         "limitations": [
             "Route and DNS results use archived rule bytes and explicit matcher metadata; no live DNS, GeoIP or ASN database is queried.",
             "Representative rule coverage describes source entries with generated probes, not all possible user traffic.",
-            "Mihomo baseline fake-IP mode was implicit; the comparison reports resolver ownership separately from the explicit fake-IP mode change.",
+            "Resolver ownership comparisons do not establish fake-IP allocation or packet handling; those require actual-client runtime checks.",
             "DNS comparison is an ordered selector/resolver ownership model only; it does not verify live Mihomo policy priority or Surge remote proxy-side DNS resolution.",
             "Static route diffs exclude migration-generated node endpoint bypass and DoH endpoint route rules; these require separate syntax and client-engine verification.",
         ],
@@ -2263,7 +2709,8 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
     for platform in ("mihomo", "surge"):
         # Compare the actual private migration route program: retained baseline
         # inline exceptions run before the generated profile stages.
-        new_stages = [*local_stages.get(platform, ()), *candidate.stages]
+        profile_stages = _candidate_stages(candidate, platform)
+        new_stages = [*local_stages.get(platform, ()), *profile_stages]
         old_platform_stages = old_stages[platform]
         old_dns_stages, old_default_dns = old_dns[platform]
         new_dns_stages = [*_retained_dns_stages(old_dns_stages, candidate, platform), *_make_dns_stages(candidate, platform)]
@@ -2274,8 +2721,21 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
             old_dns_index = api.RuleIndex(old_dns_stages, platform)
         except Exception as exc:
             raise ProfileClientsError(f"cannot index route/DNS rules for {platform}: {type(exc).__name__}") from exc
-        old_rules = [(stage, rule) for stage in old_platform_stages for rule in stage.get("rules", []) if rule.platform == platform]
-        new_rules = [(stage, rule) for stage in new_stages for rule in stage.get("rules", []) if rule.platform == platform]
+        # Fail independent acceptance cases before the much larger source-probe
+        # expansion. Diagnostic canaries are not business routing witnesses.
+        report["platforms"][platform] = {
+            "case_count": sum(1 for case in cases["independent_cases"] if platform in case.get("platforms", [])),
+            "independent_case_evidence_counts": {},
+            "independent_case_evidence_status_counts": {},
+        }
+        _compare_independent_cases(
+            report, platform, api, candidate, new_route_index, new_stages, old_route_index,
+            new_dns_index, old_dns_index, new_dns_stages, old_dns_stages,
+            "US", old_default_dns, cases,
+        )
+        canary = getattr(api, "SUKKA_IP_CANARY", None)
+        old_rules = [(stage, rule) for stage in old_platform_stages for rule in stage.get("rules", []) if rule.platform == platform and (rule.type, rule.value) != canary]
+        new_rules = [(stage, rule) for stage in new_stages for rule in stage.get("rules", []) if rule.platform == platform and (rule.type, rule.value) != canary]
         route_diff: dict[str, dict[str, Any]] = {}
         dns_diff: dict[str, dict[str, Any]] = {}
         covered_old: set[tuple[str, str, str, str, int, str]] = set()
@@ -2319,11 +2779,6 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
                         new_dns_intent, _, _ = _dns_match(new_dns_index, new_dns_stages, subject, platform, "US")
                         _diff_bucket(dns_diff, old_dns_intent, new_dns_intent, subject, evidence)
                         dns_sample_count += 1
-        report["platforms"][platform] = {
-            "case_count": sum(1 for case in cases["independent_cases"] if platform in case.get("platforms", [])),
-            "independent_case_evidence_counts": {},
-            "independent_case_evidence_status_counts": {},
-        }
         for matcher_label, matcher_index in (
             ("old-route", old_route_index), ("new-migrated-route", new_route_index),
             ("old-dns", old_dns_index), ("new-dns", new_dns_index),
@@ -2332,16 +2787,11 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
                 item = {"id": f"{platform}:{matcher_label}:{limitation.get('stage')}:{limitation.get('type')}", "reason": limitation.get("reason")}
                 if item not in unsupported:
                     unsupported.append(item)
-        _compare_independent_cases(
-            report, platform, api, candidate, new_route_index, old_route_index,
-            new_dns_index, old_dns_index, new_dns_stages, old_dns_stages,
-            "US", old_default_dns, cases,
-        )
         old_count, new_count = len(old_rules), len(new_rules)
         platform_result = {
             "old_rule_count": old_count,
             "new_rule_count": new_count,
-            "new_profile_rule_count": sum(1 for stage in candidate.stages for rule in stage.get("rules", []) if rule.platform == platform),
+            "new_profile_rule_count": sum(1 for stage in profile_stages for rule in stage.get("rules", []) if rule.platform == platform),
             "new_retained_local_rule_count": sum(1 for stage in local_stages.get(platform, ()) for rule in stage.get("rules", []) if rule.platform == platform),
             "old_rules_with_representative": len(covered_old),
             "new_rules_with_representative": len(covered_new),
@@ -2359,6 +2809,7 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
             "dns_differences": list(dns_diff.values()),
             "case_count": report["platforms"].get(platform, {}).get("case_count", 0),
             "coverage_note": "Every representable old/new rule gets a bounded source-derived probe; rule-level coverage is not all-flow equivalence.",
+            "diagnostic_canaries_excluded": True,
         }
         report["platforms"][platform] = platform_result
     report.pop("_old_stages", None)
@@ -2461,12 +2912,16 @@ def build_parser() -> argparse.ArgumentParser:
     migrate.add_argument("--base-url", default=argparse.SUPPRESS, help="resource root for private candidate configs")
     migrate.add_argument("--converter", default=argparse.SUPPRESS)
     migrate.add_argument("--private-dir", type=Path, required=True)
+    migrate.add_argument("--baseline-dir", type=Path, default=argparse.SUPPRESS,
+                         help="directory containing either the original baseline pair or deployed v1 pair")
     compare = subparsers.add_parser("compare", help="write the private route/DNS comparison report")
     compare.add_argument("--root", type=Path, default=argparse.SUPPRESS)
     compare.add_argument("--base-url", default=argparse.SUPPRESS)
     compare.add_argument("--converter", default=argparse.SUPPRESS)
     compare.add_argument("--private-dir", type=Path, required=True)
     compare.add_argument("--cases", type=Path, default=Path(CASE_PATH))
+    compare.add_argument("--baseline-dir", type=Path, default=argparse.SUPPRESS,
+                         help="directory containing either the original baseline pair or deployed v1 pair")
     return parser
 
 
@@ -2484,13 +2939,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote credential-free snippets under {target}")
             return 0
         if args.command == "migrate":
-            outputs = private_migrate(root, args.private_dir, args.base_url, converter_path=args.converter)
+            outputs = private_migrate(
+                root, args.private_dir, args.base_url, converter_path=args.converter,
+                baseline_dir=getattr(args, "baseline_dir", None),
+            )
             for label, path in outputs.items():
                 print(f"{label}: {path}")
             return 0
         if args.command == "compare":
             cases_path = args.cases if args.cases.is_absolute() else root / args.cases
-            report = compare_private(root, _replay(root, args.converter), root / PRIVATE_BASELINE, _load_cases(cases_path))
+            baseline_dir = _resolve_baseline_dir(root, getattr(args, "baseline_dir", None))
+            report = compare_private(root, _replay(root, args.converter), baseline_dir, _load_cases(cases_path))
             target = _ensure_private_dir(root, args.private_dir)
             json_path = target / "route-dns-comparison.json"
             markdown_path = target / "route-dns-comparison.md"
