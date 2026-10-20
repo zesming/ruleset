@@ -45,6 +45,11 @@ SURGE_US_DOH = ("https://8.8.8.8/dns-query", "https://1.1.1.1/dns-query")
 SURGE_JP_DOH = ("https://1.0.0.1/dns-query",)
 SURGE_TEST_DOH = ("https://8.8.4.4/dns-query",)
 SURGE_DOMESTIC_DOH = ("https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query")
+SURGE_REGION_GROUPS = {"US": "🇺🇸 US", "JP": "🇯🇵 JP"}
+SURGE_REGION_LEAVES = {
+    ("US", "snell"): "🇺🇸 Snell", ("US", "tuic"): "🇺🇸 TUIC",
+    ("JP", "snell"): "🇯🇵 Snell", ("JP", "tuic"): "🇯🇵 TUIC",
+}
 ATT_REAL_IP = ("epdg.epc.att.net", "epdg.epc.att-idns.net")
 NINTENDO_REAL_IP = ("+.srv.nintendo.net", "*.n.n.srv.nintendo.net")
 SURGE_NINTENDO_REAL_IP = ("*.srv.nintendo.net", "*.n.n.srv.nintendo.net")
@@ -402,7 +407,7 @@ def _surge_target(group: Mapping[str, Any]) -> str:
     action = group["action"]
     mode = group.get("reject_mode")
     if action != "REJECT":
-        return action
+        return SURGE_REGION_GROUPS.get(action, action)
     if mode not in {None, "plain", "drop", "no-drop"}:
         raise ProfileClientsError(f"unsupported reject mode {mode!r}")
     return {"drop": "REJECT-DROP", "no-drop": "REJECT-NO-DROP", "plain": "REJECT", None: "REJECT"}[mode]
@@ -440,9 +445,6 @@ def render_mihomo_snippet(candidate: Any, base_url: str) -> str:
         policy_lines.extend(f"      - {_yaml_quote(value)}" for value in values)
     all_providers = [line for block in provider_blocks.values() for line in block]
     lines = [
-        "# Generated from profiles/us-primary.json by scripts/profile_clients.py.",
-        "# Bind the canonical US / JP / TEST / DIRECT / REJECT policies to local selectors.",
-        "# No node definitions or credentials are included.",
         "rule-providers:", *all_providers,
         "rules:", *ordered_rules,
         "dns:", "  enable: true", "  enhanced-mode: fake-ip",
@@ -459,25 +461,16 @@ def render_surge_snippet(candidate: Any, base_url: str) -> str:
     base_url = _validate_base_url(base_url)
     groups = _groups(candidate, "surge")
     host_lines: list[str] = []
-    last_slot: str | None = None
     for group in groups:
         dns_selector = _surge_dns_selector(group, base_url)
         dns_endpoints = _dns_endpoints(group, "surge")
         if dns_selector and dns_endpoints:
-            # Keep system resolution explicit; encrypted endpoints use server: URLs.
-            slot = str(group.get("slot", group["id"]))
-            if slot != last_slot:
-                host_lines.append(f"# slot: {slot}")
-                last_slot = slot
             if dns_endpoints == ("system",):
                 host_lines.append(f"{dns_selector} = server:system")
             else:
                 host_lines.append(f"{dns_selector} = server:{', '.join(dns_endpoints)}")
     ordered_route_lines = _surge_route_lines(candidate, base_url)
     lines = [
-        "# Generated from profiles/us-primary.json by scripts/profile_clients.py.",
-        "# Bind US / JP / TEST / DIRECT / REJECT to the matching local policies.",
-        "# No node definitions or credentials are included.",
         "[General]",
         "encrypted-dns-server = " + ", ".join(SURGE_US_DOH),
         "encrypted-dns-follow-outbound-mode = true",
@@ -497,9 +490,9 @@ def _surge_endpoint_rules() -> list[str]:
     return [
         "AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),DIRECT",
         "AND,((PROTOCOL,DOH),(DOMAIN,1.12.12.12)),DIRECT",
-        "AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),US",
-        "AND,((PROTOCOL,DOH),(DOMAIN,1.1.1.1)),US",
-        "AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),JP",
+        f"AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),{SURGE_REGION_GROUPS['US']}",
+        f"AND,((PROTOCOL,DOH),(DOMAIN,1.1.1.1)),{SURGE_REGION_GROUPS['US']}",
+        f"AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),{SURGE_REGION_GROUPS['JP']}",
         "AND,((PROTOCOL,DOH),(DOMAIN,8.8.4.4)),TEST",
     ]
 
@@ -591,11 +584,38 @@ def _surge_sections(text: str) -> tuple[list[str], list[SurgeSection]]:
 
 
 def _render_surge_sections(preamble: Sequence[str], sections: Sequence[SurgeSection]) -> str:
-    parts = list(preamble)
+    def clean_lines(lines: Sequence[str]) -> list[str]:
+        kept: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith(("#", ";")):
+                if not _keep_surge_comment(stripped):
+                    continue
+            if not stripped:
+                continue
+            kept.append(line)
+        return kept
+
+    parts = clean_lines(preamble)
     for section in sections:
+        body = clean_lines(section.lines)
+        while body and not body[-1].strip():
+            body.pop()
+        if not body:
+            continue
+        if parts and parts[-1].strip():
+            parts.append("")
         parts.append(section.header)
-        parts.extend(section.lines)
+        parts.extend(body)
     return "\n".join(parts).rstrip() + "\n"
+
+
+def _keep_surge_comment(line: str) -> bool:
+    lowered = line.casefold()
+    return line.startswith("#!") or "epdg" in lowered or (
+        "jp" in lowered
+        and any(token in lowered for token in ("empty", "reserved", "reserve", "空", "预留"))
+    )
 
 
 def _section(sections: list[SurgeSection], name: str, *, create: bool = False) -> SurgeSection:
@@ -627,8 +647,8 @@ def _surge_rule_lines(section: SurgeSection) -> list[str]:
     return [line for line in section.lines if line.strip() and not line.lstrip().startswith(("#", ";"))]
 
 
-def _replace_section_rules(section: SurgeSection, rules: Iterable[str], comment: str) -> None:
-    section.lines = [comment, *rules]
+def _replace_section_rules(section: SurgeSection, rules: Iterable[str]) -> None:
+    section.lines = list(rules)
 
 
 def _load_yaml_private(data: bytes) -> dict[str, Any]:
@@ -804,10 +824,18 @@ def _canonical_mihomo_groups(config: dict[str, Any], jp_node: dict[str, Any]) ->
     for proxy in proxies:
         if id(proxy) not in selected_nodes and proxy.get("name") in {"US", "JP"}:
             raise ProfileClientsError("private Mihomo proxy name conflicts with a canonical TUIC leaf")
-    # Rename the two country TUIC definitions in place. Credentials and all
-    # transport fields remain exactly as supplied by the baseline.
+    # Rename the country TUIC definitions while preserving node identity fields.
+    # Apply only the reviewed Mihomo TUIC compatibility settings below.
     us_nodes[0]["name"] = "US"
     jp_nodes[0]["name"] = "JP"
+    if us_nodes[0].get("fast-open") is True:
+        us_nodes[0].pop("fast-open")
+    jp_nodes[0].update({
+        "congestion-controller": "bbr",
+        "heartbeat-interval": 8000,
+        "disable-sni": False,
+        "udp-relay-mode": "native",
+    })
 
     group_names: set[str] = set()
     for group in groups:
@@ -1089,8 +1117,6 @@ def _surge_group_references(fields: Sequence[str], known_names: set[str]) -> tup
             options.append(raw.strip())
         else:
             raise ProfileClientsError("private Surge proxy-group has an unknown member or option")
-    if any(option.split("=", 1)[0].strip().casefold().startswith("include-") for option in options):
-        raise ProfileClientsError("private Surge proxy-group uses unsupported dynamic membership options")
     return members, options
 
 
@@ -1104,7 +1130,7 @@ def _is_surge_snell_v6(protocol: str, fields: Sequence[str]) -> bool:
 
 
 def _canonical_surge_proxy_names(sections: Sequence[SurgeSection]) -> list[tuple[str, str, list[str]]]:
-    """Rename the two Snell v6 and two TUIC leaves without touching their RHS."""
+    """Rename the four country leaves while preserving their parsed RHS values."""
     proxy = _section(list(sections), "Proxy")
     entries = _surge_proxy_entries(sections)
     by_region: dict[str, dict[str, list[str]]] = {
@@ -1126,12 +1152,12 @@ def _canonical_surge_proxy_names(sections: Sequence[SurgeSection]) -> list[tuple
             if len(by_region[region][kind]) != 1:
                 expected = "TUIC" if kind == "tuic" else "Snell version 6"
                 raise ProfileClientsError(f"private Surge baseline must contain exactly one {region} {expected} node")
-        selected[by_region[region]["snell"][0]] = region
-        selected[by_region[region]["tuic"][0]] = f"{region}-TUIC"
+        selected[by_region[region]["snell"][0]] = SURGE_REGION_LEAVES[(region, "snell")]
+        selected[by_region[region]["tuic"][0]] = SURGE_REGION_LEAVES[(region, "tuic")]
     if len(entries) != 4:
         raise ProfileClientsError("private Surge profile must contain exactly four proxy leaves")
-    for name, protocol, _fields in entries:
-        canonical = {"US", "JP", "US-TUIC", "JP-TUIC"}
+    canonical = set(SURGE_REGION_LEAVES.values())
+    for name, _protocol, _fields in entries:
         if name in canonical and name not in selected:
             raise ProfileClientsError("private Surge proxy name conflicts with a canonical leaf")
     for index, line in enumerate(proxy.lines):
@@ -1140,24 +1166,21 @@ def _canonical_surge_proxy_names(sections: Sequence[SurgeSection]) -> list[tuple
             continue
         target_name = selected[parsed[0]]
         if target_name != parsed[0]:
-            # Keep the entire right-hand side, including exact credentials,
-            # endpoint formatting, and transport tuning, byte-for-value.
-            proxy.lines[index] = target_name + line[line.index("="):]
+            # Keep every endpoint, credential, option, and field value; normalize
+            # only the spacing around the assignment for readable output.
+            rhs = line.split("=", 1)[1].strip()
+            proxy.lines[index] = f"{target_name} = {rhs}"
     return _surge_proxy_entries(sections)
 
 
 def _surge_group_aliases(section: SurgeSection, proxy_entries: Sequence[tuple[str, str, list[str]]]) -> list[str]:
-    """Keep the four direct proxy leaves and expose only the TEST selector."""
+    """Rebuild country Smart groups and the small, user-facing TEST selector."""
     groups = _surge_group_index(section)
-    tuic_by_region = {
-        region: [name for name, protocol, _fields in proxy_entries if protocol in {"tuic", "tuic-v5"} and _node_region(name) == region]
-        for region in ("US", "JP")
-    }
-    if any(len(names) != 1 for names in tuic_by_region.values()):
-        raise ProfileClientsError("private Surge baseline must contain exactly one TUIC leaf per country")
     expected = {
-        "us": {"snell"}, "jp": {"snell"},
-        "us-tuic": {"tuic", "tuic-v5"}, "jp-tuic": {"tuic", "tuic-v5"},
+        SURGE_REGION_LEAVES[("US", "snell")].casefold(): {"snell", "snell-v6"},
+        SURGE_REGION_LEAVES[("US", "tuic")].casefold(): {"tuic", "tuic-v5"},
+        SURGE_REGION_LEAVES[("JP", "snell")].casefold(): {"snell", "snell-v6"},
+        SURGE_REGION_LEAVES[("JP", "tuic")].casefold(): {"tuic", "tuic-v5"},
     }
     observed = {name.casefold(): protocol for name, protocol, _fields in proxy_entries}
     if len(observed) != 4 or set(observed) != set(expected):
@@ -1165,7 +1188,10 @@ def _surge_group_aliases(section: SurgeSection, proxy_entries: Sequence[tuple[st
     if any(observed[name] not in protocols for name, protocols in expected.items()):
         raise ProfileClientsError("private Surge country leaves must be Snell v6 and TUIC")
     for name, protocol, fields in proxy_entries:
-        if name.casefold() in {"us", "jp"} and not _is_surge_snell_v6(protocol, fields):
+        if name.casefold() in {
+            SURGE_REGION_LEAVES[("US", "snell")].casefold(),
+            SURGE_REGION_LEAVES[("JP", "snell")].casefold(),
+        } and not _is_surge_snell_v6(protocol, fields):
             raise ProfileClientsError("private Surge country leaves must use Snell protocol version 6")
     test_candidates = [
         name for name in groups
@@ -1173,40 +1199,22 @@ def _surge_group_aliases(section: SurgeSection, proxy_entries: Sequence[tuple[st
     ]
     if len(test_candidates) != 1:
         raise ProfileClientsError("private Surge baseline must have exactly one reusable TEST group")
-    return ["TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT"]
+    us, jp = SURGE_REGION_GROUPS["US"], SURGE_REGION_GROUPS["JP"]
+    us_snell, us_tuic = SURGE_REGION_LEAVES[("US", "snell")], SURGE_REGION_LEAVES[("US", "tuic")]
+    jp_snell, jp_tuic = SURGE_REGION_LEAVES[("JP", "snell")], SURGE_REGION_LEAVES[("JP", "tuic")]
+    return [
+        f"{us} = smart, {us_snell}, {us_tuic}",
+        f"{jp} = smart, {jp_snell}, {jp_tuic}",
+        f"TEST = select, {us}, {jp}, DIRECT",
+    ]
 
 
 def _rewrite_surge_host_comments(host_section: SurgeSection) -> None:
-    """Refresh generated Host guidance while preserving user mappings and notes."""
-    title = "# DNS policy selectors for this profile and retained private mappings."
-    rewritten: list[str] = []
-    title_written = False
-    for line in host_section.lines:
-        stripped = line.strip()
-        if stripped.startswith(("#", ";")):
-            lowered = stripped.casefold()
-            refreshed: list[str] = []
-            if "dns-fallback" in lowered:
-                refreshed.append("DoH endpoint routing uses explicit protocol-qualified rules in [Rule].")
-            if "cnbanned" in lowered:
-                refreshed.append("Resolver ownership follows this ordered Host selector, independent of proxy choices.")
-            if "apple" in lowered and any(token in lowered for token in ("组", "group", "选择")):
-                refreshed.append("Apple resolver policy is fixed by the matching Host selectors.")
-            if refreshed:
-                rewritten.append("# " + " ".join(refreshed))
-            elif not title_written and (
-                ("dns" in lowered and any(token in lowered for token in ("分流", "selector", "policy", "host", "解析", "域名", "配置", "标题", "策略")))
-                or ("host" in lowered and any(token in lowered for token in ("selector", "policy", "mapping", "解析", "域名", "配置", "标题", "策略")))
-            ):
-                rewritten.append(title)
-                title_written = True
-            else:
-                rewritten.append(line)
-            continue
-        rewritten.append(line)
-    if not title_written:
-        rewritten.insert(0, title)
-    host_section.lines = rewritten
+    """Remove retired commentary while retaining active Host selectors/mappings."""
+    host_section.lines = [
+        line for line in host_section.lines
+        if not line.strip().startswith(("#", ";")) or _keep_surge_comment(line.strip())
+    ]
 
 
 def _surge_dns(
@@ -1214,16 +1222,11 @@ def _surge_dns(
     baseline_manifest: Mapping[str, Any] | None = None,
 ) -> list[str]:
     lines = []
-    last_slot: str | None = None
     profile_groups = _groups(candidate, "surge")
     for group in profile_groups:
         selector = _surge_dns_selector(group, base_url)
         endpoints = _dns_endpoints(group, "surge")
         if selector and endpoints:
-            slot = str(group.get("slot", group["id"]))
-            if slot != last_slot:
-                lines.append(f"# slot: {slot}")
-                last_slot = slot
             if endpoints == ("system",):
                 server_value = "server:system"
             else:
@@ -1303,12 +1306,9 @@ def _migrate_surge(
             raise ProfileClientsError(f"private Surge baseline must preserve {region} TUIC and Snell nodes")
     proxy_entries = _canonical_surge_proxy_names(sections)
     generated_groups = _surge_group_aliases(proxy_group, proxy_entries)
-    proxy_group.lines = [
-        "# TEST lists the four direct Snell v6 and TUIC proxy leaves.",
-        *generated_groups,
-    ]
+    proxy_group.lines = generated_groups
     node_rules = _node_endpoint_rules(proxy_nodes, platform="surge", root=root)
-    _replace_section_rules(route, _surge_route_lines(candidate, base_url, node_rules, local_stages), "# Personal profile route, generated from the ordered manifest and retained local exceptions.")
+    _replace_section_rules(route, _surge_route_lines(candidate, base_url, node_rules, local_stages))
     _rewrite_surge_host_comments(host)
     _surge_dns(host, candidate, base_url, root, baseline_manifest)
     return _render_surge_sections(preamble, sections).encode("utf-8")
@@ -1509,10 +1509,12 @@ def _known_policy_targets(platform: str, baseline: Any) -> set[str]:
             return leaf_actions[name]
         if name not in choices and upper in {"US", "JP", "TEST"}:
             return upper
-        if name not in choices or not choices[name]:
-            raise ProfileClientsError("baseline policy group references an unknown or empty target")
         if any(token in name.casefold() for token in ("test", "测速", "网络测试")):
             return "TEST"
+        if name not in choices and _node_region(name):
+            return _node_region(name) or "US"
+        if name not in choices or not choices[name]:
+            raise ProfileClientsError("baseline policy group references an unknown or empty target")
         # A static comparison uses the configured first choice, not remembered
         # UI selections or the time-varying Smart result.
         return resolve(choices[name][0], visiting | {name})
@@ -1698,10 +1700,14 @@ def _source_aliases(candidate: Any, api: Any, baseline_manifest: Mapping[str, An
                         "platform": platform,
                         "compact": manifest_key == "compact",
                         "stages": [stage_id for stage_id in stage_ids if isinstance(stage_id, str)],
-                        "rule_count": raw_group.get("rule_count"),
-                        "action": raw_group.get("action"),
-                        "dns": raw_group.get("dns"),
-                        "slot": raw_group.get("slot"),
+                        **{
+                            key: raw_group[key]
+                            for key in (
+                                "rule_count", "action", "dns", "slot", "reject_mode",
+                                "extended_matching", "no_resolve",
+                            )
+                            if key in raw_group
+                        },
                     }
                     add(path, source_id)
                     dns_path = raw_group.get("dns_path")
@@ -1790,10 +1796,7 @@ def _source_rules(candidate: Any, source_id: str, platform: str, aliases: Mappin
         if group.get("platform") != platform:
             raise ProfileClientsError("baseline group source belongs to another platform")
         if group.get("compact") is True:
-            physical = next(
-                (stage for stage in _candidate_stages(candidate, platform) if stage.get("id") == group.get("id")),
-                None,
-            )
+            physical = _compact_source_stage(candidate, platform, group)
             if physical is not None:
                 rules = [rule for rule in physical.get("rules", []) if rule.platform == platform]
                 if group.get("rule_count") != len(rules):
@@ -1822,10 +1825,7 @@ def _source_rules(candidate: Any, source_id: str, platform: str, aliases: Mappin
 def _group_rule_sources(candidate: Any, group: Mapping[str, Any], platform: str) -> set[str]:
     """Return exact source IDs represented by one manifest resource."""
     if group.get("compact") is True:
-        physical = next(
-            (stage for stage in _candidate_stages(candidate, platform) if stage.get("id") == group.get("id")),
-            None,
-        )
+        physical = _compact_source_stage(candidate, platform, group)
         if physical is not None:
             return {
                 rule.source for rule in physical.get("rules", [])
@@ -1838,6 +1838,35 @@ def _group_rule_sources(candidate: Any, group: Mapping[str, Any], platform: str)
         if stage is not None:
             sources.update(rule.source for rule in stage.get("rules", []) if rule.platform == platform)
     return sources
+
+
+def _compact_source_stage(candidate: Any, platform: str, group: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """Find a compact group by its current physical ID, then its stable slot."""
+    stages = _candidate_stages(candidate, platform)
+    physical = next((stage for stage in stages if stage.get("id") == group.get("id")), None)
+    if physical is not None:
+        return physical
+
+    slot = group.get("slot")
+    if not isinstance(slot, str):
+        return None
+    compact = candidate.manifest.get("compact")
+    compact_groups = compact.get("groups") if isinstance(compact, Mapping) else None
+    groups = compact_groups.get(platform) if isinstance(compact_groups, Mapping) else None
+    if not isinstance(groups, list):
+        return None
+    matching = [
+        item for item in groups
+        if isinstance(item, Mapping)
+        and item.get("slot") == slot
+        and all(item.get(key) == group[key] for key in (
+            "rule_count", "action", "dns", "reject_mode", "extended_matching", "no_resolve",
+        ) if key in group)
+    ]
+    if len(matching) != 1:
+        return None
+    group_id = matching[0].get("id")
+    return next((stage for stage in stages if stage.get("id") == group_id), None)
 
 
 def _split_rule_fields(line: str) -> list[str]:

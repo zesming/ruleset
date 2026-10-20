@@ -10,10 +10,32 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests"))
 import personal_profile  # noqa: E402
-from test_personal_profile import compile_candidate, legacy_inputs, profile_value, snapshots  # noqa: E402
+from test_personal_profile import compile_candidate, legacy_inputs, old_compact_group_id, profile_value, snapshots  # noqa: E402
 
 
 CANARY = b"7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe"
+EXPECTED_COMPACT_RENAMES = {
+    "priority-lan-domain": "lan-direct",
+    "priority-test-domain": "test",
+    "priority-reject-classical": "reject-drop",
+    "priority-reject-domain": "reject",
+    "priority-reject-classical-2": "reject-rules",
+    "priority-reject-domain-2": "reject-extra",
+    "priority-reject-classical-3": "reject-no-drop",
+    "priority-reject-classical-4": "reject-extra-rules",
+    "priority-jp-classical": "jp-proxy",
+    "priority-us-classical": "us-proxy",
+    "priority-us-classical-2": "us-proxy-ext",
+    "priority-cn-direct-domain": "cn-direct",
+    "priority-cn-direct-classical": "cn-direct-extra",
+    "priority-lan-ip-classical": "lan-direct-ip",
+    "priority-reject-ip-classical": "reject-ip",
+    "priority-jp-ip-classical": "jp-proxy-ip",
+    "priority-us-ip-classical": "us-proxy-ip",
+    "priority-direct-ip-classical": "direct-ip",
+    "priority-us-ip-late-classical": "us-proxy-ip-late",
+    "priority-cn-ip-classical": "cn-direct-ip",
+}
 
 
 def compact_groups(candidate, platform: str) -> list[dict]:
@@ -22,6 +44,14 @@ def compact_groups(candidate, platform: str) -> list[dict]:
 
 def slot_groups(candidate, platform: str, slot: str) -> list[dict]:
     return [group for group in compact_groups(candidate, platform) if group["slot"] == slot]
+
+
+def old_compact_id(group: dict, ordinals: dict[tuple[str, str], int]) -> str:
+    slot, capability = group["slot"], group["capability"]
+    key = (slot, capability)
+    ordinals[key] = ordinals.get(key, 0) + 1
+    group_id = f"priority-{slot}-{capability}"
+    return group_id if ordinals[key] == 1 else f"{group_id}-{ordinals[key]}"
 
 
 class PriorityProfileTests(unittest.TestCase):
@@ -47,10 +77,107 @@ class PriorityProfileTests(unittest.TestCase):
                 for stage in stages if stage["group_by_platform"].get(platform) is not None
             ])
             for group in groups:
-                self.assertTrue(group["path"].startswith(f"rules/personal/{platform}/priority-"))
+                self.assertFalse(group["id"].startswith("priority-"))
+                self.assertEqual(Path(group["path"]).stem, group["id"])
+                self.assertEqual(Path(group["path"]).parent.name, "route")
                 self.assertEqual(group["dns_path"], group["path"])
                 self.assertEqual(group["dns_kind"], "route")
                 self.assertEqual(group["kind"], "route")
+
+    def test_canonical_names_replace_old_paths_and_manifest_closes_outputs(self) -> None:
+        candidate = compile_candidate()
+        self.assertEqual(personal_profile.LEGACY_COMPACT_GROUP_IDS, EXPECTED_COMPACT_RENAMES)
+        canonical_paths: list[str] = []
+
+        for platform in ("mihomo", "surge"):
+            groups = compact_groups(candidate, platform)
+            group_ids = [group["id"] for group in groups]
+            paths = [group["path"] for group in groups]
+            self.assertEqual(len(group_ids), len(set(group_ids)))
+            self.assertEqual(len(paths), len(set(paths)))
+            canonical_paths.extend(paths)
+            ordinals: dict[tuple[str, str], int] = {}
+            for group in groups:
+                old_id = old_compact_group_id(group, ordinals)
+                if old_id in EXPECTED_COMPACT_RENAMES:
+                    self.assertEqual(group["id"], EXPECTED_COMPACT_RENAMES[old_id])
+                self.assertNotIn("priority-", group["id"])
+                self.assertNotIn("classical", group["id"])
+                self.assertNotIn("domain", group["id"])
+                self.assertEqual(group["path"].split("/")[-2], "route")
+                self.assertIn(group["path"], candidate.manifest["outputs"])
+                old_path = f"rules/personal/{platform}/{old_id}{Path(group['path']).suffix}"
+                self.assertNotIn(old_path, candidate.files)
+                self.assertNotIn(old_path, candidate.manifest["outputs"])
+            referenced_ids = {
+                stage["group_by_platform"][platform]
+                for stage in candidate.manifest["compact"]["stages"][platform]
+                if stage["group_by_platform"].get(platform) is not None
+            }
+            self.assertEqual(referenced_ids, set(group_ids))
+
+        self.assertTrue(canonical_paths)
+        self.assertEqual(len(canonical_paths), len(set(canonical_paths)))
+        for path, metadata in candidate.manifest["outputs"].items():
+            self.assertIn(path, candidate.files)
+            self.assertEqual(metadata["bytes"], len(candidate.files[path]))
+            self.assertEqual(metadata["sha256"], personal_profile.sha256(candidate.files[path]))
+
+    def test_arbitrary_fixture_slot_names_are_generic_unique_and_capabilities_fail_closed(self) -> None:
+        snapshot = snapshots()
+        snapshot["mihomo.lan"] = (
+            "".join(f"DOMAIN-SUFFIX,fixture-{number}.example\n" for number in range(1001))
+            + "DOMAIN-KEYWORD,fixture-keyword\n"
+        ).encode()
+        profile = profile_value()
+        next(slot for slot in profile["compact"]["slots"] if slot["id"] == "lan")["id"] = "fixture-lan"
+        candidate = compile_candidate(snapshot, profile)
+        fixture_groups = slot_groups(candidate, "mihomo", "fixture-lan")
+        self.assertEqual([group["id"] for group in fixture_groups], [
+            "fixture-lan-direct", "fixture-lan-direct-extra",
+        ])
+        self.assertTrue(all("priority-" not in group["id"] for group in fixture_groups))
+        self.assertTrue(set(group["id"] for group in fixture_groups).isdisjoint(EXPECTED_COMPACT_RENAMES.values()))
+        self.assertEqual(len({group["path"] for group in fixture_groups}), len(fixture_groups))
+        self.assertEqual(
+            personal_profile._compact_group_name("fixture-reject", "REJECT", "classical", 1),
+            ("fixture-reject", False),
+        )
+        self.assertEqual(
+            personal_profile._compact_group_name("fixture-test", "TEST", "domain", 1),
+            ("fixture-test", False),
+        )
+        with self.assertRaisesRegex(personal_profile.ProfileError, "unsupported compact group capability"):
+            personal_profile._compact_group_name("fixture-lan", "DIRECT", "unknown", 1)
+
+    def test_legacy_name_migration_still_requires_interface_acceptance(self) -> None:
+        candidate = compile_candidate()
+        legacy = copy.deepcopy(candidate.manifest)
+        old_id_by_new: dict[str, dict[str, str]] = {"mihomo": {}, "surge": {}}
+
+        for platform in ("mihomo", "surge"):
+            ordinals: dict[tuple[str, str], int] = {}
+            for group in legacy["compact"]["groups"][platform]:
+                new_id = group["id"]
+                old_id = old_compact_id(group, ordinals)
+                old_path = f"rules/personal/{platform}/{old_id}{Path(group['path']).suffix}"
+                old_id_by_new[platform][new_id] = old_id
+                group["id"] = old_id
+                group["path"] = old_path
+                group["dns_path"] = old_path
+            for stage in legacy["compact"]["stages"][platform]:
+                old_id = old_id_by_new[platform].get(stage["id"])
+                if old_id is not None:
+                    stage["id"] = old_id
+                group_id = stage["group_by_platform"].get(platform)
+                if group_id in old_id_by_new[platform]:
+                    stage["group_by_platform"][platform] = old_id_by_new[platform][group_id]
+
+        with self.assertRaisesRegex(personal_profile.ProfileError, "client resource interface changed"):
+            personal_profile._require_stable_client_interface(legacy, candidate.manifest)
+        personal_profile._require_stable_client_interface(
+            legacy, candidate.manifest, accept_change=True,
+        )
 
     def test_early_direct_test_and_canary_handling_preserve_fine_interface(self) -> None:
         candidate = compile_candidate()
@@ -253,9 +380,11 @@ class PriorityProfileTests(unittest.TestCase):
             empty_jp_ip = slot_groups(empty, platform, "jp-ip")[0]
             populated_jp_ip = slot_groups(populated, platform, "jp-ip")[0]
             self.assertEqual(empty_jp["path"], populated_jp["path"])
+            self.assertEqual(Path(empty_jp["path"]).stem, "jp-proxy")
             self.assertEqual(empty_jp["dns_path"], empty_jp["path"])
             self.assertEqual(populated_jp["dns_path"], populated_jp["path"])
             self.assertEqual(empty_jp_ip["path"], populated_jp_ip["path"])
+            self.assertEqual(Path(empty_jp_ip["path"]).stem, "jp-proxy-ip")
             self.assertEqual(populated_jp_ip["stages"], ["jp-manual"])
             self.assertIn("DOMAIN-SUFFIX,jp.example", populated.files[populated_jp["path"]].decode())
             self.assertIn("IP-CIDR,198.51.100.0/24", populated.files[populated_jp_ip["path"]].decode())
