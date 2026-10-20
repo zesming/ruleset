@@ -120,9 +120,14 @@ class RendererOrderTests(unittest.TestCase):
         rendered = clients.render_surge_snippet(_candidate(), "https://example.invalid/ref")
         self.assertIn("AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),🇺🇸 US", rendered)
         self.assertIn("AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),🇯🇵 JP", rendered)
+        self.assertIn("🚀 Direct = direct", rendered)
+        self.assertIn("⛔️ Reject = reject", rendered)
+        self.assertIn("⛔️ Reject-Drop = reject-drop", rendered)
+        self.assertIn("⛔️ Reject-No-Drop = reject-no-drop", rendered)
+        self.assertIn("⚒️ Test = select, 🇺🇸 US, 🇯🇵 JP, 🚀 Direct", rendered)
         self.assertIn("FINAL,🇺🇸 US,dns-failed", rendered)
-        self.assertNotIn("[Proxy]", rendered)
-        self.assertNotIn("[Proxy Group]", rendered)
+        self.assertIn("[Proxy]", rendered)
+        self.assertIn("[Proxy Group]", rendered)
         self.assertNotIn("uuid=", rendered)
         self.assertNotIn("password=", rendered)
 
@@ -250,6 +255,11 @@ class IndependentCaseOracleTests(unittest.TestCase):
         self.assertEqual(clients._old_policy("blocked", targets), ("REJECT", "no-drop"))
         self.assertEqual(clients._old_policy("local", targets), ("DIRECT", None))
 
+    def test_surge_group_keeps_a_declared_direct_named_alias_for_resolution(self):
+        baseline = "[Proxy]\n🚀 Direct = reject\n[Proxy Group]\napple = select, 🚀 Direct\n"
+        targets = clients._known_policy_targets("surge", baseline)
+        self.assertEqual(clients._old_policy("apple", targets), ("REJECT", "plain"))
+
     def test_group_defaults_resolve_through_nested_direct_and_reject_choices(self):
         baseline = {
             "proxies": [{"name": "US node"}],
@@ -268,6 +278,50 @@ class IndependentCaseOracleTests(unittest.TestCase):
         self.assertEqual(clients._old_policy("apple", clients._known_policy_targets("surge", surge)), ("DIRECT", None))
         self.assertEqual(clients._old_policy("JP", clients._known_policy_targets("surge", "[Proxy]\nJP = direct\n[Proxy Group]\n")), ("DIRECT", None))
 
+    def test_display_aliases_use_declared_builtin_semantics_and_unknown_reject_names_fail(self):
+        mihomo = {
+            "proxies": [{"name": "🇺🇸 US"}, {"name": "🇯🇵 JP"}],
+            "proxy-groups": [
+                {"name": "⚒️ Test", "proxies": ["🇺🇸 US", "🇯🇵 JP", "🚀 Direct"]},
+                {"name": "🚀 Direct", "proxies": ["DIRECT"]},
+                {"name": "⛔️ Reject", "proxies": ["REJECT"]},
+                {"name": "⛔️ Reject-Drop", "proxies": ["REJECT-DROP"]},
+            ],
+        }
+        mihomo_targets = clients._known_policy_targets("mihomo", mihomo)
+        self.assertEqual(clients._old_policy("🇺🇸 US", mihomo_targets), ("US", None))
+        self.assertEqual(clients._old_policy("🇯🇵 JP", mihomo_targets), ("JP", None))
+        self.assertEqual(clients._old_policy("⚒️ Test", mihomo_targets), ("TEST", None))
+        self.assertEqual(clients._old_policy("🚀 Direct", mihomo_targets), ("DIRECT", None))
+        self.assertEqual(clients._old_policy("⛔️ Reject", mihomo_targets), ("REJECT", "plain"))
+        self.assertEqual(clients._old_policy("⛔️ Reject-Drop", mihomo_targets), ("REJECT", "drop"))
+        with self.assertRaisesRegex(clients.ProfileClientsError, "unknown policy target"):
+            clients._old_policy("⛔️ Reject", {"US"})
+
+        surge = """[Proxy]
+🚀 Direct = direct
+⛔️ Reject = reject
+⛔️ Reject-Drop = reject-drop
+⛔️ Reject-No-Drop = reject-no-drop
+🇺🇸 Snell = snell, us-snell.example, 443, psk=x
+🇺🇸 TUIC = tuic-v5, us.example, 443, uuid=u, password=p
+🇯🇵 Snell = snell, jp-snell.example, 443, psk=y
+🇯🇵 TUIC = tuic-v5, jp.example, 443, uuid=j, password=q
+
+[Proxy Group]
+⚒️ Test = select, 🇺🇸 US, 🇯🇵 JP, 🚀 Direct
+🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC
+🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC
+"""
+        surge_targets = clients._known_policy_targets("surge", surge)
+        self.assertEqual(clients._old_policy("🚀 Direct", surge_targets), ("DIRECT", None))
+        self.assertEqual(clients._old_policy("⛔️ Reject", surge_targets), ("REJECT", "plain"))
+        self.assertEqual(clients._old_policy("⛔️ Reject-Drop", surge_targets), ("REJECT", "drop"))
+        self.assertEqual(clients._old_policy("⛔️ Reject-No-Drop", surge_targets), ("REJECT", "no-drop"))
+        self.assertEqual(clients._old_policy("⚒️ Test", surge_targets), ("TEST", None))
+        with self.assertRaisesRegex(clients.ProfileClientsError, "unknown policy target"):
+            clients._old_policy("⛔️ Reject-No-Drop", {"US"})
+
     def test_baseline_geoip_terminal_is_preserved_outside_source_rule_parser(self):
         for platform in ("mihomo", "surge"):
             stage, endpoint = clients._baseline_route_rule(
@@ -284,14 +338,19 @@ class IndependentCaseOracleTests(unittest.TestCase):
         rendered = clients.render_mihomo_snippet(_candidate(), "https://example.invalid/ref")
         route_section = rendered.split("rules:\n", 1)[1].split("\ndns:\n", 1)[0]
         expected = [
-            "RULE-SET,att-us,US,no-resolve",
-            "GEOIP,CN,DIRECT,no-resolve",
-            "RULE-SET,domestic-ip,DIRECT,no-resolve",
-            "MATCH,US",
+            "RULE-SET,att-us,🇺🇸 US,no-resolve",
+            "GEOIP,CN,🚀 Direct,no-resolve",
+            "RULE-SET,domestic-ip,🚀 Direct,no-resolve",
+            "MATCH,🇺🇸 US",
         ]
         positions = [route_section.index(value) for value in expected]
         self.assertEqual(positions, sorted(positions))
-        self.assertEqual(route_section.count("MATCH,US"), 1)
+        self.assertEqual(route_section.count("MATCH,🇺🇸 US"), 1)
+        self.assertIn('"⛔️ Reject-Drop"', rendered)
+        self.assertIn("proxy: 🇺🇸 US", rendered)
+        self.assertIn('"🚀 Direct"', rendered)
+        self.assertEqual(clients._mihomo_target({"action": "REJECT", "reject_mode": "drop"}), "⛔️ Reject-Drop")
+        self.assertEqual(clients._mihomo_target({"action": "REJECT", "reject_mode": "no-drop"}), "⛔️ Reject")
         self.assertIn("enhanced-mode: fake-ip", rendered)
 
     def test_surge_emits_doh_node_policy_then_geoip_then_final(self):
@@ -300,14 +359,18 @@ class IndependentCaseOracleTests(unittest.TestCase):
         expected = [
             "AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),🇺🇸 US",
             "DOMAIN-SET,https://example.invalid/ref/rules/personal/surge/att-us.set,🇺🇸 US,no-resolve,update-interval=43200",
-            "GEOIP,CN,DIRECT,no-resolve",
-            "DOMAIN-SET,https://example.invalid/ref/rules/personal/surge/domestic-ip.set,DIRECT,no-resolve,update-interval=43200",
+            "GEOIP,CN,🚀 Direct,no-resolve",
+            "DOMAIN-SET,https://example.invalid/ref/rules/personal/surge/domestic-ip.set,🚀 Direct,no-resolve,update-interval=43200",
             "FINAL,🇺🇸 US,dns-failed",
         ]
         positions = [rules.index(value) for value in expected]
         self.assertEqual(positions, sorted(positions))
         self.assertEqual(sum(line.startswith("FINAL,") for line in rules), 1)
         self.assertTrue(all("AND,((PROTOCOL,DOH)" in line for line in rules if line.startswith("AND,")))
+        self.assertIn("🚀 Direct = direct", rendered)
+        self.assertIn("⛔️ Reject-Drop = reject-drop", rendered)
+        self.assertIn("⛔️ Reject-No-Drop = reject-no-drop", rendered)
+        self.assertEqual(clients._surge_target({"action": "REJECT", "reject_mode": "no-drop"}), "⛔️ Reject-No-Drop")
 
     def test_compact_physical_stages_drive_rendering_and_slot_scoped_dns_unions(self):
         candidate = _compact_candidate()
@@ -328,7 +391,7 @@ class IndependentCaseOracleTests(unittest.TestCase):
         mihomo = clients.render_mihomo_snippet(candidate, "https://example.invalid/ref")
         self.assertIn('"rule-set:att-us":', mihomo)
         self.assertIn('"rule-set:domestic-ip":', mihomo)
-        self.assertIn("https://223.5.5.5/dns-query#DIRECT", mihomo)
+        self.assertIn("https://223.5.5.5/dns-query#🚀 Direct", mihomo)
         surge = clients.render_surge_snippet(candidate, "https://example.invalid/ref")
         routes = surge.split("[Rule]\n", 1)[1].split("\n[Host]", 1)[0]
         self.assertLess(routes.index("/rules/personal/surge/domestic-ip.set"), routes.index("/rules/personal/surge/att-us.set"))
@@ -336,9 +399,9 @@ class IndependentCaseOracleTests(unittest.TestCase):
     def test_test_doh_endpoint_has_a_distinct_test_policy(self):
         test_group = {"id": "network-test", "action": "TEST", "dns": "test"}
         jp_group = {"id": "jp", "action": "JP", "dns": "jp"}
-        self.assertEqual(clients._dns_endpoints(test_group, "mihomo"), ("https://8.8.4.4/dns-query#TEST",))
+        self.assertEqual(clients._dns_endpoints(test_group, "mihomo"), ("https://8.8.4.4/dns-query#⚒️ Test",))
         self.assertEqual(clients._dns_endpoints(jp_group, "surge"), ("https://1.0.0.1/dns-query",))
-        self.assertTrue(clients._surge_endpoint_rules()[-1].endswith(")),TEST"))
+        self.assertTrue(clients._surge_endpoint_rules()[-1].endswith(")),⚒️ Test"))
         self.assertEqual(clients._resolver_class("https://8.8.4.4/dns-query", "RULE-SET:test"), "TEST")
 
     def test_surge_host_comment_cleanup_keeps_private_mapping_lines(self):
@@ -386,8 +449,8 @@ class IndependentCaseOracleTests(unittest.TestCase):
             platform="surge", root=ROOT,
         )
         self.assertEqual(rules, [
-            "DOMAIN,proxy.example.net,DIRECT",
-            "IP-CIDR,203.0.113.8/32,DIRECT,no-resolve",
+            "DOMAIN,proxy.example.net,🚀 Direct",
+            "IP-CIDR,203.0.113.8/32,🚀 Direct,no-resolve",
         ])
 
 
@@ -414,23 +477,28 @@ class CanonicalGroupTests(unittest.TestCase):
                 {"name": "TEST pool", "type": "select", "proxies": ["Mixed Smart", "DIRECT"]},
             ],
         }
-        expected_us = {**us, "name": "US"}
+        expected_us = {**us, "name": "🇺🇸 US"}
         expected_us.pop("fast-open")
         clients._canonical_mihomo_groups(config, jp)
-        self.assertEqual([item["name"] for item in config["proxy-groups"]], ["TEST"])
+        self.assertEqual([item["name"] for item in config["proxy-groups"]], ["⚒️ Test", "🚀 Direct", "⛔️ Reject", "⛔️ Reject-Drop"])
         self.assertEqual(config["proxy-groups"][0], {
-            "name": "TEST", "type": "select", "proxies": ["US", "JP", "DIRECT"],
+            "name": "⚒️ Test", "type": "select", "proxies": ["🇺🇸 US", "🇯🇵 JP", "🚀 Direct"],
         })
+        self.assertEqual(config["proxy-groups"][1:], [
+            {"name": "🚀 Direct", "type": "select", "proxies": ["DIRECT"]},
+            {"name": "⛔️ Reject", "type": "select", "proxies": ["REJECT"]},
+            {"name": "⛔️ Reject-Drop", "type": "select", "proxies": ["REJECT-DROP"]},
+        ])
         self.assertEqual(len(config["proxies"]), 2)
         self.assertEqual(config["proxies"][0], expected_us)
         self.assertEqual(config["proxies"][1], {
-            **jp, "name": "JP", "congestion-controller": "bbr",
+            **jp, "name": "🇯🇵 JP", "congestion-controller": "bbr",
             "heartbeat-interval": 8000, "disable-sni": False, "udp-relay-mode": "native",
         })
         self.assertEqual(config["proxies"][0]["sni"], "us.sni.example")
         self.assertEqual(config["proxies"][1]["sni"], "jp.sni.example")
         clients._canonical_mihomo_groups(config, jp)
-        self.assertEqual([item["name"] for item in config["proxy-groups"]], ["TEST"])
+        self.assertEqual([item["name"] for item in config["proxy-groups"]], ["⚒️ Test", "🚀 Direct", "⛔️ Reject", "⛔️ Reject-Drop"])
 
     def test_old_surge_country_display_names_compare_as_logical_actions(self):
         baseline = """[Proxy]
@@ -470,7 +538,7 @@ TEST pool = select, US Smart, JP Smart, DIRECT
         self.assertEqual(lines, [
             "🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC",
             "🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC",
-            "TEST = select, 🇺🇸 US, 🇯🇵 JP, DIRECT",
+            "⚒️ Test = select, 🇺🇸 US, 🇯🇵 JP, 🚀 Direct",
         ])
         self.assertNotIn("include-other-group", "\n".join(lines))
 
@@ -504,7 +572,7 @@ TEST pool = select, US Smart, JP Smart, DIRECT
         self.assertEqual(lines, [
             "🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC",
             "🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC",
-            "TEST = select, 🇺🇸 US, 🇯🇵 JP, DIRECT",
+            "⚒️ Test = select, 🇺🇸 US, 🇯🇵 JP, 🚀 Direct",
         ])
 
     def test_surge_migration_is_idempotent_and_preserves_private_host_mapping(self):
@@ -538,7 +606,12 @@ company.internal = 192.0.2.10
         self.assertEqual(rendered.count("company.internal = 192.0.2.10"), 1)
         self.assertIn("🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC", rendered)
         self.assertIn("🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC", rendered)
-        self.assertIn("TEST = select, 🇺🇸 US, 🇯🇵 JP, DIRECT", rendered)
+        self.assertIn("⚒️ Test = select, 🇺🇸 US, 🇯🇵 JP, 🚀 Direct", rendered)
+        self.assertEqual(rendered.count("🚀 Direct = direct"), 1)
+        self.assertEqual(rendered.count("⛔️ Reject = reject"), 1)
+        self.assertEqual(rendered.count("⛔️ Reject-Drop = reject-drop"), 1)
+        self.assertEqual(rendered.count("⛔️ Reject-No-Drop = reject-no-drop"), 1)
+        self.assertIn("DOMAIN,us.example.net,🚀 Direct", rendered)
         self.assertNotIn("Mixed Smart", rendered)
         self.assertNotIn("DNS-Fallback", rendered)
         self.assertNotIn("CNBanned", rendered)
@@ -553,6 +626,82 @@ company.internal = 192.0.2.10
             sum(field == "version=6" for _name, protocol, fields in rendered_nodes if protocol == "snell" for field in fields),
             2,
         )
+
+    def test_surge_migration_rejects_native_aliases_that_conflict_with_generated_names(self):
+        baseline = """[General]
+
+[Proxy]
+US node = tuic-v5, us.example.net, 443, uuid=u, password=p
+JP node = tuic-v5, jp.example.net, 443, uuid=j, password=q
+US Snell = snell, us-snell.example.net, 443, psk=us, version=6
+JP Snell = snell, jp-snell.example.net, 443, psk=jp, version=6
+⚒️ Test = direct
+
+[Proxy Group]
+US Smart = smart, US node, US Snell
+JP Smart = smart, JP node, JP Snell
+TEST pool = select, US Smart, JP Smart, DIRECT
+
+[Rule]
+FINAL,US,dns-failed
+
+[Host]
+"""
+        with self.assertRaisesRegex(clients.ProfileClientsError, "conflicts with a generated group or leaf"):
+            clients._migrate_surge(_candidate(), baseline, "https://example.invalid/ref")
+
+    def test_surge_native_aliases_keep_original_positions_and_duplicate_definitions_fail(self):
+        original = [
+            "US node = tuic-v5, us.example.net, 443, uuid=u, password=p",
+            "🚀 Direct = direct",
+            "JP node = tuic-v5, jp.example.net, 443, uuid=j, password=q",
+            "⛔️ Reject = reject",
+        ]
+        section = clients.SurgeSection("Proxy", "[Proxy]", list(original))
+
+        clients._set_surge_policy_aliases(section)
+
+        self.assertEqual(section.lines[:len(original)], original)
+        self.assertEqual(section.lines[len(original):], [
+            "⛔️ Reject-Drop = reject-drop",
+            "⛔️ Reject-No-Drop = reject-no-drop",
+        ])
+        with self.assertRaisesRegex(clients.ProfileClientsError, "defined more than once"):
+            clients._set_surge_policy_aliases(clients.SurgeSection(
+                "Proxy", "[Proxy]", ["🚀 Direct = direct", "🚀 Direct = direct"],
+            ))
+
+    def test_surge_repeated_literal_node_endpoint_rule_is_deduplicated_idempotently(self):
+        baseline = """[General]
+
+[Proxy]
+US node = tuic-v5, 192.0.2.21, 443, uuid=u, password=p
+JP node = tuic-v5, jp.example.net, 443, uuid=j, password=q
+US Snell = snell, us-snell.example.net, 443, psk=us, version=6
+JP Snell = snell, jp-snell.example.net, 443, psk=jp, version=6
+
+[Proxy Group]
+US Smart = smart, US node, US Snell
+JP Smart = smart, JP node, JP Snell
+TEST pool = select, US Smart, JP Smart, DIRECT
+
+[Rule]
+FINAL,US,dns-failed
+
+[Host]
+"""
+        inline = [clients._stage(
+            "DIRECT", None, [_rule("surge", "IP-CIDR", "192.0.2.21/32", ("no-resolve",))],
+            stage_id="local-inline-surge-ip",
+        )]
+        first = clients._migrate_surge(
+            _candidate(), baseline, "https://example.invalid/ref", local_stages=inline,
+        )
+        second = clients._migrate_surge(
+            _candidate(), first.decode("utf-8"), "https://example.invalid/ref", local_stages=inline,
+        )
+        self.assertEqual(first, second)
+        self.assertEqual(first.decode("utf-8").count("IP-CIDR,192.0.2.21/32,🚀 Direct,no-resolve"), 1)
 
     def test_v2_surge_baseline_without_country_groups_migrates_to_smart_groups(self):
         baseline = """[General]
@@ -580,7 +729,7 @@ office.internal = 10.0.0.5
         self.assertIn("🇺🇸 US = smart, 🇺🇸 Snell, 🇺🇸 TUIC", rendered)
         self.assertIn("🇯🇵 JP = smart, 🇯🇵 Snell, 🇯🇵 TUIC", rendered)
         self.assertIn("FINAL,🇺🇸 US,dns-failed", rendered)
-        self.assertIn("DOMAIN,us.example.net,DIRECT", rendered)
+        self.assertIn("DOMAIN,us.example.net,🚀 Direct", rendered)
 
 
 class LegacyDnsSelectorTests(unittest.TestCase):
@@ -746,21 +895,118 @@ class LegacyDnsSelectorTests(unittest.TestCase):
             self.assertEqual([(rule.platform, rule.value) for rule in replayed], [("mihomo", "att.example")])
 
     def test_mihomo_resolver_fragments_normalize_retired_groups_and_reject_dangling_tags(self):
-        targets = {"🌐 基础出口", "US Smart", "TEST pool", "⏩️ 直连访问"}
+        targets = {"🌐 基础出口", "US Smart", "JP Smart", "TEST pool", "⏩️ 直连访问"}
+        for interface in ("br-lan", "pppoe-wan"):
+            endpoint = "https://dns.example/query#" + interface
+            self.assertEqual(clients._normalize_resolver_target(endpoint, targets), endpoint)
+        for unknown in ("unknown-us-policy", "unknown-jp-policy", "unknown-test-policy"):
+            with self.assertRaises(clients.ProfileClientsError):
+                clients._normalize_resolver_target("https://dns.example/query#" + unknown, targets)
+        for fragment, expected in (
+            ("REJECT&JP", "REJECT&🇯🇵 JP"),
+            ("unknown-us-policy&br-lan", "unknown-us-policy&br-lan"),
+            ("unknown%26JP%20Smart", "unknown&🇯🇵 JP"),
+            ("h3%3Dtrue&US", "h3=true&🇺🇸 US"),
+            ("ecs=value%2526&US", "ecs=value%2526&🇺🇸 US"),
+        ):
+            self.assertEqual(
+                clients._normalize_resolver_target("https://dns.example/query#" + fragment, targets),
+                "https://dns.example/query#" + expected,
+            )
+        with self.assertRaises(clients.ProfileClientsError):
+            clients._normalize_resolver_target("https://dns.example/query#h3", targets)
         normalized = clients._normalize_resolver_target(
             ["https://8.8.8.8/dns-query#🌐 基础出口", "https://1.1.1.1/dns-query#US Smart"],
             targets,
         )
         self.assertEqual(normalized, [
-            "https://8.8.8.8/dns-query#US",
-            "https://1.1.1.1/dns-query#US",
+            "https://8.8.8.8/dns-query#🇺🇸 US",
+            "https://1.1.1.1/dns-query#🇺🇸 US",
         ])
         self.assertEqual(
             clients._normalize_resolver_target("https://dns.example/query#⏩️ 直连访问", targets),
-            "https://dns.example/query#DIRECT",
+            "https://dns.example/query#🚀 Direct",
+        )
+        self.assertEqual(
+            clients._normalize_resolver_target(
+                [
+                    "https://dns.example/query#US Smart&h3=true",
+                    "https://dns.example/query#h3=true&JP Smart",
+                    "https://dns.example/query#eth0",
+                    "https://dns.example/query#RULES&h3=true",
+                    "https://dns.example/query#h3=true",
+                ],
+                targets,
+            ),
+            [
+                "https://dns.example/query#🇺🇸 US&h3=true",
+                "https://dns.example/query#h3=true&🇯🇵 JP",
+                "https://dns.example/query#eth0",
+                "https://dns.example/query#RULES&h3=true",
+                "https://dns.example/query#h3=true",
+            ],
         )
         with self.assertRaisesRegex(clients.ProfileClientsError, "unknown policy target"):
             clients._normalize_resolver_target("https://8.8.8.8/dns-query#deleted-group", targets)
+        with self.assertRaisesRegex(clients.ProfileClientsError, "non-egress policy"):
+            reject_targets = clients._known_policy_targets("mihomo", {
+                "proxy-groups": [{"name": "⛔️ Reject", "proxies": ["REJECT"]}],
+            })
+            clients._normalize_resolver_target(
+                "https://8.8.8.8/dns-query#⛔️ Reject",
+                reject_targets,
+            )
+
+    def test_mihomo_external_provider_and_retained_dns_fields_use_display_targets(self):
+        config = {
+            "proxies": [
+                {"name": "US node", "type": "tuic", "server": "us.example.net"},
+                {"name": "JP node", "type": "tuic", "server": "jp.example.net"},
+            ],
+            "proxy-groups": [],
+            "rule-providers": {
+                "external-dns": {
+                    "type": "http", "behavior": "domain", "format": "text",
+                    "url": "https://external.example/rules.list", "path": "./external.list",
+                    "interval": 43200, "proxy": "JP",
+                },
+            },
+            "dns": {
+                "nameserver-policy": {
+                    "rule-set:external-dns": ["https://dns.example/policy#JP"],
+                },
+                "fallback": [
+                    "https://dns.example/fallback#US&h3=true",
+                    "https://dns.example/fallback#h3=true&JP",
+                    "https://dns.example/interface#eth0",
+                    "https://dns.example/rules#RULES&h3=true",
+                ],
+                "proxy-server-nameserver": ["https://dns.example/proxy#JP"],
+                "direct-nameserver": ["https://dns.example/direct#DIRECT"],
+                "default-nameserver": ["https://dns.example/bootstrap#US"],
+                "proxy-server-nameserver-policy": {
+                    "node.example": ["https://dns.example/node-policy#JP"],
+                },
+                "fake-ip-filter": [],
+            },
+        }
+        clients._set_mihomo_providers(config, _candidate(), "https://example.invalid/ref", ROOT)
+        self.assertEqual(config["rule-providers"]["external-dns"]["proxy"], "🇯🇵 JP")
+        self.assertEqual(config["dns"]["nameserver-policy"]["rule-set:external-dns"], [
+            "https://dns.example/policy#🇯🇵 JP",
+        ])
+        self.assertEqual(config["dns"]["fallback"], [
+            "https://dns.example/fallback#🇺🇸 US&h3=true",
+            "https://dns.example/fallback#h3=true&🇯🇵 JP",
+            "https://dns.example/interface#eth0",
+            "https://dns.example/rules#RULES&h3=true",
+        ])
+        self.assertEqual(config["dns"]["proxy-server-nameserver"], ["https://dns.example/proxy#🇯🇵 JP"])
+        self.assertEqual(config["dns"]["direct-nameserver"], ["https://dns.example/direct#🚀 Direct"])
+        self.assertEqual(config["dns"]["default-nameserver"], ["https://dns.example/bootstrap#🇺🇸 US"])
+        self.assertEqual(config["dns"]["proxy-server-nameserver-policy"], {
+            "node.example": ["https://dns.example/node-policy#🇯🇵 JP"],
+        })
 
     def test_not_covered_case_is_counted_separately_from_archive_evidence(self):
         report = {"platforms": {"mihomo": {

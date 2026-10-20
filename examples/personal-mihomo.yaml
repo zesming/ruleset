@@ -6,7 +6,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/lan-direct.mrs"
     path: ./ruleset/personal-lan-direct.mrs
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   test:
     type: http
     behavior: domain
@@ -14,7 +14,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/test.mrs"
     path: ./ruleset/personal-test.mrs
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   reject-drop:
     type: http
     behavior: classical
@@ -22,7 +22,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-drop.list"
     path: ./ruleset/personal-reject-drop.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   reject:
     type: http
     behavior: domain
@@ -30,7 +30,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject.mrs"
     path: ./ruleset/personal-reject.mrs
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   reject-rules:
     type: http
     behavior: classical
@@ -38,7 +38,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-rules.list"
     path: ./ruleset/personal-reject-rules.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   reject-no-drop:
     type: http
     behavior: classical
@@ -46,7 +46,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-no-drop.list"
     path: ./ruleset/personal-reject-no-drop.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   reject-extra-rules:
     type: http
     behavior: classical
@@ -54,7 +54,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-extra-rules.list"
     path: ./ruleset/personal-reject-extra-rules.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   jp-proxy:
     type: http
     behavior: classical
@@ -62,7 +62,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/jp-proxy.list"
     path: ./ruleset/personal-jp-proxy.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   us-proxy:
     type: http
     behavior: classical
@@ -70,7 +70,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-proxy.list"
     path: ./ruleset/personal-us-proxy.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   cn-direct:
     type: http
     behavior: domain
@@ -78,7 +78,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/cn-direct.mrs"
     path: ./ruleset/personal-cn-direct.mrs
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   cn-direct-extra:
     type: http
     behavior: classical
@@ -86,7 +86,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/cn-direct-extra.list"
     path: ./ruleset/personal-cn-direct-extra.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   lan-direct-ip:
     type: http
     behavior: classical
@@ -94,7 +94,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/lan-direct-ip.list"
     path: ./ruleset/personal-lan-direct-ip.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   reject-ip:
     type: http
     behavior: classical
@@ -102,7 +102,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-ip.list"
     path: ./ruleset/personal-reject-ip.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   jp-proxy-ip:
     type: http
     behavior: classical
@@ -110,7 +110,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/jp-proxy-ip.list"
     path: ./ruleset/personal-jp-proxy-ip.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   us-proxy-ip:
     type: http
     behavior: classical
@@ -118,7 +118,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-proxy-ip.list"
     path: ./ruleset/personal-us-proxy-ip.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   direct-ip:
     type: http
     behavior: classical
@@ -126,7 +126,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/direct-ip.list"
     path: ./ruleset/personal-direct-ip.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   us-proxy-ip-late:
     type: http
     behavior: classical
@@ -134,7 +134,7 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-proxy-ip-late.list"
     path: ./ruleset/personal-us-proxy-ip-late.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
   cn-direct-ip:
     type: http
     behavior: classical
@@ -142,50 +142,69 @@ rule-providers:
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/cn-direct-ip.list"
     path: ./ruleset/personal-cn-direct-ip.text
     interval: 43200
-    proxy: US
+    proxy: 🇺🇸 US
 rules:
-  - RULE-SET,lan-direct,DIRECT
-  - RULE-SET,test,TEST
-  - RULE-SET,reject-drop,REJECT-DROP
-  - RULE-SET,reject,REJECT
-  - RULE-SET,reject-rules,REJECT
-  - RULE-SET,reject-no-drop,REJECT
-  - RULE-SET,reject-extra-rules,REJECT
-  - RULE-SET,jp-proxy,JP
-  - RULE-SET,us-proxy,US
-  - RULE-SET,cn-direct,DIRECT
-  - RULE-SET,cn-direct-extra,DIRECT
-  - RULE-SET,lan-direct-ip,DIRECT
-  - RULE-SET,reject-ip,REJECT
-  - RULE-SET,jp-proxy-ip,JP
-  - RULE-SET,us-proxy-ip,US
-  - RULE-SET,direct-ip,DIRECT
-  - RULE-SET,us-proxy-ip-late,US
-  - RULE-SET,cn-direct-ip,DIRECT
-  - GEOIP,CN,DIRECT,no-resolve
-  - MATCH,US
+  - RULE-SET,lan-direct,🚀 Direct
+  - RULE-SET,test,⚒️ Test
+  - RULE-SET,reject-drop,⛔️ Reject-Drop
+  - RULE-SET,reject,⛔️ Reject
+  - RULE-SET,reject-rules,⛔️ Reject
+  - RULE-SET,reject-no-drop,⛔️ Reject
+  - RULE-SET,reject-extra-rules,⛔️ Reject
+  - RULE-SET,jp-proxy,🇯🇵 JP
+  - RULE-SET,us-proxy,🇺🇸 US
+  - RULE-SET,cn-direct,🚀 Direct
+  - RULE-SET,cn-direct-extra,🚀 Direct
+  - RULE-SET,lan-direct-ip,🚀 Direct
+  - RULE-SET,reject-ip,⛔️ Reject
+  - RULE-SET,jp-proxy-ip,🇯🇵 JP
+  - RULE-SET,us-proxy-ip,🇺🇸 US
+  - RULE-SET,direct-ip,🚀 Direct
+  - RULE-SET,us-proxy-ip-late,🇺🇸 US
+  - RULE-SET,cn-direct-ip,🚀 Direct
+  - GEOIP,CN,🚀 Direct,no-resolve
+  - MATCH,🇺🇸 US
+proxy-groups:
+  - name: "⚒️ Test"
+    type: select
+    proxies:
+      - "🇺🇸 US"
+      - "🇯🇵 JP"
+      - "🚀 Direct"
+  - name: "🚀 Direct"
+    type: select
+    proxies:
+      - "DIRECT"
+  - name: "⛔️ Reject"
+    type: select
+    proxies:
+      - "REJECT"
+  - name: "⛔️ Reject-Drop"
+    type: select
+    proxies:
+      - "REJECT-DROP"
 dns:
   enable: true
   enhanced-mode: fake-ip
   nameserver:
-    - https://8.8.8.8/dns-query#US
-    - https://1.1.1.1/dns-query#US
+    - https://8.8.8.8/dns-query#🇺🇸 US
+    - https://1.1.1.1/dns-query#🇺🇸 US
   nameserver-policy:
     "rule-set:lan-direct":
       - "system"
     "rule-set:test":
-      - "https://8.8.4.4/dns-query#TEST"
+      - "https://8.8.4.4/dns-query#⚒️ Test"
     "rule-set:reject-drop,reject,reject-rules,reject-no-drop,reject-extra-rules":
-      - "https://8.8.8.8/dns-query#US"
-      - "https://1.1.1.1/dns-query#US"
+      - "https://8.8.8.8/dns-query#🇺🇸 US"
+      - "https://1.1.1.1/dns-query#🇺🇸 US"
     "rule-set:jp-proxy":
-      - "https://1.0.0.1/dns-query#JP"
+      - "https://1.0.0.1/dns-query#🇯🇵 JP"
     "rule-set:us-proxy":
-      - "https://8.8.8.8/dns-query#US"
-      - "https://1.1.1.1/dns-query#US"
+      - "https://8.8.8.8/dns-query#🇺🇸 US"
+      - "https://1.1.1.1/dns-query#🇺🇸 US"
     "rule-set:cn-direct,cn-direct-extra":
-      - "https://223.5.5.5/dns-query#DIRECT"
-      - "https://1.12.12.12/dns-query#DIRECT"
+      - "https://223.5.5.5/dns-query#🚀 Direct"
+      - "https://1.12.12.12/dns-query#🚀 Direct"
   fake-ip-filter-mode: blacklist
   fake-ip-filter:
     - "epdg.epc.att.net"

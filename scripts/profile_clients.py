@@ -37,10 +37,27 @@ V1_SURGE_BASELINE = "surge.v1.conf"
 BASELINE_FILE_PAIRS = ((CLASH_BASELINE, SURGE_BASELINE), (V1_CLASH_BASELINE, V1_SURGE_BASELINE))
 CASE_PATH = "tests/fixtures/personal-route-cases.json"
 
-MIHOMO_US_DOH = ("https://8.8.8.8/dns-query#US", "https://1.1.1.1/dns-query#US")
-MIHOMO_JP_DOH = ("https://1.0.0.1/dns-query#JP",)
-MIHOMO_TEST_DOH = ("https://8.8.4.4/dns-query#TEST",)
-MIHOMO_DOMESTIC_DOH = ("https://223.5.5.5/dns-query#DIRECT", "https://1.12.12.12/dns-query#DIRECT")
+MIHOMO_REGION_GROUPS = {"US": "🇺🇸 US", "JP": "🇯🇵 JP"}
+MIHOMO_POLICY_ALIASES = {
+    "TEST": "⚒️ Test", "DIRECT": "🚀 Direct", "REJECT": "⛔️ Reject",
+    "REJECT-DROP": "⛔️ Reject-Drop",
+}
+SURGE_POLICY_ALIASES = {
+    "TEST": "⚒️ Test", "DIRECT": "🚀 Direct", "REJECT": "⛔️ Reject",
+    "REJECT-DROP": "⛔️ Reject-Drop", "REJECT-NO-DROP": "⛔️ Reject-No-Drop",
+}
+MIHOMO_US_DOH = ("https://8.8.8.8/dns-query#🇺🇸 US", "https://1.1.1.1/dns-query#🇺🇸 US")
+MIHOMO_JP_DOH = ("https://1.0.0.1/dns-query#🇯🇵 JP",)
+MIHOMO_TEST_DOH = ("https://8.8.4.4/dns-query#⚒️ Test",)
+MIHOMO_DOMESTIC_DOH = ("https://223.5.5.5/dns-query#🚀 Direct", "https://1.12.12.12/dns-query#🚀 Direct")
+MIHOMO_DNS_SERVER_FIELDS = (
+    "fallback", "proxy-server-nameserver", "direct-nameserver", "default-nameserver",
+)
+MIHOMO_DNS_POLICY_FIELDS = ("proxy-server-nameserver-policy",)
+MIHOMO_INTERFACE_FRAGMENT = re.compile(
+    r"^(?:lo\d*|(?:br|pppoe)-[a-z0-9_.-]+|(?:en|eth|wlan|wlp|enp|ens|eno|utun|tun|tap|ppp|bridge|br|wg|tailscale|docker|veth)\d+[a-z0-9_.-]*)$",
+    re.IGNORECASE,
+)
 SURGE_US_DOH = ("https://8.8.8.8/dns-query", "https://1.1.1.1/dns-query")
 SURGE_JP_DOH = ("https://1.0.0.1/dns-query",)
 SURGE_TEST_DOH = ("https://8.8.4.4/dns-query",)
@@ -338,7 +355,7 @@ def _mihomo_provider(group: Mapping[str, Any], base_url: str) -> list[str]:
         f"    url: {_yaml_quote(_resource_url(base_url, path))}",
         f"    path: ./ruleset/personal-{platform_cache_slug(group_id)}.{file_format}",
         "    interval: 43200",
-        "    proxy: US",
+        f"    proxy: {MIHOMO_REGION_GROUPS['US']}",
     ]
     return lines
 
@@ -389,28 +406,49 @@ def _mihomo_dns_provider(group: Mapping[str, Any], base_url: str) -> list[str] |
         f"  {provider_id}:", "    type: http", f"    behavior: {behavior}",
         f"    format: {file_format}", f"    url: {_yaml_quote(_resource_url(base_url, path))}",
         f"    path: ./ruleset/personal-{platform_cache_slug(provider_id)}.{file_format}",
-        "    interval: 43200", "    proxy: US",
+        "    interval: 43200", f"    proxy: {MIHOMO_REGION_GROUPS['US']}",
     ]
 
 
 def _mihomo_target(group: Mapping[str, Any]) -> str:
     action = group["action"]
     mode = group.get("reject_mode")
-    if action != "REJECT":
-        return action
-    if mode not in {None, "plain", "drop", "no-drop"}:
-        raise ProfileClientsError(f"unsupported reject mode {mode!r}")
-    return {"drop": "REJECT-DROP", "no-drop": "REJECT", "plain": "REJECT", None: "REJECT"}[mode]
+    if action == "REJECT":
+        if mode not in {None, "plain", "drop", "no-drop"}:
+            raise ProfileClientsError(f"unsupported reject mode {mode!r}")
+        action = {"drop": "REJECT-DROP", "no-drop": "REJECT", "plain": "REJECT", None: "REJECT"}[mode]
+    return MIHOMO_REGION_GROUPS.get(action, MIHOMO_POLICY_ALIASES.get(action, action))
 
 
 def _surge_target(group: Mapping[str, Any]) -> str:
     action = group["action"]
     mode = group.get("reject_mode")
-    if action != "REJECT":
-        return SURGE_REGION_GROUPS.get(action, action)
-    if mode not in {None, "plain", "drop", "no-drop"}:
-        raise ProfileClientsError(f"unsupported reject mode {mode!r}")
-    return {"drop": "REJECT-DROP", "no-drop": "REJECT-NO-DROP", "plain": "REJECT", None: "REJECT"}[mode]
+    if action == "REJECT":
+        if mode not in {None, "plain", "drop", "no-drop"}:
+            raise ProfileClientsError(f"unsupported reject mode {mode!r}")
+        action = {"drop": "REJECT-DROP", "no-drop": "REJECT-NO-DROP", "plain": "REJECT", None: "REJECT"}[mode]
+    return SURGE_REGION_GROUPS.get(action, SURGE_POLICY_ALIASES.get(action, action))
+
+
+def _mihomo_proxy_groups() -> list[dict[str, Any]]:
+    """Return display groups whose only job is to expose canonical action names."""
+    return [
+        {"name": MIHOMO_POLICY_ALIASES["TEST"], "type": "select", "proxies": [
+            MIHOMO_REGION_GROUPS["US"], MIHOMO_REGION_GROUPS["JP"], MIHOMO_POLICY_ALIASES["DIRECT"],
+        ]},
+        *[
+            {"name": MIHOMO_POLICY_ALIASES[action], "type": "select", "proxies": [builtin]}
+            for action, builtin in (("DIRECT", "DIRECT"), ("REJECT", "REJECT"), ("REJECT-DROP", "REJECT-DROP"))
+        ],
+    ]
+
+
+def _mihomo_proxy_groups_yaml() -> list[str]:
+    lines = ["proxy-groups:"]
+    for group in _mihomo_proxy_groups():
+        lines.extend((f"  - name: {_yaml_quote(group['name'])}", f"    type: {group['type']}", "    proxies:"))
+        lines.extend(f"      - {_yaml_quote(member)}" for member in group["proxies"])
+    return lines
 
 
 def render_mihomo_snippet(candidate: Any, base_url: str) -> str:
@@ -447,6 +485,7 @@ def render_mihomo_snippet(candidate: Any, base_url: str) -> str:
     lines = [
         "rule-providers:", *all_providers,
         "rules:", *ordered_rules,
+        *_mihomo_proxy_groups_yaml(),
         "dns:", "  enable: true", "  enhanced-mode: fake-ip",
         "  nameserver:", *[f"    - {value}" for value in MIHOMO_US_DOH],
         "  nameserver-policy:", *(policy_lines or ["    {}"]),
@@ -470,11 +509,18 @@ def render_surge_snippet(candidate: Any, base_url: str) -> str:
             else:
                 host_lines.append(f"{dns_selector} = server:{', '.join(dns_endpoints)}")
     ordered_route_lines = _surge_route_lines(candidate, base_url)
+    proxy_alias_lines = [f"{alias} = {policy.lower()}" for policy, alias in SURGE_POLICY_ALIASES.items() if policy != "TEST"]
     lines = [
         "[General]",
         "encrypted-dns-server = " + ", ".join(SURGE_US_DOH),
         "encrypted-dns-follow-outbound-mode = true",
         "always-real-ip = " + ", ".join((*ATT_REAL_IP, *SURGE_NINTENDO_REAL_IP)),
+        "",
+        "[Proxy]",
+        *proxy_alias_lines,
+        "",
+        "[Proxy Group]",
+        f"{SURGE_POLICY_ALIASES['TEST']} = select, {SURGE_REGION_GROUPS['US']}, {SURGE_REGION_GROUPS['JP']}, {SURGE_POLICY_ALIASES['DIRECT']}",
         "",
         "[Rule]",
         *ordered_route_lines,
@@ -488,13 +534,18 @@ def render_surge_snippet(candidate: Any, base_url: str) -> str:
 
 def _surge_endpoint_rules() -> list[str]:
     return [
-        "AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),DIRECT",
-        "AND,((PROTOCOL,DOH),(DOMAIN,1.12.12.12)),DIRECT",
+        f"AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),{SURGE_POLICY_ALIASES['DIRECT']}",
+        f"AND,((PROTOCOL,DOH),(DOMAIN,1.12.12.12)),{SURGE_POLICY_ALIASES['DIRECT']}",
         f"AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),{SURGE_REGION_GROUPS['US']}",
         f"AND,((PROTOCOL,DOH),(DOMAIN,1.1.1.1)),{SURGE_REGION_GROUPS['US']}",
         f"AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),{SURGE_REGION_GROUPS['JP']}",
-        "AND,((PROTOCOL,DOH),(DOMAIN,8.8.4.4)),TEST",
+        f"AND,((PROTOCOL,DOH),(DOMAIN,8.8.4.4)),{SURGE_POLICY_ALIASES['TEST']}",
     ]
+
+
+def _is_surge_direct_inline_rule(line: str) -> bool:
+    fields = _split_csv(line)
+    return len(fields) >= 3 and fields[2].strip() in {"DIRECT", SURGE_POLICY_ALIASES["DIRECT"]}
 
 
 def _surge_route_lines(candidate: Any, base_url: str, node_rules: Sequence[str] = (), local_stages: Sequence[Mapping[str, Any]] = ()) -> list[str]:
@@ -511,13 +562,19 @@ def _surge_route_lines(candidate: Any, base_url: str, node_rules: Sequence[str] 
                     raise ProfileClientsError(f"Surge stage {stage_id} maps to multiple route groups")
                 by_stage[stage_id] = group
     lines = [*node_rules]
+    seen_direct_inline = {line for line in lines if _is_surge_direct_inline_rule(line)}
     for stage in local_stages:
         for rule in stage.get("rules", []):
             if rule.platform != "surge":
                 continue
             if rule.type in {"GEOIP", "MATCH"}:
                 raise ProfileClientsError("private inline stages may not replace profile terminal rules")
-            lines.append(_render_inline_rule(rule, stage, "surge"))
+            rendered = _render_inline_rule(rule, stage, "surge")
+            if _is_surge_direct_inline_rule(rendered):
+                if rendered in seen_direct_inline:
+                    continue
+                seen_direct_inline.add(rendered)
+            lines.append(rendered)
     lines.extend(_surge_endpoint_rules())
     emitted: set[str] = set()
     terminal_seen = False
@@ -822,12 +879,12 @@ def _canonical_mihomo_groups(config: dict[str, Any], jp_node: dict[str, Any]) ->
             raise ProfileClientsError("private Mihomo proxy names are not unique")
         proxy_names.add(proxy["name"])
     for proxy in proxies:
-        if id(proxy) not in selected_nodes and proxy.get("name") in {"US", "JP"}:
+        if id(proxy) not in selected_nodes and proxy.get("name") in set(MIHOMO_REGION_GROUPS.values()):
             raise ProfileClientsError("private Mihomo proxy name conflicts with a canonical TUIC leaf")
     # Rename the country TUIC definitions while preserving node identity fields.
     # Apply only the reviewed Mihomo TUIC compatibility settings below.
-    us_nodes[0]["name"] = "US"
-    jp_nodes[0]["name"] = "JP"
+    us_nodes[0]["name"] = MIHOMO_REGION_GROUPS["US"]
+    jp_nodes[0]["name"] = MIHOMO_REGION_GROUPS["JP"]
     if us_nodes[0].get("fast-open") is True:
         us_nodes[0].pop("fast-open")
     jp_nodes[0].update({
@@ -850,12 +907,13 @@ def _canonical_mihomo_groups(config: dict[str, Any], jp_node: dict[str, Any]) ->
     ]
     if len(test_groups) != 1 or not isinstance(test_groups[0].get("proxies"), list):
         raise ProfileClientsError("private Mihomo baseline must contain exactly one reusable TEST selector")
-    groups[:] = [{"name": "TEST", "type": "select", "proxies": ["US", "JP", "DIRECT"]}]
+    groups[:] = _mihomo_proxy_groups()
 
 
 def _node_endpoint_rules(nodes: Iterable[Mapping[str, Any]], *, platform: str, root: Path = ROOT) -> list[str]:
     rules: list[str] = []
     seen: set[tuple[str, str]] = set()
+    direct_target = MIHOMO_POLICY_ALIASES["DIRECT"] if platform == "mihomo" else SURGE_POLICY_ALIASES["DIRECT"]
     for node in nodes:
         values = [node.get("server"), node.get("ip")]
         for raw in values:
@@ -876,7 +934,7 @@ def _node_endpoint_rules(nodes: Iterable[Mapping[str, Any]], *, platform: str, r
                 if key in seen:
                     continue
                 seen.add(key)
-                rules.append(f"DOMAIN,{value},DIRECT")
+                rules.append(f"DOMAIN,{value},{direct_target}")
             else:
                 kind = "IP-CIDR" if address.version == 4 else "IP-CIDR6"
                 network = f"{address}/{address.max_prefixlen}"
@@ -885,7 +943,7 @@ def _node_endpoint_rules(nodes: Iterable[Mapping[str, Any]], *, platform: str, r
                     continue
                 seen.add(key)
                 rule_kind = "IP-CIDR" if platform == "mihomo" and address.version == 4 else kind
-                rules.append(f"{rule_kind},{network},DIRECT,no-resolve")
+                rules.append(f"{rule_kind},{network},{direct_target},no-resolve")
     return rules
 
 
@@ -908,7 +966,7 @@ def _mihomo_route_lines(candidate: Any, base_url: str, node_rules: Sequence[str]
             fields = _split_rule_fields(line)
             if (
                 len(fields) >= 3 and fields[0].upper() in DOMAIN_RULE_TYPES | IP_RULE_TYPES | {"PROCESS-NAME", "USER-AGENT"}
-                and fields[2].upper() == "DIRECT"
+                and (fields[2].upper() == "DIRECT" or fields[2] == MIHOMO_POLICY_ALIASES["DIRECT"])
             ):
                 key = ",".join(fields)
                 if key in direct_inline_seen:
@@ -955,8 +1013,18 @@ def _mihomo_provider_data(group: Mapping[str, Any], base_url: str, provider_id: 
         "type": "http", "behavior": behavior, "format": file_format,
         "url": _resource_url(base_url, path),
         "path": f"./ruleset/personal-{platform_cache_slug(provider_id)}.{file_format}",
-        "interval": 43200, "proxy": "US",
+        "interval": 43200, "proxy": MIHOMO_REGION_GROUPS["US"],
     }
+
+
+def _mihomo_display_policy(value: str, known_targets: set[str]) -> str:
+    action, reject_mode = _old_policy(value, known_targets)
+    if action == "REJECT":
+        if reject_mode == "drop":
+            action = "REJECT-DROP"
+        elif reject_mode not in {None, "plain", "no-drop"}:
+            raise ProfileClientsError("Mihomo provider proxy references an unsupported reject policy")
+    return MIHOMO_REGION_GROUPS.get(action, MIHOMO_POLICY_ALIASES.get(action, action))
 
 
 def _set_mihomo_providers(
@@ -987,6 +1055,29 @@ def _set_mihomo_providers(
     retained_providers: dict[str, Any] = {}
     retained_policy: dict[str, Any] = {}
     known_targets = known_targets if known_targets is not None else _known_policy_targets("mihomo", config)
+
+    def preserve_provider(name: str, provider: Mapping[str, Any]) -> None:
+        preserved = dict(provider)
+        if "proxy" in preserved and preserved["proxy"] is not None:
+            if not isinstance(preserved["proxy"], str):
+                raise ProfileClientsError("preserved Mihomo provider proxy must be a policy name")
+            preserved["proxy"] = _mihomo_display_policy(preserved["proxy"], known_targets)
+        retained_providers[name] = preserved
+
+    for field in MIHOMO_DNS_SERVER_FIELDS:
+        if field in dns:
+            dns[field] = _normalize_resolver_target(dns[field], known_targets)
+    for field in MIHOMO_DNS_POLICY_FIELDS:
+        value = dns.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, Mapping):
+            raise ProfileClientsError(f"private Mihomo {field} must be a mapping")
+        dns[field] = {
+            selector: _normalize_resolver_target(target, known_targets)
+            for selector, target in value.items()
+        }
+
     for selector, target in old_dns_policy.items():
         selector_text = str(selector)
         normalized_target = _normalize_resolver_target(target, known_targets)
@@ -1003,7 +1094,7 @@ def _set_mihomo_providers(
                 except ProfileClientsError:
                     # Preserve explicit local/external DNS exceptions in their original order.
                     retained_names.append(name)
-                    retained_providers[name] = dict(provider)
+                    preserve_provider(name, provider)
                     continue
                 migrated_sources = {source_id}
                 group = aliases.group_sources.get(source_id)
@@ -1016,7 +1107,7 @@ def _set_mihomo_providers(
                 )
                 if not migrated_sources & profile_dns_sources and not reserved_empty_jp:
                     retained_names.append(name)
-                    retained_providers[name] = dict(provider)
+                    preserve_provider(name, provider)
             if retained_names:
                 retained_policy["rule-set:" + ",".join(retained_names)] = normalized_target
         else:
@@ -1107,9 +1198,7 @@ def _surge_group_references(fields: Sequence[str], known_names: set[str]) -> tup
             continue
         if "=" in value:
             options.append(raw.strip())
-        elif _is_direct_policy_alias(value):
-            # Some legacy select groups spell the builtin action as "🚀 Direct".
-            # It is a policy alias, not a proxy entry to preserve by name.
+        elif value.upper() == "DIRECT":
             members.append("DIRECT")
         elif value.casefold() in {item.casefold() for item in known_names} or value.upper() in _SURGE_BUILTIN_POLICIES:
             members.append(value)
@@ -1205,7 +1294,42 @@ def _surge_group_aliases(section: SurgeSection, proxy_entries: Sequence[tuple[st
     return [
         f"{us} = smart, {us_snell}, {us_tuic}",
         f"{jp} = smart, {jp_snell}, {jp_tuic}",
-        f"TEST = select, {us}, {jp}, DIRECT",
+        f"{SURGE_POLICY_ALIASES['TEST']} = select, {us}, {jp}, {SURGE_POLICY_ALIASES['DIRECT']}",
+    ]
+
+
+def _set_surge_policy_aliases(section: SurgeSection) -> None:
+    """Declare named aliases for Surge's native built-in policies."""
+    expected = {alias.casefold(): policy.lower() for policy, alias in SURGE_POLICY_ALIASES.items() if policy != "TEST"}
+    generated_group_and_leaf_names = {
+        *(name.casefold() for name in SURGE_REGION_GROUPS.values()),
+        SURGE_POLICY_ALIASES["TEST"].casefold(),
+        *(name.casefold() for name in SURGE_REGION_LEAVES.values()),
+    }
+    kept: list[str] = []
+    present: set[str] = set()
+    for line in section.lines:
+        if "=" not in line or line.strip().startswith(("#", ";")):
+            kept.append(line)
+            continue
+        name, raw_value = (part.strip() for part in line.split("=", 1))
+        value = raw_value.strip().strip('"')
+        key = name.casefold()
+        if key in generated_group_and_leaf_names and "," not in raw_value:
+            raise ProfileClientsError("Surge proxy alias conflicts with a generated group or leaf")
+        if key not in expected:
+            kept.append(line)
+            continue
+        if value.casefold() != expected[key]:
+            raise ProfileClientsError("Surge policy alias conflicts with a proxy definition")
+        if key in present:
+            raise ProfileClientsError("Surge policy alias is defined more than once")
+        present.add(key)
+        kept.append(line)
+    section.lines = kept + [
+        f"{SURGE_POLICY_ALIASES[policy]} = {policy.lower()}"
+        for policy, alias in SURGE_POLICY_ALIASES.items()
+        if policy != "TEST" and alias.casefold() not in present
     ]
 
 
@@ -1305,6 +1429,7 @@ def _migrate_surge(
         if not any(item.startswith("tuic") for item in protocols) or not any(item.startswith("snell") for item in protocols):
             raise ProfileClientsError(f"private Surge baseline must preserve {region} TUIC and Snell nodes")
     proxy_entries = _canonical_surge_proxy_names(sections)
+    _set_surge_policy_aliases(_section(sections, "Proxy"))
     generated_groups = _surge_group_aliases(proxy_group, proxy_entries)
     proxy_group.lines = generated_groups
     node_rules = _node_endpoint_rules(proxy_nodes, platform="surge", root=root)
@@ -1477,7 +1602,9 @@ def _known_policy_targets(platform: str, baseline: Any) -> set[str]:
                     raise ProfileClientsError(f"Mihomo baseline {key} contains an invalid entry")
                 result.add(entry["name"])
                 if key == "proxies":
-                    leaf_actions[entry["name"]] = _node_region(entry["name"]) or "US"
+                    region = _node_region(entry["name"])
+                    if region or not _looks_like_reject_policy_name(entry["name"]):
+                        leaf_actions[entry["name"]] = region or "US"
                 else:
                     members = entry.get("proxies")
                     if not isinstance(members, list) or not members or not all(isinstance(item, str) for item in members):
@@ -1488,7 +1615,10 @@ def _known_policy_targets(platform: str, baseline: Any) -> set[str]:
         groups = _surge_group_index(_section(sections, "Proxy Group"))
         nodes = _surge_proxy_entries(sections)
         result = {name for name, _kind, _fields in nodes} | set(groups)
-        leaf_actions = {name: _node_region(name) or "US" for name, _kind, _fields in nodes}
+        leaf_actions = {
+            name: region or "US" for name, _kind, _fields in nodes
+            if (region := _node_region(name)) or not _looks_like_reject_policy_name(name)
+        }
         for raw in _section(sections, "Proxy").lines:
             if raw.lstrip().startswith(("#", ";")) or "=" not in raw:
                 continue
@@ -1527,6 +1657,11 @@ def _is_direct_policy_alias(value: str) -> bool:
     return clean == "direct" or "直连" in value
 
 
+def _looks_like_reject_policy_name(value: str) -> bool:
+    normalized = value.casefold()
+    return value.startswith("🚫") or "reject" in normalized or "拒绝" in normalized
+
+
 def _old_policy(action: str, known_targets: set[str] | None = None) -> tuple[str, str | None]:
     value = action.strip().strip('"')
     alias = getattr(known_targets, "aliases", {}).get(value)
@@ -1534,7 +1669,9 @@ def _old_policy(action: str, known_targets: set[str] | None = None) -> tuple[str
         return _old_policy(alias)
     upper = value.upper()
     normalized = value.casefold()
-    if _is_direct_policy_alias(value):
+    if upper == "DIRECT" or (
+        known_targets is not None and value in known_targets and _is_direct_policy_alias(value)
+    ):
         return "DIRECT", None
     reject = {"REJECT": "plain", "REJECT-DROP": "drop", "REJECT-NO-DROP": "no-drop", "REJECT-TINYGIF": "tinygif"}
     if upper in reject:
@@ -1547,6 +1684,8 @@ def _old_policy(action: str, known_targets: set[str] | None = None) -> tuple[str
     if region:
         return region, None
     if known_targets is not None and value in known_targets:
+        if _looks_like_reject_policy_name(value):
+            raise ProfileClientsError("baseline route references an unknown policy target")
         # The old route target is a configured proxy/group, not an action token.
         # Compare its observed baseline selection as US and report this as an
         # explicit AUTO/Smart -> fixed-US normalization.
@@ -1559,8 +1698,8 @@ def _normalize_resolver_target(target: Any, known_targets: set[str]) -> Any:
 
     Mihomo nameserver-policy values may be a single endpoint or an ordered list.
     Endpoint fragments that referenced retired baseline groups must be rewritten
-    to the corresponding canonical action, and unknown group references fail
-    closed instead of leaving a dangling resolver route.
+    to the corresponding canonical action; configured DNS options and interface
+    fragments remain intact, while unknown policy references fail closed.
     """
     if isinstance(target, str):
         values = [target]
@@ -1583,11 +1722,30 @@ def _normalize_resolver_target(target: Any, known_targets: set[str]) -> Any:
         parsed = urllib.parse.urlsplit(value)
         if not parsed.fragment:
             raise ProfileClientsError("Mihomo resolver endpoint has an empty policy fragment")
-        fragment = urllib.parse.unquote(parsed.fragment)
-        action, reject_mode = _old_policy(fragment, known_targets)
-        if action not in {"US", "JP", "DIRECT", "TEST"} or reject_mode is not None:
-            raise ProfileClientsError("Mihomo resolver endpoint references a non-egress policy")
-        normalized.append(urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, action)))
+        fragment_parts = urllib.parse.unquote(parsed.fragment).split("&")
+        bare_indices = [index for index, part in enumerate(fragment_parts) if "=" not in part]
+        effective_index = bare_indices[-1] if bare_indices else None
+        normalized_parts: list[str] = []
+        for index, fragment in enumerate(fragment_parts):
+            if index != effective_index or fragment.casefold() == "rules":
+                normalized_parts.append(fragment)
+                continue
+            if fragment not in known_targets and fragment.upper() not in {"US", "JP", "TEST", "DIRECT", "REJECT", "REJECT-DROP", "REJECT-NO-DROP"}:
+                if MIHOMO_INTERFACE_FRAGMENT.fullmatch(fragment):
+                    normalized_parts.append(fragment)
+                    continue
+                raise ProfileClientsError("Mihomo resolver endpoint references an unknown policy target or interface")
+            action, reject_mode = _old_policy(fragment, known_targets)
+            if action not in {"US", "JP", "DIRECT", "TEST"} or reject_mode is not None:
+                raise ProfileClientsError("Mihomo resolver endpoint references a non-egress policy")
+            display_target = MIHOMO_REGION_GROUPS.get(action, MIHOMO_POLICY_ALIASES.get(action, action))
+            normalized_parts.append(display_target)
+        normalized_fragment = "&".join(normalized_parts)
+        normalized_fragment = "".join(
+            urllib.parse.quote(character, safe="") if character == "%" or ord(character) < 32 or ord(character) == 127 else character
+            for character in normalized_fragment
+        )
+        normalized.append(urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, normalized_fragment)))
 
     if shape == "string":
         if not normalized:
