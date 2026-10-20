@@ -1,6 +1,6 @@
 {
-  "baseline_release_id": "bf7b372749baf1b201ea05f2ddea163857ddf467953f727e93a937b4359d73a6",
-  "candidate_id": "c1334990279294f252a1c180faf19edab7077357417ca58891e93e32e42324df",
+  "baseline_release_id": "1ea5f3631b05ab785e538d695fc8f05ee3070c38d380c27a27d5efd8e2ce1997",
+  "candidate_id": "4313fb95ed253a1c5848ff7c66767a05a4c0117f0991d5cc6e007f3f0c1b731f",
   "cn_direct": {
     "acl_review": {
       "accepted": [
@@ -222,7 +222,7 @@
     },
     "counts": {
       "acl_excluded_rules": 25,
-      "compressed_input_rules": 113436,
+      "compressed_input_rules": 113438,
       "domain_output_rules": 110955,
       "mihomo_process_rules": 36,
       "mihomo_special_rules": 10,
@@ -231,8 +231,8 @@
         "china_max": 110746,
         "sukka_direct_clash": 219,
         "sukka_direct_surge": 220,
-        "sukka_domestic_clash": 869,
-        "sukka_domestic_surge": 872
+        "sukka_domestic_clash": 870,
+        "sukka_domestic_surge": 873
       },
       "surge_platform_rules": 40,
       "surge_special_rules": 10
@@ -280,17 +280,27 @@
           "removed_rules": []
         },
         "sukka_domestic_clash": {
-          "added": 0,
-          "added_rules": [],
-          "after": 869,
+          "added": 1,
+          "added_rules": [
+            [
+              "DOMAIN-SUFFIX",
+              "amemv.com"
+            ]
+          ],
+          "after": 870,
           "before": 869,
           "removed": 0,
           "removed_rules": []
         },
         "sukka_domestic_surge": {
-          "added": 0,
-          "added_rules": [],
-          "after": 872,
+          "added": 1,
+          "added_rules": [
+            [
+              "DOMAIN-SUFFIX",
+              "amemv.com"
+            ]
+          ],
+          "after": 873,
           "before": 872,
           "removed": 0,
           "removed_rules": []
@@ -444125,7 +444135,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "575637df38884575bfa523e95c17d0ee3be1676c",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -444134,7 +444144,7 @@
         "china_max": {
           "branch": "master",
           "commit": "f9e403a75bbc4bee939c6d8dd766cf78f1b512f3",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "9a183c3eb474445af35f04c6d49ee517cbd295a1cc7fc27362892f8cf85aeece",
@@ -444142,7 +444152,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -444154,7 +444164,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -444166,26 +444176,26 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
-            "content_hash": "tpv0Wjwwaed8UoJHtpXNZYnuaoSZVNK_FaEQecUqEIk",
-            "declared_size": "869",
-            "last_updated": "2026-09-30T11:33:00.392Z",
+            "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
+            "declared_size": "870",
+            "last_updated": "2026-10-20T10:56:36.477Z",
             "license": "AGPL 3.0"
           },
-          "sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+          "sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
           "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
-            "content_hash": "rWUXpmmZfqd-E48xeinjmUM2pBbxQLRUZDouiuMITlE",
-            "declared_size": "872",
-            "last_updated": "2026-09-30T11:33:00.392Z",
+            "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
+            "declared_size": "873",
+            "last_updated": "2026-10-20T10:56:36.477Z",
             "license": "AGPL 3.0"
           },
-          "sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+          "sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
           "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
         }
       }
@@ -538201,10 +538211,12 @@
         "value": "ameisx.com"
       },
       {
-        "covered_input_rule_count": 2,
+        "covered_input_rule_count": 4,
         "source_rule_counts": {
           "acl_china_domain": 1,
-          "china_max": 1
+          "china_max": 1,
+          "sukka_domestic_clash": 1,
+          "sukka_domestic_surge": 1
         },
         "type": "DOMAIN-SUFFIX",
         "value": "amemv.com"
@@ -1781878,6 +1781890,10 @@
         },
         {
           "type": "DOMAIN-SUFFIX",
+          "value": "amemv.com"
+        },
+        {
+          "type": "DOMAIN-SUFFIX",
           "value": "anjuke.com"
         },
         {
@@ -1785356,6 +1785372,10 @@
         },
         {
           "type": "DOMAIN-SUFFIX",
+          "value": "amemv.com"
+        },
+        {
+          "type": "DOMAIN-SUFFIX",
           "value": "anjuke.com"
         },
         {
@@ -1788311,13 +1788331,13 @@
       },
       "sukka_domestic_clash": {
         "path": "upstream/cn-direct/sukka-domestic.txt",
-        "rules": 869,
-        "sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39"
+        "rules": 870,
+        "sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8"
       },
       "sukka_domestic_surge": {
         "path": "upstream/cn-direct/sukka-domestic.conf",
-        "rules": 872,
-        "sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2"
+        "rules": 873,
+        "sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e"
       }
     },
     "wide_scope_baseline": {
@@ -1788477,12 +1788497,7 @@
         "removed": []
       },
       "global": {
-        "added": [
-          {
-            "type": "DOMAIN-SUFFIX",
-            "value": "magnific.com"
-          }
-        ],
+        "added": [],
         "removed": []
       },
       "network-test": {
@@ -1788496,12 +1788511,7 @@
         "removed": []
       },
       "global": {
-        "added": [
-          {
-            "type": "DOMAIN-SUFFIX",
-            "value": "magnific.com"
-          }
-        ],
+        "added": [],
         "removed": []
       },
       "network-test": {
@@ -1793640,7 +1793650,7 @@
       "sha256": "ed8a1b69a61b43e0b1f917afe84790ba22cb08ae80f8bc6a9b6df9c50b58aa56"
     }
   },
-  "release_id": "1ea5f3631b05ab785e538d695fc8f05ee3070c38d380c27a27d5efd8e2ce1997",
+  "release_id": "4cc4d627802a9319b1c6c7ac1a48bab7cd659759cc0cd943b6c0b79158dcee4d",
   "routing_ownership": {
     "automatic_moves": [
       {
@@ -1793780,7 +1793790,7 @@
             "line": 181,
             "raw": "DOMAIN-SUFFIX,quark.cn",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "quark.cn"
           },
@@ -1793789,7 +1793799,7 @@
             "line": 181,
             "raw": "DOMAIN-SUFFIX,quark.cn",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "quark.cn"
           }
@@ -1794193,7 +1794203,7 @@
             "line": 85,
             "raw": "DOMAIN-SUFFIX,coze.cn",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "coze.cn"
           },
@@ -1794202,7 +1794212,7 @@
             "line": 85,
             "raw": "DOMAIN-SUFFIX,coze.cn",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "coze.cn"
           }
@@ -1794684,19 +1794694,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 369,
+            "line": 370,
             "raw": "DOMAIN-SUFFIX,doubao.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "doubao.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 369,
+            "line": 370,
             "raw": "DOMAIN-SUFFIX,doubao.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "doubao.com"
           }
@@ -1794967,19 +1794977,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 585,
+            "line": 586,
             "raw": "DOMAIN-SUFFIX,tencent.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "tencent.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 585,
+            "line": 586,
             "raw": "DOMAIN-SUFFIX,tencent.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "tencent.com"
           }
@@ -1795262,7 +1795272,7 @@
               "line": 37,
               "raw": "DOMAIN-SUFFIX,com.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "com.cn"
             },
@@ -1795272,7 +1795282,7 @@
               "line": 37,
               "raw": "DOMAIN-SUFFIX,com.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "com.cn"
             }
@@ -1795778,19 +1795788,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 345,
+            "line": 346,
             "raw": "DOMAIN-SUFFIX,aliyun.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "aliyun.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 345,
+            "line": 346,
             "raw": "DOMAIN-SUFFIX,aliyun.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "aliyun.com"
           }
@@ -1796110,19 +1796120,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 345,
+            "line": 346,
             "raw": "DOMAIN-SUFFIX,aliyun.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "aliyun.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 345,
+            "line": 346,
             "raw": "DOMAIN-SUFFIX,aliyun.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "aliyun.com"
           }
@@ -1796198,7 +1796208,7 @@
               "line": 37,
               "raw": "DOMAIN-SUFFIX,com.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "com.cn"
             },
@@ -1796208,7 +1796218,7 @@
               "line": 37,
               "raw": "DOMAIN-SUFFIX,com.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "com.cn"
             }
@@ -1796403,19 +1796413,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 213,
+            "line": 214,
             "raw": "DOMAIN-SUFFIX,baidu.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "baidu.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 213,
+            "line": 214,
             "raw": "DOMAIN-SUFFIX,baidu.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "baidu.com"
           }
@@ -1796470,19 +1796480,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 585,
+            "line": 586,
             "raw": "DOMAIN-SUFFIX,tencent.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "tencent.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 585,
+            "line": 586,
             "raw": "DOMAIN-SUFFIX,tencent.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "tencent.com"
           }
@@ -1796511,19 +1796521,19 @@
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 585,
+            "line": 586,
             "raw": "DOMAIN-SUFFIX,tencent.com",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "tencent.com"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 585,
+            "line": 586,
             "raw": "DOMAIN-SUFFIX,tencent.com",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "tencent.com"
           }
@@ -1796822,19 +1796832,19 @@
         "cover_evidence": [
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 767,
+            "line": 768,
             "raw": "DOMAIN-SUFFIX,cnspeedtest.cn",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "cnspeedtest.cn"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 767,
+            "line": 768,
             "raw": "DOMAIN-SUFFIX,cnspeedtest.cn",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "cnspeedtest.cn"
           }
@@ -1796910,7 +1796920,7 @@
             "line": 159,
             "raw": "DOMAIN-SUFFIX,ipip.net",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "ipip.net"
           },
@@ -1796919,7 +1796929,7 @@
             "line": 159,
             "raw": "DOMAIN-SUFFIX,ipip.net",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "ipip.net"
           }
@@ -1797021,7 +1797031,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797031,7 +1797041,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797057,7 +1797067,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797067,7 +1797077,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797093,7 +1797103,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797103,7 +1797113,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797129,7 +1797139,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797139,7 +1797149,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797165,7 +1797175,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797175,7 +1797185,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797201,7 +1797211,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797211,7 +1797221,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797230,19 +1797240,19 @@
         "cover_evidence": [
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.conf",
-            "line": 668,
+            "line": 669,
             "raw": "DOMAIN-SUFFIX,speedtest.cn",
             "source": "sukka_domestic_surge",
-            "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+            "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
             "type": "DOMAIN-SUFFIX",
             "value": "speedtest.cn"
           },
           {
             "archive_path": "upstream/cn-direct/sukka-domestic.txt",
-            "line": 668,
+            "line": 669,
             "raw": "DOMAIN-SUFFIX,speedtest.cn",
             "source": "sukka_domestic_clash",
-            "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+            "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
             "type": "DOMAIN-SUFFIX",
             "value": "speedtest.cn"
           }
@@ -1797310,7 +1797320,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797320,7 +1797330,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797346,7 +1797356,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797356,7 +1797366,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797382,7 +1797392,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797392,7 +1797402,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797418,7 +1797428,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797428,7 +1797438,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797454,7 +1797464,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797464,7 +1797474,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797490,7 +1797500,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797500,7 +1797510,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797526,7 +1797536,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797536,7 +1797546,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }
@@ -1797611,7 +1797621,7 @@
               "line": 37,
               "raw": "DOMAIN-SUFFIX,com.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "com.cn"
             },
@@ -1797621,7 +1797631,7 @@
               "line": 37,
               "raw": "DOMAIN-SUFFIX,com.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "com.cn"
             }
@@ -1797647,7 +1797657,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_surge",
-              "source_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+              "source_sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             },
@@ -1797657,7 +1797667,7 @@
               "line": 41,
               "raw": "DOMAIN-SUFFIX,edu.cn",
               "source": "sukka_domestic_clash",
-              "source_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+              "source_sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
               "type": "DOMAIN-SUFFIX",
               "value": "edu.cn"
             }

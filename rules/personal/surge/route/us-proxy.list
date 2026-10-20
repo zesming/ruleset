@@ -2205,6 +2205,7 @@ DOMAIN,media3.giphy.com
 DOMAIN,media4.giphy.com
 DOMAIN-SUFFIX,meetupstatic.com
 DOMAIN,meteorclient.com
+DOMAIN,metrics.manus.im
 DOMAIN-SUFFIX,mirror-media.xyz
 DOMAIN-SUFFIX,neweggimages.com
 DOMAIN,ocsp.godaddy.com
@@ -4184,6 +4185,7 @@ DOMAIN,scripts.dailymail.co.uk
 DOMAIN,server.arcgisonline.com
 DOMAIN,static-assets.juksy.com
 DOMAIN,static-images.remax.com
+DOMAIN,static-page.tp-link.com
 DOMAIN,static.chrome-stats.com
 DOMAIN,static.fastboostcdn.com
 DOMAIN,static.filestackapi.com

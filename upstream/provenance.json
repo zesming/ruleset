@@ -10,7 +10,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "575637df38884575bfa523e95c17d0ee3be1676c",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -19,7 +19,7 @@
         "china_max": {
           "branch": "master",
           "commit": "f9e403a75bbc4bee939c6d8dd766cf78f1b512f3",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "9a183c3eb474445af35f04c6d49ee517cbd295a1cc7fc27362892f8cf85aeece",
@@ -27,7 +27,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -39,7 +39,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -51,26 +51,26 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
-            "content_hash": "tpv0Wjwwaed8UoJHtpXNZYnuaoSZVNK_FaEQecUqEIk",
-            "declared_size": "869",
-            "last_updated": "2026-09-30T11:33:00.392Z",
+            "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
+            "declared_size": "870",
+            "last_updated": "2026-10-20T10:56:36.477Z",
             "license": "AGPL 3.0"
           },
-          "sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+          "sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
           "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-10-20T02:50:17Z",
+          "fetched_at": "2026-10-20T12:34:33Z",
           "header": {
-            "content_hash": "rWUXpmmZfqd-E48xeinjmUM2pBbxQLRUZDouiuMITlE",
-            "declared_size": "872",
-            "last_updated": "2026-09-30T11:33:00.392Z",
+            "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
+            "declared_size": "873",
+            "last_updated": "2026-10-20T10:56:36.477Z",
             "license": "AGPL 3.0"
           },
-          "sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+          "sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
           "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
         }
       }
@@ -80,7 +80,7 @@
       "acl_china_domain": {
         "branch": "master",
         "commit": "575637df38884575bfa523e95c17d0ee3be1676c",
-        "fetched_at": "2026-10-20T02:50:17Z",
+        "fetched_at": "2026-10-20T12:34:33Z",
         "path": "Clash/ChinaDomain.list",
         "repository": "ACL4SSR/ACL4SSR",
         "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -89,7 +89,7 @@
       "china_max": {
         "branch": "master",
         "commit": "f9e403a75bbc4bee939c6d8dd766cf78f1b512f3",
-        "fetched_at": "2026-10-20T02:50:17Z",
+        "fetched_at": "2026-10-20T12:34:33Z",
         "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
         "repository": "blackmatrix7/ios_rule_script",
         "sha256": "9a183c3eb474445af35f04c6d49ee517cbd295a1cc7fc27362892f8cf85aeece",
@@ -97,7 +97,7 @@
       },
       "sukka_direct_clash": {
         "artifact": "sukka_direct_clash",
-        "fetched_at": "2026-10-20T02:50:17Z",
+        "fetched_at": "2026-10-20T12:34:33Z",
         "header": {
           "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
           "declared_size": "219",
@@ -109,7 +109,7 @@
       },
       "sukka_direct_surge": {
         "artifact": "sukka_direct_surge",
-        "fetched_at": "2026-10-20T02:50:17Z",
+        "fetched_at": "2026-10-20T12:34:33Z",
         "header": {
           "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
           "declared_size": "224",
@@ -121,26 +121,26 @@
       },
       "sukka_domestic_clash": {
         "artifact": "sukka_domestic_clash",
-        "fetched_at": "2026-10-20T02:50:17Z",
+        "fetched_at": "2026-10-20T12:34:33Z",
         "header": {
-          "content_hash": "tpv0Wjwwaed8UoJHtpXNZYnuaoSZVNK_FaEQecUqEIk",
-          "declared_size": "869",
-          "last_updated": "2026-09-30T11:33:00.392Z",
+          "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
+          "declared_size": "870",
+          "last_updated": "2026-10-20T10:56:36.477Z",
           "license": "AGPL 3.0"
         },
-        "sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39",
+        "sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
         "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
       },
       "sukka_domestic_surge": {
         "artifact": "sukka_domestic_surge",
-        "fetched_at": "2026-10-20T02:50:17Z",
+        "fetched_at": "2026-10-20T12:34:33Z",
         "header": {
-          "content_hash": "rWUXpmmZfqd-E48xeinjmUM2pBbxQLRUZDouiuMITlE",
-          "declared_size": "872",
-          "last_updated": "2026-09-30T11:33:00.392Z",
+          "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
+          "declared_size": "873",
+          "last_updated": "2026-10-20T10:56:36.477Z",
           "license": "AGPL 3.0"
         },
-        "sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2",
+        "sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
         "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
       }
     }
