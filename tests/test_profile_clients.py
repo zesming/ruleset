@@ -76,6 +76,35 @@ def _candidate():
     return SimpleNamespace(stages=stages, files=files, manifest={"groups": groups, "profile": {"id": "fixture"}})
 
 
+def _compact_candidate():
+    candidate = _candidate()
+    compact_groups = {"mihomo": [], "surge": []}
+    compact_stages = {"mihomo": [], "surge": []}
+    for platform in ("mihomo", "surge"):
+        for raw_group in candidate.manifest["groups"][platform]:
+            group = {**raw_group, "slot": raw_group["id"]}
+            fine = next(stage for stage in candidate.stages if stage["id"] == group["stages"][0])
+            rules = [rule for rule in fine["rules"] if rule.platform == platform]
+            group["rule_count"] = len(rules)
+            compact_groups[platform].append(group)
+            compact_stages[platform].append({
+                **fine, "id": group["id"], "slot": group["slot"], "rules": rules,
+                "group_by_platform": {platform: group["id"]},
+            })
+        for fine in candidate.stages:
+            if not any(rule.type in {"GEOIP", "MATCH"} for rule in fine["rules"]):
+                continue
+            rules = [rule for rule in fine["rules"] if rule.platform == platform]
+            compact_stages[platform].append({
+                **fine, "rules": rules, "group_by_platform": {platform: None},
+            })
+    candidate.manifest["compact"] = {
+        "schema": 1, "groups": compact_groups, "stages": compact_stages,
+    }
+    candidate.compact_stages = compact_stages
+    return candidate
+
+
 class RendererOrderTests(unittest.TestCase):
     def test_jp_tuic_uses_its_own_endpoint_and_an_alpn_array(self):
         _, sections = clients._surge_sections("[Proxy]\nJP node = tuic-v5, jp.example, 443, uuid=fixture, password=fixture, alpn=h3\n")
@@ -87,8 +116,120 @@ class RendererOrderTests(unittest.TestCase):
         self.assertNotIn("fast-open", node)
         self.assertNotIn("reduce-rtt", node)
 
+
+class CompactGroupValidationTests(unittest.TestCase):
+    def test_compact_allows_fine_source_lan_and_empty_reserved_jp_ip(self):
+        candidate = _compact_candidate()
+        for platform in ("mihomo", "surge"):
+            groups = candidate.manifest["compact"]["groups"][platform]
+            stages = candidate.compact_stages[platform]
+            lan_group, empty_jp_group = groups
+            lan_stage, empty_jp_stage = stages[:2]
+
+            lan_group.update({"stages": ["att-us"], "slot": "lan", "action": "DIRECT", "dns": "system"})
+            lan_stage.update({"slot": "lan", "action": "DIRECT", "dns": "system"})
+            empty_jp_group.update({"stages": [], "slot": "jp-ip", "action": "JP", "dns": "jp", "rule_count": 0})
+            empty_jp_stage.update({"slot": "jp-ip", "action": "JP", "dns": "jp", "rules": []})
+
+            resolved = clients._groups(candidate, platform)
+            self.assertEqual([group["slot"] for group in resolved], ["lan", "jp-ip"])
+            self.assertEqual(resolved[0]["stages"], ["att-us"])
+            self.assertEqual(resolved[1]["stages"], [])
+
+
+class IndependentCaseOracleTests(unittest.TestCase):
+    @staticmethod
+    def _mapping_rule(platform, rule_type, value, flags=()):
+        return {
+            "platform": platform, "type": rule_type, "value": value,
+            "flags": list(flags), "source": "fixture", "line": 1,
+        }
+
+    def _compare(self, candidate, full_new_stages, cases):
+        api = clients._load_api(ROOT)
+        old_stages = [{
+            "id": "old-default", "action": "US", "rules": [self._mapping_rule("mihomo", "MATCH", "*")],
+        }]
+        report = {
+            "independent_cases": [],
+            "platforms": {"mihomo": {
+                "independent_case_evidence_counts": {},
+                "independent_case_evidence_status_counts": {},
+            }},
+            "_old_stages": {"mihomo": old_stages},
+        }
+        clients._compare_independent_cases(
+            report, "mihomo", api, candidate,
+            api.RuleIndex(full_new_stages, "mihomo"), full_new_stages,
+            api.RuleIndex(old_stages, "mihomo"), api.RuleIndex([], "mihomo"),
+            api.RuleIndex([], "mihomo"), [], [], "US", "US", cases,
+        )
+        return report
+
+    def test_same_action_overlap_fails_when_first_match_uses_wrong_slot(self):
+        subject = {"domain": "overlap.example"}
+        fine_stages = [
+            {"id": "fine-us", "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "overlap.example")]},
+            {"id": "fine-cn", "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "overlap.example")]},
+        ]
+        wrong_first = {
+            "id": "priority-cn-direct", "slot": "cn-direct", "action": "DIRECT", "dns": "domestic",
+            "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "overlap.example")],
+        }
+        expected_first = {
+            "id": "priority-us", "slot": "us", "action": "DIRECT", "dns": "foreign",
+            "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "overlap.example")],
+        }
+        terminals = [
+            {"id": "geoip-cn", "action": "DIRECT", "rules": [self._mapping_rule("mihomo", "GEOIP", "CN")]},
+            {"id": "default-us", "action": "US", "rules": [self._mapping_rule("mihomo", "MATCH", "*")]},
+        ]
+        physical = [wrong_first, expected_first, *terminals]
+        candidate = SimpleNamespace(
+            stages=fine_stages, compact_stages={"mihomo": physical}, manifest={"compact": {}},
+        )
+        local_prefix = {
+            "id": "retained-company", "action": "DIRECT",
+            "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "company.internal")],
+        }
+        cases = {"independent_cases": [{
+            "id": "same-action-overlap", "kind": "literal-domain", "platforms": ["mihomo"],
+            "evidence": "synthetic", "subject": subject,
+            "expected_new_slot": "us", "expected_new_action": "DIRECT",
+            "expected_membership": ["fine-us", "fine-cn"],
+        }]}
+        with self.assertRaisesRegex(clients.ProfileClientsError, "same-action-overlap"):
+            self._compare(candidate, [local_prefix, *physical], cases)
+
+    def test_terminal_last_assertion_uses_full_program_after_local_prefix(self):
+        fine = {"id": "fine-us", "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "listed.example")]}
+        profile_stages = [
+            {"id": "priority-us", "slot": "us", "action": "US", "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "listed.example")]},
+            {"id": "geoip-cn", "action": "DIRECT", "rules": [self._mapping_rule("mihomo", "GEOIP", "CN")]},
+            {"id": "default-us", "action": "US", "rules": [self._mapping_rule("mihomo", "MATCH", "*")]},
+        ]
+        candidate = SimpleNamespace(
+            stages=[fine], compact_stages={"mihomo": profile_stages}, manifest={"compact": {}},
+        )
+        local_prefix = {
+            "id": "retained-company", "action": "DIRECT",
+            "rules": [self._mapping_rule("mihomo", "DOMAIN-SUFFIX", "company.internal")],
+        }
+        cases = {"independent_cases": [{
+            "id": "fallback-is-final", "kind": "literal-domain", "platforms": ["mihomo"],
+            "evidence": "synthetic", "subject": {"domain": "unknown.invalid"},
+            "expected_new_stage": "default-us", "expected_new_stage_last": True,
+            "expected_new_action": "US",
+        }]}
+        report = self._compare(candidate, [local_prefix, *profile_stages], cases)
+        self.assertEqual(report["independent_cases"][0]["status"], "passed")
+
+        early_match = {"id": "retained-broad-match", "action": "US", "rules": [self._mapping_rule("mihomo", "MATCH", "*")]}
+        with self.assertRaisesRegex(clients.ProfileClientsError, "fallback-is-final"):
+            self._compare(candidate, [local_prefix, early_match, *profile_stages], cases)
+
     def test_comparison_projects_surge_only_reject_variant_to_actual_mihomo_policy(self):
-        result = SimpleNamespace(stage={"id": "reject-no-drop"}, action="REJECT", reject_mode="no-drop", rule=_rule("mihomo", "DOMAIN", "blocked.example"))
+        result = SimpleNamespace(stage={"id": "reject-no-drop"}, stage_index=0, action="REJECT", reject_mode="no-drop", rule=_rule("mihomo", "DOMAIN", "blocked.example"))
         self.assertEqual(clients._result_route(result)["reject_mode"], "plain")
         result.rule.platform = "surge"
         self.assertEqual(clients._result_route(result)["reject_mode"], "no-drop")
@@ -158,6 +299,50 @@ class RendererOrderTests(unittest.TestCase):
         self.assertEqual(sum(line.startswith("FINAL,") for line in rules), 1)
         self.assertTrue(all("AND,((PROTOCOL,DOH)" in line for line in rules if line.startswith("AND,")))
 
+    def test_compact_physical_stages_drive_rendering_and_slot_scoped_dns_unions(self):
+        candidate = _compact_candidate()
+        surge_groups = candidate.manifest["compact"]["groups"]["surge"]
+        surge_stages = candidate.compact_stages["surge"]
+        surge_groups.reverse()
+        by_id = {stage["id"]: stage for stage in surge_stages}
+        candidate.compact_stages["surge"] = [by_id[group["id"]] for group in surge_groups] + surge_stages[-2:]
+        candidate.manifest["compact"]["stages"]["surge"] = candidate.compact_stages["surge"]
+        for group, stage in zip(candidate.manifest["compact"]["groups"]["mihomo"], candidate.compact_stages["mihomo"]):
+            group.update({
+                "slot": "priority-one" if group["id"] == "att-us" else "priority-two",
+                "action": "DIRECT", "dns": "domestic", "dns_path": group["path"],
+                "dns_kind": "route", "dns_behavior": group["behavior"], "dns_format": group["format"],
+            })
+            stage.update({"slot": group["slot"], "action": "DIRECT", "dns": "domestic"})
+
+        mihomo = clients.render_mihomo_snippet(candidate, "https://example.invalid/ref")
+        self.assertIn('"rule-set:att-us":', mihomo)
+        self.assertIn('"rule-set:domestic-ip":', mihomo)
+        self.assertIn("https://223.5.5.5/dns-query#DIRECT", mihomo)
+        surge = clients.render_surge_snippet(candidate, "https://example.invalid/ref")
+        routes = surge.split("[Rule]\n", 1)[1].split("\n[Host]", 1)[0]
+        self.assertLess(routes.index("/rules/personal/surge/domestic-ip.set"), routes.index("/rules/personal/surge/att-us.set"))
+
+    def test_test_doh_endpoint_has_a_distinct_test_policy(self):
+        test_group = {"id": "network-test", "action": "TEST", "dns": "test"}
+        jp_group = {"id": "jp", "action": "JP", "dns": "jp"}
+        self.assertEqual(clients._dns_endpoints(test_group, "mihomo"), ("https://8.8.4.4/dns-query#TEST",))
+        self.assertEqual(clients._dns_endpoints(jp_group, "surge"), ("https://1.0.0.1/dns-query",))
+        self.assertTrue(clients._surge_endpoint_rules()[-1].endswith(")),TEST"))
+        self.assertEqual(clients._resolver_class("https://8.8.4.4/dns-query", "RULE-SET:test"), "TEST")
+
+    def test_surge_host_comment_refresh_keeps_private_mapping_lines(self):
+        section = clients.SurgeSection("Host", "[Host]", [
+            "# DNS-Fallback and Apple group route selectors",
+            "# CNBanned group resolver note",
+            "service.internal.example = 10.0.0.7",
+        ])
+        clients._rewrite_surge_host_comments(section)
+        self.assertTrue(section.lines[0].startswith("# DNS policy selectors"))
+        self.assertTrue(any("protocol-qualified" in line for line in section.lines))
+        self.assertTrue(any("Resolver ownership" in line for line in section.lines))
+        self.assertIn("service.internal.example = 10.0.0.7", section.lines)
+
     @unittest.skipUnless(shutil.which("ruby"), "system Ruby YAML parser is unavailable")
     def test_public_mihomo_snippet_parses_as_yaml(self):
         rendered = clients.render_mihomo_snippet(_candidate(), "https://example.invalid/ref")
@@ -178,12 +363,18 @@ class RendererOrderTests(unittest.TestCase):
 
 
 class CanonicalGroupTests(unittest.TestCase):
-    def test_mihomo_keeps_only_fixed_country_groups_and_flat_test_selector(self):
-        jp = {"name": "JP TUIC", "type": "tuic", "server": "jp.example", "port": 443}
+    def test_mihomo_renames_tuic_leaves_and_keeps_only_flat_test_selector(self):
+        jp = {
+            "name": "JP TUIC", "type": "tuic", "server": "jp.example", "port": 443,
+            "uuid": "jp-uuid", "password": "jp-password", "alpn": ["h3"], "udp-relay-mode": "native",
+        }
+        us = {
+            "name": "US TUIC", "type": "tuic", "server": "us.example", "port": 443,
+            "uuid": "us-uuid", "password": "us-password", "fast-open": True, "reduce-rtt": True,
+        }
         config = {
             "proxies": [
-                {"name": "US TUIC", "type": "tuic", "server": "us.example", "port": 443},
-                {"name": "US Snell", "type": "snell", "server": "us-snell.example", "port": 443},
+                us,
             ],
             "proxy-groups": [
                 {"name": "US Smart", "type": "url-test", "proxies": ["US TUIC", "US Snell"]},
@@ -193,14 +384,17 @@ class CanonicalGroupTests(unittest.TestCase):
             ],
         }
         clients._canonical_mihomo_groups(config, jp)
-        groups = {item["name"]: item for item in config["proxy-groups"]}
-        self.assertEqual(set(groups), {"US", "JP", "TEST"})
-        self.assertEqual(groups["US"]["proxies"], ["US TUIC"])
-        self.assertEqual(groups["JP"]["proxies"], ["JP TUIC"])
-        self.assertEqual(groups["TEST"]["proxies"][0], "US")
-        self.assertTrue(set(groups["TEST"]["proxies"]).issubset({"US", "US TUIC", "US Snell", "JP TUIC", "DIRECT"}))
+        self.assertEqual([item["name"] for item in config["proxy-groups"]], ["TEST"])
+        self.assertEqual(config["proxy-groups"][0], {
+            "name": "TEST", "type": "select", "proxies": ["US", "JP", "DIRECT"],
+        })
+        self.assertEqual(len(config["proxies"]), 2)
+        self.assertEqual(config["proxies"][0], {**us, "name": "US"})
+        self.assertEqual(config["proxies"][1], {**jp, "name": "JP"})
+        clients._canonical_mihomo_groups(config, jp)
+        self.assertEqual([item["name"] for item in config["proxy-groups"]], ["TEST"])
 
-    def test_surge_groups_have_same_country_smart_and_no_cross_country_aliases(self):
+    def test_surge_exposes_only_test_group_with_four_direct_proxy_leaves(self):
         section = clients.SurgeSection("Proxy Group", "[Proxy Group]", [
             "US Smart = smart, US TUIC, US Snell, interval=300",
             "JP Smart = smart, JP TUIC, JP Snell, interval=300",
@@ -208,38 +402,105 @@ class CanonicalGroupTests(unittest.TestCase):
             "Test pool = select, Mixed Smart, JP TUIC, 🚀 Direct",
         ])
         proxy_entries = [
-            ("US TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
-            ("US Snell", "snell", ["snell", "us-snell.example", "443"]),
-            ("JP TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
-            ("JP Snell", "snell", ["snell", "jp-snell.example", "443"]),
+            ("US-TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
+            ("JP-TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
+            ("US", "snell", ["snell", "us-snell.example", "443", "psk=fixture", "version=6"]),
+            ("JP", "snell", ["snell", "jp-snell.example", "443", "psk=fixture", "version=6"]),
         ]
         lines = clients._surge_group_aliases(section, proxy_entries)
-        self.assertEqual(len(lines), 5)
-        self.assertTrue(lines[0].startswith("US Smart = smart,"))
-        self.assertTrue(lines[1].startswith("JP Smart = smart,"))
-        self.assertIn("US = select, US Smart", lines)
-        self.assertIn("JP = select, JP Smart", lines)
-        test_line = next(line for line in lines if line.startswith("TEST ="))
-        self.assertIn("US,", test_line)
-        self.assertIn("DIRECT", test_line)
-        self.assertNotIn("Mixed Smart", test_line)
-        self.assertNotIn("US Smart, JP Smart", "\n".join(lines))
+        self.assertEqual(lines, ["TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT"])
+        self.assertNotIn("Smart", "\n".join(lines))
 
-    def test_surge_dynamic_group_membership_options_fail_closed(self):
+    def test_surge_tuic_rename_preserves_entire_proxy_rhs(self):
+        _, sections = clients._surge_sections(
+            "[Proxy]\nUS node = tuic-v5, us.example, 443, uuid=u, password=p, alpn=h3, tfo=true\n"
+            "JP node = tuic-v5, jp.example, 443, uuid=j, password=q, alpn=h3, tfo=false\n"
+            "US Snell = snell, us-snell.example, 443, psk=s, version=6\n"
+            "JP Snell = snell, jp-snell.example, 443, psk=t, version=6\n"
+            "[Proxy Group]\nTEST pool = select, US node, JP node, DIRECT\n"
+        )
+        before = [line.split("=", 1)[1] for line in sections[0].lines]
+        entries = clients._canonical_surge_proxy_names(sections)
+        after = [line.split("=", 1)[1] for line in sections[0].lines]
+        self.assertEqual([item[0] for item in entries], ["US-TUIC", "JP-TUIC", "US", "JP"])
+        self.assertEqual(after, before)
+
+    def test_surge_discards_dynamic_country_wrappers_when_building_canonical_groups(self):
         section = clients.SurgeSection("Proxy Group", "[Proxy Group]", [
             "US Smart = smart, US TUIC, include-other-group=JP Smart",
             "JP Smart = smart, JP TUIC",
             "Test pool = select, US Smart, DIRECT",
         ])
         proxy_entries = [
-            ("US TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
-            ("JP TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
+            ("US-TUIC", "tuic-v5", ["tuic-v5", "us.example", "443"]),
+            ("JP-TUIC", "tuic-v5", ["tuic-v5", "jp.example", "443"]),
+            ("US", "snell", ["snell", "us-snell.example", "443", "psk=fixture", "version=6"]),
+            ("JP", "snell", ["snell", "jp-snell.example", "443", "psk=fixture", "version=6"]),
         ]
-        with self.assertRaisesRegex(clients.ProfileClientsError, "dynamic membership"):
-            clients._surge_group_aliases(section, proxy_entries)
+        lines = clients._surge_group_aliases(section, proxy_entries)
+        self.assertEqual(lines, [
+            "TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT",
+        ])
+
+    def test_surge_migration_is_idempotent_and_preserves_private_host_mapping(self):
+        baseline = f"""[General]
+encrypted-dns-server = https://8.8.8.8/dns-query
+
+[Proxy]
+US node = tuic-v5, us.example.net, 443, uuid=u, password=p, alpn=h3, tfo=true
+JP node = tuic-v5, jp.example.net, 443, uuid=j, password=q, alpn=h3, tfo=false
+US Snell = snell, us-snell.example.net, 443, psk=us-secret, version=6
+JP Snell = snell, jp-snell.example.net, 443, psk=jp-secret, version=6
+
+[Proxy Group]
+US Smart = smart, US node, US Snell 1
+JP Smart = smart, JP node, JP Snell 1
+TEST pool = select, US Smart, JP Smart, DIRECT
+
+[Rule]
+FINAL,US,dns-failed
+
+[Host]
+# DNS-Fallback and Apple group choices
+company.internal = 192.0.2.10
+# CNBanned group owns a resolver selector
+"""
+        first = clients._migrate_surge(_candidate(), baseline, "https://example.invalid/ref")
+        second = clients._migrate_surge(_candidate(), first.decode("utf-8"), "https://example.invalid/ref")
+        self.assertEqual(second, first)
+        rendered = first.decode("utf-8")
+        self.assertEqual(rendered.count("company.internal = 192.0.2.10"), 1)
+        self.assertIn("TEST = select, US, JP, US-TUIC, JP-TUIC, DIRECT", rendered)
+        _, rendered_sections = clients._surge_sections(rendered)
+        rendered_nodes = clients._surge_proxy_entries(rendered_sections)
+        self.assertEqual(
+            [(name, protocol) for name, protocol, _fields in rendered_nodes],
+            [("US-TUIC", "tuic-v5"), ("JP-TUIC", "tuic-v5"), ("US", "snell"), ("JP", "snell")],
+        )
+        self.assertEqual(
+            sum(field == "version=6" for _name, protocol, fields in rendered_nodes if protocol == "snell" for field in fields),
+            2,
+        )
 
 
 class LegacyDnsSelectorTests(unittest.TestCase):
+    def test_raw_repository_url_does_not_accept_a_different_repository(self):
+        path, recognized = clients._normalized_repository_reference(
+            "https://raw.githubusercontent.com/main/rules/personal/mihomo/cn-direct-domain.mrs"
+        )
+        self.assertIsNone(path)
+        self.assertTrue(recognized)
+
+    def test_source_witness_ignores_diagnostic_canary(self):
+        canary = profile.Rule(*profile.SUKKA_IP_CANARY, platform="mihomo")
+        lan = profile.Rule("DOMAIN-SUFFIX", "lan", platform="mihomo")
+        self.assertEqual(clients._matching_representatives(canary, profile), [])
+        subject, _ = clients._stage_witness(
+            {"rules": [canary, lan]}, "mihomo", family=None, api=profile
+        )
+        self.assertTrue(profile.rule_matches(lan, **subject))
+        self.assertNotEqual(subject.get("domain"), canary.value)
+
     def test_mihomo_comma_provider_union_expands_and_retains_custom_order(self):
         candidate = _candidate()
         candidate.stages[0]["dns"] = "foreign"
@@ -306,6 +567,64 @@ class LegacyDnsSelectorTests(unittest.TestCase):
             clients._resolve_source_reference("cn-direct-domain.mrs", aliases, platform="mihomo"),
             "rules/mihomo/cn-direct-domain.txt",
         )
+
+    def test_baseline_group_alias_replays_fine_sources_and_allows_empty_jp_resource(self):
+        candidate = _candidate()
+        manifest = {
+            "groups": {
+                "mihomo": [
+                    {
+                        "id": "priority-lan-classical",
+                        "path": "rules/personal/mihomo/priority-lan-classical.list",
+                        "stages": ["att-us"], "rule_count": 1,
+                    },
+                    {
+                        "id": "priority-jp-ip-classical",
+                        "path": "rules/personal/mihomo/priority-jp-ip-classical.list",
+                        "stages": [], "rule_count": 0,
+                    },
+                ],
+                "surge": [],
+            },
+        }
+        aliases = clients._source_aliases(candidate, clients._load_api(ROOT), manifest)
+        group_id = clients._resolve_source_reference(
+            "rules/personal/mihomo/priority-lan-classical.list", aliases, platform="mihomo",
+        )
+        replayed = clients._source_rules(candidate, group_id, "mihomo", aliases)
+        self.assertEqual([rule.source for rule in replayed], ["fixture"])
+        empty_id = clients._resolve_source_reference(
+            "rules/personal/mihomo/priority-jp-ip-classical.list", aliases, platform="mihomo",
+        )
+        self.assertEqual(clients._source_rules(candidate, empty_id, "mihomo", aliases), [])
+
+    def test_v1_manifest_full_github_urls_resolve_exact_platform_group(self):
+        candidate = _candidate()
+        manifest = {
+            "groups": {
+                "mihomo": [{
+                    "id": "cn-direct-domain",
+                    "path": "rules/personal/mihomo/cn-direct-domain.mrs",
+                    "stages": ["att-us"], "rule_count": 1,
+                }],
+                "surge": [{
+                    "id": "cn-direct-domain",
+                    "path": "rules/personal/surge/cn-direct-domain.set",
+                    "stages": ["att-us"], "rule_count": 1,
+                }],
+            },
+        }
+        aliases = clients._source_aliases(candidate, clients._load_api(ROOT), manifest)
+        expected = "baseline-group:mihomo:cn-direct-domain"
+        for url in (
+            "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/cn-direct-domain.mrs",
+            "https://github.com/zesming/ruleset/main/rules/personal/mihomo/cn-direct-domain.mrs",
+            "https://github.com/zesming/ruleset/raw/refs/heads/main/rules/personal/mihomo/cn-direct-domain.mrs",
+        ):
+            source_id = clients._resolve_source_reference(url, aliases, platform="mihomo")
+            self.assertEqual(source_id, expected)
+            replayed = clients._source_rules(candidate, source_id, "mihomo", aliases)
+            self.assertEqual([(rule.platform, rule.value) for rule in replayed], [("mihomo", "att.example")])
 
     def test_mihomo_resolver_fragments_normalize_retired_groups_and_reject_dangling_tags(self):
         targets = {"🌐 基础出口", "US Smart", "TEST pool", "⏩️ 直连访问"}

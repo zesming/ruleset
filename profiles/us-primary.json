@@ -9,6 +9,23 @@
     "TEST": "TEST"
   },
   "jp_members": [],
+  "compact": {
+    "slots": [
+      {"id": "lan", "stages": ["infra-lan"]},
+      {"id": "test", "stages": ["network-test"], "dns": "test"},
+      {"id": "reject", "stages": ["reject-drop", "reject-domains", "reject-extra", "reject-rules", "reject-no-drop", "sogouinput"]},
+      {"id": "jp", "stages": ["jp-manual"], "ip_slot": "jp-ip", "reserve": true, "format": "classical"},
+      {"id": "us", "stages": ["att-us", "ai-global", "apple-intelligence", "ai-process", "cdn", "telegram"], "dns": "foreign", "format": "classical"},
+      {"id": "cn-direct", "stages": ["ai-cn", "apple-services", "game-download", "download", "microsoft", "netease", "cn-direct-domain", "cn-direct-special", "cn-direct-process"], "dns": "domestic"},
+      {"id": "lan-ip", "stages": ["lan-ip"], "tier": "ip"},
+      {"id": "reject-ip", "stages": ["reject-ip"], "tier": "ip"},
+      {"id": "jp-ip", "stages": [], "action": "JP", "dns": "none", "tier": "ip"},
+      {"id": "us-ip", "stages": ["ai-ip", "telegram-ip"], "tier": "ip"},
+      {"id": "direct-ip", "stages": ["apple-ip", "download-ip"], "tier": "ip"},
+      {"id": "us-ip-late", "stages": ["cdn-ip"], "tier": "ip"},
+      {"id": "cn-ip", "stages": ["domestic-ip"], "tier": "ip"}
+    ]
+  },
   "stages": [
     {"id": "infra-lan", "action": "DIRECT", "dns": "system", "sources": ["mihomo.lan", "surge.lan"], "extended_matching": false, "no_resolve": false},
     {"id": "att-us", "action": "US", "dns": "foreign", "sources": ["legacy:us"], "extended_matching": false, "no_resolve": false},

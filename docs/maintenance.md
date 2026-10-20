@@ -19,7 +19,7 @@ AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX
 
 `us` 是单独的人工维护入口，不属于 Meta 来源类别，也不参与 AI 的 `cn-direct` 自动分类。编辑 `policy.json` 的 `us_rules` 后，构建会生成 `rules/us.list`（Mihomo / classical）和 `rules/surge/us.set`（Surge domain-set），并把二者的哈希、数量、来源和复核日期写入 `manifest.json`。精确 `DOMAIN` 在 Surge `.set` 中不带前导点；若经复核以后加入 `DOMAIN-SUFFIX`，则使用前导点表达后缀范围。
 
-目前只有三个逐主机规则：`sentitlement2.mobile.att.net`、`epdg.epc.att.net`、`epdg.epc.att-idns.net`。后一个主机来自本机抓包中的 CNAME 观察。AT&T 文档 [KM1114459](https://www.att.com/support/article/wireless/KM1114459/) 作一般背景参考，主机范围来自本机验证；规则选择出口，不保证通话成功。客户端需单独维护所需的真实 DNS，并将它们放在本地/基础设施例外之后、网络测试、AI 和广告等普通分流规则之前，绑定到具备所需 UDP 能力的独立美国出口策略。
+目前只有三个逐主机规则：`sentitlement2.mobile.att.net`、`epdg.epc.att.net`、`epdg.epc.att-idns.net`。后一个主机来自本机抓包中的 CNAME 观察。AT&T 文档 [KM1114459](https://www.att.com/support/article/wireless/KM1114459/) 作一般背景参考，主机范围来自本机验证；规则选择出口，不保证通话成功。客户端需单独维护所需的真实 DNS，个人聚合中将它们归入 `US`，位于基础设施直连、TEST 和拦截之后、普通直连之前；绑定到具备所需 UDP 能力的美国节点。单独接入此细分类的消费者自行确定顺序。
 
 国内直连聚合 3 个上游项目、4 个逻辑集合、6 个实际输入：ChinaMax Domain、ACL4SSR ChinaDomain，以及 Sukka direct/domestic 的 Clash、Surge 版本。ChinaMax 和 ACL 各固定一个 Git 提交；Sukka 的四份官方发布文件分别记录哈希和头部信息。原文保存在 `upstream/cn-direct/`，域名跨平台合并，平台表达式分别输出；ACL 待审增量不进入直连规则。
 
@@ -82,11 +82,11 @@ GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → 
 
 ## 个人有序分流策略
 
-`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器保留平台来源，合并具有相同动作、解析意图和匹配语义的相邻阶段，输出 `rules/personal/mihomo/` 与 `rules/personal/surge/`。原有 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 接口继续有效。
+`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器保留平台来源和原有细分类输出；另按优先级组织 `priority-*` 客户端聚合，输出到 `rules/personal/mihomo/` 与 `rules/personal/surge/`。客户端片段仅引用新聚合，细分类仍可单独使用。原有 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 接口继续有效。
 
 个人策略默认 US，明确直连、JP 与拦截分别使用 DIRECT、JP、REJECT。网络测试保留独立的 TEST 选择器。JP 的 `jp_members` 初始为空；其路由和 DNS 接口使用支持空集合的 classical 文本，未来添加已复核成员不必更换资源地址。节点、公司内网、DNS 端点和真实 IP 兼容例外由客户端维护。
 
-JP 成员需填写类型、匹配值、来源和理由；DNS 仅采用其中的域名规则。单独添加 IP 或 ASN 不会让未知域名改用 JP 解析器，需配套明确的业务域名。没有明确日本出口需求时继续保持空集合。
+JP 成员需填写类型、匹配值、来源和理由；DNS 复用路由集合的域名匹配部分。单独添加 IP 或 ASN 不会让未知域名改用 JP 解析器，需配套明确的业务域名。没有明确日本出口需求时继续保持空集合。
 
 ### 更新与离线校验
 
@@ -100,9 +100,11 @@ python3 scripts/personal_profile.py validate --offline
 python3 scripts/profile_clients.py render
 ```
 
+客户端顺序为：必要直连例外 → TEST → REJECT → JP → US/必须代理 → 普通直连 → 后置 IP 规则 → GEOIP CN → US。LAN 使用系统 DNS，普通直连使用国内 DNS；节点与本地明确例外仍按客户端原有设置处理。Sukka direct 的宽范围业务规则并入后段普通直连，避免盖过拦截或明确代理。
+
 纯域名的 Mihomo 输出使用同一个已注册的 `MIHOMO_CONVERTER`，Surge 使用 DOMAIN-SET；包含通配符、关键词、进程或 IP 的输出保留对应规则类型。拒绝子类型、Surge extended-matching 与 no-resolve 作为语义边界保留，不按出口名称直接压成四个文件。终结 GEOIP/MATCH/FINAL 规则保留在客户端规则段，不嵌入远端集合。
 
-`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、数量门槛或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
+`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希；`compact` 记录客户端物理聚合顺序，原 `groups` 保留细分类接口。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、数量门槛或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
 
 普通成员变化允许自动更新。输出路径、动作、DNS 意图、格式、标志或阶段组合发生变化时属于客户端接口迁移，应同步生成、对照并验证新配置后显式接受；不得让日常更新静默删除旧客户端正在订阅的资源。
 
