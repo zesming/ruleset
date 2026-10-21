@@ -31,22 +31,6 @@ rule-providers:
     path: ./ruleset/personal-reject-rules.text
     interval: 43200
     proxy: 🇺🇸 US
-  reject-no-drop:
-    type: http
-    behavior: classical
-    format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-no-drop.list"
-    path: ./ruleset/personal-reject-no-drop.text
-    interval: 43200
-    proxy: 🇺🇸 US
-  reject-extra-rules:
-    type: http
-    behavior: classical
-    format: text
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-extra-rules.list"
-    path: ./ruleset/personal-reject-extra-rules.text
-    interval: 43200
-    proxy: 🇺🇸 US
   test:
     type: http
     behavior: domain
@@ -148,8 +132,6 @@ rules:
   - RULE-SET,reject-drop,⛔️ Reject-Drop
   - RULE-SET,reject,⛔️ Reject
   - RULE-SET,reject-rules,⛔️ Reject
-  - RULE-SET,reject-no-drop,⛔️ Reject
-  - RULE-SET,reject-extra-rules,⛔️ Reject
   - RULE-SET,test,⚒️ Test
   - RULE-SET,jp-proxy,🇯🇵 JP
   - RULE-SET,us-proxy,🇺🇸 US
@@ -192,7 +174,7 @@ dns:
   nameserver-policy:
     "rule-set:lan-direct":
       - "system"
-    "rule-set:reject-drop,reject,reject-rules,reject-no-drop,reject-extra-rules":
+    "rule-set:reject-drop,reject,reject-rules":
       - "https://8.8.8.8/dns-query#🇺🇸 US"
       - "https://1.1.1.1/dns-query#🇺🇸 US"
     "rule-set:test":

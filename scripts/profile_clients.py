@@ -539,10 +539,6 @@ def render_surge_snippet(candidate: Any, base_url: str) -> str:
 
 def _surge_endpoint_rules() -> list[str]:
     return [
-        f"AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),{SURGE_POLICY_ALIASES['DIRECT']}",
-        f"AND,((PROTOCOL,DOH),(DOMAIN,1.12.12.12)),{SURGE_POLICY_ALIASES['DIRECT']}",
-        f"AND,((PROTOCOL,DOH),(DOMAIN,8.8.8.8)),{SURGE_REGION_GROUPS['US']}",
-        f"AND,((PROTOCOL,DOH),(DOMAIN,1.1.1.1)),{SURGE_REGION_GROUPS['US']}",
         f"AND,((PROTOCOL,DOH),(DOMAIN,1.0.0.1)),{SURGE_REGION_GROUPS['JP']}",
         f"AND,((PROTOCOL,DOH),(DOMAIN,8.8.4.4)),{SURGE_POLICY_ALIASES['TEST']}",
     ]
@@ -727,12 +723,65 @@ def _load_yaml_private(data: bytes) -> dict[str, Any]:
 
 def _dump_yaml_private(value: Mapping[str, Any]) -> bytes:
     payload = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    script = "require 'json'; require 'yaml'; STDOUT.write(YAML.dump(JSON.parse(STDIN.read)))"
+    script = """require 'json'; require 'yaml'
+RESOLVER_LIST_KEYS = %w[
+  nameserver fallback proxy-server-nameserver direct-nameserver
+  default-nameserver
+].freeze
+RESOLVER_POLICY_KEYS = %w[nameserver-policy proxy-server-nameserver-policy].freeze
+def intern_resolver_list(value, seen)
+  return value unless value.is_a?(Array) && value.all? { |item| item.is_a?(String) }
+  seen[JSON.generate(value)] ||= value
+end
+def share_dns_resolver_arrays(value, seen, dns_scope = false)
+  case value
+  when Hash
+    value.each do |key, item|
+      key_name = key.to_s
+      if key_name == 'dns' && item.is_a?(Hash)
+        value[key] = share_dns_resolver_arrays(item, seen, true)
+      elsif dns_scope && RESOLVER_LIST_KEYS.include?(key_name)
+        value[key] = intern_resolver_list(item, seen)
+      elsif dns_scope && RESOLVER_POLICY_KEYS.include?(key_name) && item.is_a?(Hash)
+        item.each { |selector, servers| item[selector] = intern_resolver_list(servers, seen) }
+      elsif item.is_a?(Hash)
+        value[key] = share_dns_resolver_arrays(item, seen, dns_scope)
+      end
+    end
+    value
+  else
+    value
+  end
+end
+value = share_dns_resolver_arrays(JSON.parse(STDIN.read), {})
+STDOUT.write(YAML.dump(value))"""
     try:
         result = subprocess.run(["ruby", "-e", script], input=payload, capture_output=True, check=True)
     except (OSError, subprocess.CalledProcessError):
         raise ProfileClientsError("cannot serialize private Mihomo candidate with the system Ruby YAML emitter") from None
-    return result.stdout
+    try:
+        emitted = result.stdout.decode("utf-8")
+    except UnicodeDecodeError:
+        return result.stdout
+
+    def readable_unicode(match: re.Match[str]) -> str:
+        codepoint = int(match.group(1), 16)
+        if codepoint <= 0xFFFF or codepoint > 0x10FFFF or 0xD800 <= codepoint <= 0xDFFF:
+            return match.group(0)
+        return chr(codepoint)
+
+    # Ruby quotes non-BMP characters as YAML \U escapes. Decode only valid
+    # scalar escapes that are not themselves protected by a YAML backslash
+    # escape, then retain the emitter's form unless Ruby parses back the exact
+    # object supplied by the migration.
+    readable = re.sub(r"(?<!\\)\\U([0-9A-Fa-f]{8})", readable_unicode, emitted)
+    if readable != emitted:
+        try:
+            if _load_yaml_private(readable.encode("utf-8")) == dict(value):
+                emitted = readable
+        except ProfileClientsError:
+            pass
+    return emitted.encode("utf-8")
 
 
 def _parse_surge_proxy_line(line: str) -> tuple[str, str, list[str]] | None:
@@ -793,6 +842,24 @@ def _surge_options(fields: Sequence[str], start: int = 3) -> tuple[list[str], di
         elif field.strip():
             positional.append(field.strip())
     return positional, options
+
+
+def _remove_inactive_surge_dashboard_flag(general: SurgeSection) -> None:
+    http_api_active = False
+    for line in general.lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", ";")) or "=" not in stripped:
+            continue
+        key, value = (part.strip() for part in stripped.split("=", 1))
+        if key.casefold() == "http-api" and value.casefold() not in {"", "false", "no", "off", "0", "disabled"}:
+            http_api_active = True
+            break
+    if http_api_active:
+        return
+    general.lines = [
+        line for line in general.lines
+        if not re.match(r"^\s*http-api-web-dashboard\s*=\s*true\s*(?:[#;].*)?$", line, flags=re.IGNORECASE)
+    ]
 
 
 def _node_region(name: str) -> str | None:
@@ -1086,6 +1153,8 @@ def _set_mihomo_providers(
     for selector, target in old_dns_policy.items():
         selector_text = str(selector)
         normalized_target = _normalize_resolver_target(target, known_targets)
+        if _retire_known_legacy_dns_selector("mihomo", selector_text, normalized_target):
+            continue
         provider_names = _mihomo_rule_set_names(selector_text)
         if provider_names is not None:
             retained_names: list[str] = []
@@ -1262,11 +1331,22 @@ def _canonical_surge_proxy_names(sections: Sequence[SurgeSection]) -> list[tuple
         parsed = _parse_surge_proxy_line(line)
         if parsed is None or parsed[0] not in selected:
             continue
-        target_name = selected[parsed[0]]
-        if target_name != parsed[0]:
-            # Keep every endpoint, credential, option, and field value; normalize
-            # only the spacing around the assignment for readable output.
-            rhs = line.split("=", 1)[1].strip()
+        name, protocol, fields = parsed
+        target_name = selected[name]
+        rhs = line.split("=", 1)[1].strip()
+        changed = target_name != name
+        if protocol in {"tuic", "tuic-v5"}:
+            _positional, options = _surge_options(fields)
+            if options.get("tfo", "").casefold() == "true":
+                rhs = re.sub(
+                    r",\s*tfo\s*=\s*(?:true|\"true\")(?=\s*(?:,|$))", "", rhs,
+                    count=1, flags=re.IGNORECASE,
+                )
+                changed = True
+        if changed:
+            # Keep every endpoint, credential, remaining option, and field
+            # value; normalize only assignment spacing and the reviewed TUIC
+            # TCP Fast Open setting.
             proxy.lines[index] = f"{target_name} = {rhs}"
     return _surge_proxy_entries(sections)
 
@@ -1382,6 +1462,9 @@ def _surge_dns(
             explicit.append(line)
             continue
         selector, target = (part.strip() for part in stripped.split("=", 1))
+        resolver_target = _surge_server_values(target) if target.startswith("server:") else target
+        if _retire_known_legacy_dns_selector("surge", selector, resolver_target):
+            continue
         if selector.startswith(("RULE-SET:", "DOMAIN-SET:")):
             reference = selector.split(":", 1)[1]
             try:
@@ -1418,6 +1501,7 @@ def _migrate_surge(
     proxy_group = _section(sections, "Proxy Group")
     route = _section(sections, "Rule")
     host = _section(sections, "Host", create=True)
+    _remove_inactive_surge_dashboard_flag(general)
     _set_general_value(general, "encrypted-dns-server", ", ".join(SURGE_US_DOH))
     _set_general_value(general, "encrypted-dns-follow-outbound-mode", "true")
     current_real_ip: list[str] = []
@@ -1877,6 +1961,13 @@ def _source_aliases(candidate: Any, api: Any, baseline_manifest: Mapping[str, An
     elif "legacy:cn-direct-domain" in source_ids:
         add("rules/mihomo/cn-direct-domain.mrs", "legacy:cn-direct-domain")
     if baseline_manifest is not None:
+        source_stage_metadata: dict[str, Mapping[str, Any]] = {}
+        raw_stages = baseline_manifest.get("stages", [])
+        if isinstance(raw_stages, list):
+            source_stage_metadata = {
+                stage["id"]: stage for stage in raw_stages
+                if isinstance(stage, Mapping) and isinstance(stage.get("id"), str)
+            }
         for manifest_key, source_prefix in (
             ("groups", "baseline-group"), ("compact", "baseline-compact-group"),
         ):
@@ -1889,6 +1980,20 @@ def _source_aliases(candidate: Any, api: Any, baseline_manifest: Mapping[str, An
                 groups = group_root.get(platform, [])
                 if not isinstance(groups, list):
                     continue
+                domain_stages_by_identity: dict[tuple[Any, ...], set[str]] = {}
+                if manifest_key == "compact":
+                    for domain_group in groups:
+                        if not isinstance(domain_group, Mapping) or domain_group.get("behavior") != "domain-set":
+                            continue
+                        stages = domain_group.get("stages")
+                        if not isinstance(stages, list):
+                            continue
+                        identity = tuple(domain_group.get(key) for key in (
+                            "slot", "action", "dns", "reject_mode", "extended_matching", "no_resolve",
+                        ))
+                        domain_stages_by_identity.setdefault(identity, set()).update(
+                            stage_id for stage_id in stages if isinstance(stage_id, str)
+                        )
                 for raw_group in groups:
                     if not isinstance(raw_group, Mapping):
                         continue
@@ -1907,11 +2012,32 @@ def _source_aliases(candidate: Any, api: Any, baseline_manifest: Mapping[str, An
                             key: raw_group[key]
                             for key in (
                                 "rule_count", "action", "dns", "slot", "reject_mode",
-                                "extended_matching", "no_resolve",
+                                "extended_matching", "no_resolve", "kind", "behavior", "format",
                             )
                             if key in raw_group
                         },
                     }
+                    if manifest_key == "compact":
+                        identity = tuple(raw_group.get(key) for key in (
+                            "slot", "action", "dns", "reject_mode", "extended_matching", "no_resolve",
+                        ))
+                        domain_sibling_stages = domain_stages_by_identity.get(identity, set())
+                        aliases.group_sources[source_id]["sibling_domain_stages"] = [
+                            stage_id for stage_id in aliases.group_sources[source_id]["stages"]
+                            if stage_id in domain_sibling_stages
+                        ] if raw_group.get("behavior") == "classical" else []
+                        aliases.group_sources[source_id]["source_stage_identity"] = {
+                            stage_id: {
+                                key: source_stage_metadata[stage_id][key]
+                                for key in (
+                                    "action", "dns", "reject_mode", "extended_matching",
+                                    "no_resolve", "sources",
+                                )
+                                if key in source_stage_metadata[stage_id]
+                            }
+                            for stage_id in aliases.group_sources[source_id]["stages"]
+                            if stage_id in source_stage_metadata
+                        }
                     add(path, source_id)
                     dns_path = raw_group.get("dns_path")
                     if isinstance(dns_path, str):
@@ -2027,11 +2153,12 @@ def _group_rule_sources(candidate: Any, group: Mapping[str, Any], platform: str)
     """Return exact source IDs represented by one manifest resource."""
     if group.get("compact") is True:
         physical = _compact_source_stage(candidate, platform, group)
-        if physical is not None:
-            return {
-                rule.source for rule in physical.get("rules", [])
-                if rule.platform == platform and isinstance(getattr(rule, "source", None), str)
-            }
+        if physical is None:
+            raise ProfileClientsError("baseline compact group does not map to one identity-checked current group")
+        return {
+            rule.source for rule in physical.get("rules", [])
+            if rule.platform == platform and isinstance(getattr(rule, "source", None), str)
+        }
     stages_by_id = {stage.get("id"): stage for stage in candidate.stages if isinstance(stage, Mapping)}
     sources: set[str] = set()
     for stage_id in group.get("stages", []):
@@ -2041,40 +2168,202 @@ def _group_rule_sources(candidate: Any, group: Mapping[str, Any], platform: str)
     return sources
 
 
+def _physical_group_value(platform: str, key: str, value: Any) -> Any:
+    # Mihomo emits both plain and no-drop rejects as its same physical REJECT
+    # action. Keep source-stage metadata untouched; this is only for group
+    # interface matching after compaction.
+    if platform == "mihomo" and key == "reject_mode" and value == "no-drop":
+        return "plain"
+    return value
+
+
+def _same_physical_group_fields(
+    platform: str, left: Mapping[str, Any], right: Mapping[str, Any], keys: Sequence[str],
+) -> bool:
+    return all(
+        _physical_group_value(platform, key, left.get(key))
+        == _physical_group_value(platform, key, right.get(key))
+        for key in keys if key in right
+    )
+
+
 def _compact_source_stage(candidate: Any, platform: str, group: Mapping[str, Any]) -> Mapping[str, Any] | None:
     """Find a compact group by its current physical ID, then its stable slot."""
     stages = _candidate_stages(candidate, platform)
-    physical = next((stage for stage in stages if stage.get("id") == group.get("id")), None)
-
     identity_keys = ("action", "dns", "reject_mode", "extended_matching", "no_resolve")
-
-    def matches_semantic_identity(stage: Mapping[str, Any]) -> bool:
-        return (
-            ("slot" not in group or stage.get("slot") == group.get("slot"))
-            and all(stage.get(key) == group[key] for key in identity_keys if key in group)
-        )
-
-    if physical is not None:
-        return physical if matches_semantic_identity(physical) else None
-
-    slot = group.get("slot")
-    if not isinstance(slot, str):
-        return None
     compact = candidate.manifest.get("compact")
     compact_groups = compact.get("groups") if isinstance(compact, Mapping) else None
     groups = compact_groups.get(platform) if isinstance(compact_groups, Mapping) else None
     if not isinstance(groups, list):
         return None
+
+    def same_interface(item: Mapping[str, Any], *, require_sources: bool) -> bool:
+        if not _same_physical_group_fields(platform, item, group, identity_keys):
+            return False
+        if any(item.get(key) != group[key] for key in ("slot", "kind", "behavior", "format") if key in group):
+            return False
+        if require_sources and item.get("stages") != group.get("stages"):
+            return False
+        return True
+
+    def physical_for(item: Mapping[str, Any]) -> Mapping[str, Any] | None:
+        group_id = item.get("id")
+        result = [stage for stage in stages if stage.get("id") == group_id]
+        if len(result) != 1:
+            return None
+        stage = result[0]
+        if (
+            stage.get("slot") != item.get("slot")
+            or not _same_physical_group_fields(platform, stage, item, identity_keys)
+            or stage.get("sources") != item.get("stages")
+            or stage.get("group_by_platform", {}).get(platform) != group_id
+        ):
+            return None
+        return stage
+
+    current_id_groups = [item for item in groups if isinstance(item, Mapping) and item.get("id") == group.get("id")]
+    if len(current_id_groups) > 1:
+        return None
+    if current_id_groups:
+        current_group = current_id_groups[0]
+        current_physical = physical_for(current_group)
+        if current_physical is not None and same_interface(current_group, require_sources=True):
+            return current_physical
+        return _reclassified_compact_source_stage(candidate, platform, group)
+
+    if not isinstance(group.get("slot"), str):
+        return None
     matching = [
         item for item in groups
         if isinstance(item, Mapping)
-        and item.get("slot") == slot
-        and all(item.get(key) == group[key] for key in identity_keys if key in group)
+        and same_interface(item, require_sources=True)
     ]
-    if len(matching) != 1:
+    if len(matching) == 1:
+        return physical_for(matching[0])
+    if matching:
         return None
-    group_id = matching[0].get("id")
-    return next((stage for stage in stages if stage.get("id") == group_id), None)
+    return _reclassified_compact_source_stage(candidate, platform, group)
+
+
+def _reclassified_compact_source_stage(
+    candidate: Any, platform: str, group: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    """Replay a reclassified old group from its identity-checked current physical rules.
+
+    Only rules emitted in the old slot and semantic run are considered, so a
+    source stage's canary or IP rules deferred to another slot cannot be pulled
+    into the old group. Old same-run domain-set siblings identify domain rules
+    that the old classical resource excluded. Rule counts are intentionally not
+    used as historical gates: the replay maps current archived source bytes.
+    """
+    stage_ids = group.get("stages")
+    identities = group.get("source_stage_identity")
+    behavior = group.get("behavior")
+    slot = group.get("slot")
+    sibling_domain_stages = group.get("sibling_domain_stages", [])
+    if (
+        not isinstance(stage_ids, list) or not stage_ids
+        or len(stage_ids) != len(set(stage_ids))
+        or not isinstance(identities, Mapping) or set(identities) != set(stage_ids)
+        or behavior not in {"domain-set", "classical"}
+        or group.get("kind") != "route"
+        or not isinstance(slot, str)
+        or not isinstance(sibling_domain_stages, list)
+        or any(stage_id not in stage_ids for stage_id in sibling_domain_stages)
+    ):
+        return None
+    current_stages = {
+        stage.get("id"): stage for stage in getattr(candidate, "stages", [])
+        if isinstance(stage, Mapping) and isinstance(stage.get("id"), str)
+    }
+    fine_rules: dict[str, list[Any]] = {}
+    for stage_id in stage_ids:
+        expected = identities.get(stage_id)
+        source_stage = current_stages.get(stage_id)
+        if not isinstance(expected, Mapping) or not isinstance(source_stage, Mapping):
+            return None
+        if any(source_stage.get(key) != value for key, value in expected.items()):
+            return None
+        stage_rules = source_stage.get("rules", [])
+        if not isinstance(stage_rules, list):
+            return None
+        fine_rules[stage_id] = [rule for rule in stage_rules if getattr(rule, "platform", None) == platform]
+
+    compact = candidate.manifest.get("compact")
+    compact_groups = compact.get("groups") if isinstance(compact, Mapping) else None
+    current_groups = compact_groups.get(platform) if isinstance(compact_groups, Mapping) else None
+    if not isinstance(current_groups, list):
+        return None
+    physical_stages = _candidate_stages(candidate, platform)
+    physical_by_id = {
+        stage.get("id"): stage for stage in physical_stages
+        if isinstance(stage, Mapping) and isinstance(stage.get("id"), str)
+    }
+    identity_keys = ("action", "dns", "reject_mode", "extended_matching", "no_resolve")
+    fine_stage_by_rule: dict[int, str] = {}
+    for stage_id, stage_rules in fine_rules.items():
+        for rule in stage_rules:
+            if id(rule) in fine_stage_by_rule:
+                return None
+            fine_stage_by_rule[id(rule)] = stage_id
+    selected_rule_ids: set[int] = set()
+    found_matching_group = False
+    for current_group in current_groups:
+        if not isinstance(current_group, Mapping):
+            return None
+        current_stage_ids = current_group.get("stages")
+        if not isinstance(current_stage_ids, list):
+            return None
+        if (
+            current_group.get("slot") != slot
+            or current_group.get("kind") != "route"
+            or not _same_physical_group_fields(platform, current_group, group, identity_keys)
+            or not (set(current_stage_ids) & set(stage_ids))
+        ):
+            continue
+        current_behavior = current_group.get("behavior")
+        current_format = current_group.get("format")
+        if (
+            current_behavior not in {"domain-set", "classical"}
+            or current_format not in ({"mrs", "text"} if platform == "mihomo" else {"set", "text"})
+            or (current_behavior == "domain-set" and current_format != ("mrs" if platform == "mihomo" else "set"))
+            or (current_behavior == "classical" and current_format != "text")
+        ):
+            return None
+        group_id = current_group.get("id")
+        physical = physical_by_id.get(group_id)
+        if (
+            not isinstance(group_id, str) or physical is None
+            or physical.get("slot") != slot
+            or physical.get("sources") != current_stage_ids
+            or physical.get("group_by_platform", {}).get(platform) != group_id
+            or not _same_physical_group_fields(platform, physical, current_group, identity_keys)
+        ):
+            return None
+        found_matching_group = True
+        for rule in physical.get("rules", []):
+            stage_id = fine_stage_by_rule.get(id(rule))
+            if stage_id in stage_ids:
+                selected_rule_ids.add(id(rule))
+    if not found_matching_group:
+        return None
+
+    rules: list[Any] = []
+    seen: set[tuple[str, str, str, tuple[str, ...]]] = set()
+    sibling_domain_stages = set(sibling_domain_stages)
+    for stage_id in stage_ids:
+        for rule in fine_rules[stage_id]:
+            if id(rule) not in selected_rule_ids:
+                continue
+            if behavior == "domain-set" and rule.type not in DOMAIN_RULE_TYPES:
+                continue
+            if behavior == "classical" and stage_id in sibling_domain_stages and rule.type in DOMAIN_RULE_TYPES:
+                continue
+            key = (str(rule.platform), str(rule.type), str(rule.value), tuple(rule.flags))
+            if key not in seen:
+                seen.add(key)
+                rules.append(rule)
+    return {"id": group.get("id"), "rules": rules}
 
 
 def _split_rule_fields(line: str) -> list[str]:
@@ -2173,12 +2462,22 @@ def _private_inline_stages(
         if kind == "AND":
             compound = _doh_and_components(fields[1]) if len(fields) == 3 else None
             if compound:
+                actual_action, actual_reject = _old_policy(fields[2], known_targets)
+                if (
+                    platform == "surge" and compound[1].casefold().rstrip(".") == "doh.pub"
+                    and actual_action == "DIRECT" and actual_reject is None
+                    and _is_builtin_direct_route_target(platform, baseline, fields[2])
+                ):
+                    # The old explicit doh.pub bypass is retired with the
+                    # other locally pinned resolver endpoints. Keep it in the
+                    # old side of the comparison so its route change remains
+                    # visible there.
+                    continue
                 try:
                     endpoint_ip = str(ipaddress.ip_address(compound[1]))
                 except ValueError:
                     endpoint_ip = ""
                 expected_actions = DOH_ENDPOINT_ACTIONS.get(endpoint_ip, set())
-                actual_action, actual_reject = _old_policy(fields[2], known_targets)
                 if actual_action in expected_actions and actual_reject is None:
                     continue
             if platform != "surge" or len(fields) < 3:
@@ -2194,13 +2493,34 @@ def _private_inline_stages(
             rule = _as_profile_rule(api, platform, "URL-REGEX", fields[1], (), f"baseline:{platform}:line-{line_no}", line_no)
             result.append(_stage(action, reject_mode, [rule], stage_id=f"local-inline-{platform}-{line_no}"))
             continue
-        stage, endpoint = _baseline_route_rule(api, platform, fields, line_no, None, {}, aliases, unsupported, known_targets)
+        stage, endpoint = _baseline_route_rule(
+            api, platform, fields, line_no, None, {}, aliases, unsupported, known_targets,
+            baseline_config=baseline,
+        )
         if endpoint:
             continue
         if stage is None:
             raise ProfileClientsError(f"baseline inline route rule {line_no} cannot be retained safely")
         rule = stage["rules"][0]
         if rule.type in {"GEOIP", "MATCH"}:
+            continue
+        if _retire_known_legacy_route(platform, fields, stage, baseline):
+            continue
+        if (
+            platform == "surge" and rule.type == "DOMAIN"
+            and rule.value in {"ruleset.skk.moe", "ruleset-mirror.skk.moe"}
+            and stage.get("action") == "JP" and stage.get("reject_mode") is None
+        ):
+            # Keep the exact rule and its source identity, but make the two
+            # clients use the same approved US route for this legacy host.
+            stage["action"] = "US"
+        if (
+            platform == "mihomo" and rule.type == "DOMAIN"
+            and _is_builtin_direct_route_target(platform, baseline, fields[2])
+            and _mihomo_exact_domain_has_later_direct_suffix(
+                raw_rules, line_no, rule.value, known_targets, baseline,
+            )
+        ):
             continue
         if (
             len(fields) >= 3 and _is_builtin_direct_route_target(platform, baseline, fields[2])
@@ -2211,6 +2531,82 @@ def _private_inline_stages(
         stage["id"] = f"local-inline-{platform}-{line_no}"
         result.append(stage)
     return result
+
+
+def _retire_known_legacy_route(
+    platform: str, fields: Sequence[str], stage: Mapping[str, Any], baseline: Any,
+) -> bool:
+    """Remove only reviewed local route exceptions with their original action."""
+    if len(fields) < 3 or stage.get("action") != "DIRECT" or stage.get("reject_mode") is not None:
+        return False
+    if not _is_builtin_direct_route_target(platform, baseline, fields[2]):
+        return False
+    kind = fields[0].upper()
+    value = fields[1].casefold().rstrip(".")
+    if kind == "DOMAIN-SUFFIX" and value == "istatmenus.app":
+        return True
+    return (
+        kind == "DOMAIN" and platform == "mihomo"
+        and value in {"clash.razord.top", "yacd.haishan.me"}
+    )
+
+
+def _mihomo_exact_domain_has_later_direct_suffix(
+    raw_rules: Sequence[Any], line_no: int, domain: str, known_targets: set[str], baseline: Any,
+) -> bool:
+    """Prove an exact Direct selector redundant across only non-domain rules."""
+    safe_intervening = {"IP-CIDR", "IP-CIDR6", "IP-ASN", "GEOIP"}
+    canonical_domain = domain.casefold().rstrip(".")
+    for raw in raw_rules[line_no:]:
+        if not isinstance(raw, str):
+            return False
+        text = raw.strip()
+        if not text or text.startswith(("#", ";")):
+            continue
+        fields = _split_rule_fields(text)
+        if not fields:
+            continue
+        kind = fields[0].upper()
+        if kind == "DOMAIN-SUFFIX" and len(fields) >= 3:
+            if fields[1].casefold().rstrip(".") != canonical_domain:
+                # Even a different suffix can cover the exact host.
+                return False
+            return (
+                _old_policy(fields[2], known_targets) == ("DIRECT", None)
+                and _is_builtin_direct_route_target("mihomo", baseline, fields[2])
+            )
+        if kind in safe_intervening and len(fields) >= 3:
+            if not any(flag.strip().casefold() == "no-resolve" for flag in fields[3:]):
+                return False
+            try:
+                action, reject_mode = _old_policy(fields[2], known_targets)
+            except ProfileClientsError:
+                return False
+            if (
+                action == "DIRECT" and reject_mode is None
+                and _is_builtin_direct_route_target("mihomo", baseline, fields[2])
+            ):
+                continue
+        # Unknown rules may match this exact domain or run before its suffix.
+        return False
+    return False
+
+
+def _retire_known_legacy_dns_selector(platform: str, selector: str, target: Any) -> bool:
+    """Retire only the audited Direct resolver selectors from private baselines."""
+    normalized = selector.strip().casefold()
+    if platform == "mihomo":
+        known = {
+            "+.istatmenus.app", ".istatmenus.app",
+            "clash.razord.top", "yacd.haishan.me",
+        }
+    else:
+        known = {"istatmenus.app", "*.istatmenus.app"}
+    if normalized not in known or _has_private_dns_endpoint(target):
+        return False
+    unsupported: list[dict[str, Any]] = []
+    intent, _ = _resolver_policy(target, unsupported, selector, platform=platform)
+    return intent == "DIRECT"
 
 
 def _render_inline_rule(rule: Any, stage: Mapping[str, Any], platform: str) -> str:
@@ -2236,7 +2632,7 @@ def _provider_reference(provider: Mapping[str, Any]) -> str:
 def _baseline_route_rule(
     api: Any, platform: str, fields: Sequence[str], line_no: int, candidate: Any,
     providers: Mapping[str, Any], aliases: Mapping[str, set[str]], unsupported: list[dict[str, Any]],
-    known_targets: set[str],
+    known_targets: set[str], *, baseline_config: Any = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     if not fields or not fields[0]:
         raise ProfileClientsError("baseline contains an empty route rule")
@@ -2279,12 +2675,20 @@ def _baseline_route_rule(
             return None, None
         match = _doh_and_components(fields[1])
         if match:
+            action, reject_mode = _old_policy(fields[2], known_targets)
             try:
                 endpoint = str(ipaddress.ip_address(match[1]))
             except ValueError:
+                if (
+                    platform == "surge" and match[1].casefold().rstrip(".") == "doh.pub"
+                    and action == "DIRECT" and reject_mode is None
+                    and baseline_config is not None
+                    and _is_builtin_direct_route_target(platform, baseline_config, fields[2])
+                ):
+                    rule = _as_profile_rule(api, platform, "AND", fields[1], (), source_label, line_no)
+                    return _stage(action, reject_mode, [rule], stage_id=source_label), None
                 unsupported.append({"id": source_label, "reason": "DoH route endpoint is not a literal IP", "rule_type": kind})
                 return None, None
-            action, reject_mode = _old_policy(fields[2], known_targets)
             expected_actions = DOH_ENDPOINT_ACTIONS.get(endpoint, set())
             if action in expected_actions and reject_mode is None:
                 return None, {"endpoint_ip": endpoint, "action": action, "reject_mode": reject_mode, "protocol": "DOH"}
@@ -2351,7 +2755,10 @@ def _parse_old_routes(api: Any, platform: str, candidate: Any, baseline: Any, al
             if not isinstance(raw, str):
                 raise ProfileClientsError("Mihomo baseline contains a non-string route rule")
             fields = _split_rule_fields(raw)
-            stage, endpoint = _baseline_route_rule(api, platform, fields, line_no, candidate, providers, aliases, unsupported, known_targets)
+            stage, endpoint = _baseline_route_rule(
+                api, platform, fields, line_no, candidate, providers, aliases, unsupported,
+                known_targets, baseline_config=baseline,
+            )
             if stage:
                 stages.append(stage)
             if endpoint:
@@ -2364,7 +2771,10 @@ def _parse_old_routes(api: Any, platform: str, candidate: Any, baseline: Any, al
             if not text or text.startswith(("#", ";")):
                 continue
             fields = _split_rule_fields(text)
-            stage, endpoint = _baseline_route_rule(api, platform, fields, line_no, candidate, {}, aliases, unsupported, known_targets)
+            stage, endpoint = _baseline_route_rule(
+                api, platform, fields, line_no, candidate, {}, aliases, unsupported,
+                known_targets, baseline_config=baseline,
+            )
             if stage:
                 stages.append(stage)
             if endpoint:
@@ -2374,23 +2784,48 @@ def _parse_old_routes(api: Any, platform: str, candidate: Any, baseline: Any, al
     return stages, endpoint_routes
 
 
-def _resolver_class(value: str, selector: str = "") -> str | None:
+def _explicit_surge_test_selector(selector: str) -> bool:
+    value = selector.strip().strip('"')
+    if ":" in value:
+        kind, reference = value.split(":", 1)
+        if kind.upper() not in {"RULE-SET", "DOMAIN-SET"}:
+            return False
+    else:
+        reference = value
+    parsed = urllib.parse.urlsplit(reference)
+    label = Path(parsed.path or reference).name.casefold()
+    stem = Path(label).stem
+    return stem in {"test", "network-test", "priority-test-domain"}
+
+
+def _resolver_class(value: str, selector: str = "", *, platform: str | None = None) -> str | None:
     raw = value.strip().strip('"')
     if raw.startswith("server:"):
         raw = raw[len("server:"):]
     lowered = raw.casefold()
     if lowered in {"system", "system://"}:
         return "system"
-    if "#test" in lowered:
-        return "TEST"
-    if "#jp" in lowered:
-        return "JP"
-    if "#direct" in lowered:
-        return "DIRECT"
-    if "#us" in lowered:
-        return "US"
     parsed = urllib.parse.urlsplit(raw)
+    fragment_parts = urllib.parse.unquote(parsed.fragment).split("&")
+    policy_fragments = [
+        part.strip() for part in fragment_parts
+        if part.strip() and "=" not in part and part.strip().casefold() != "rules"
+    ]
+    if policy_fragments:
+        fragment = policy_fragments[-1].casefold()
+        policy_actions = {
+            **{name.casefold(): action for action, name in MIHOMO_POLICY_ALIASES.items()},
+            **{name.casefold(): action for action, name in SURGE_POLICY_ALIASES.items()},
+            **{name.casefold(): action for action, name in MIHOMO_REGION_GROUPS.items()},
+            **{name.casefold(): action for action, name in SURGE_REGION_GROUPS.items()},
+            "test": "TEST", "direct": "DIRECT", "jp": "JP", "us": "US",
+        }
+        fragment_action = policy_actions.get(fragment)
+        if fragment_action in {"TEST", "DIRECT", "JP", "US"}:
+            return fragment_action
     host = (parsed.hostname or raw.split("#", 1)[0]).casefold()
+    if platform == "surge" and host == "8.8.4.4" and _explicit_surge_test_selector(selector):
+        return "TEST"
     if host == "8.8.4.4" and any(token in selector.casefold() for token in ("test", "测速", "网络测试")):
         return "TEST"
     if host in {"1.0.0.1", "8.8.4.4"}:
@@ -2402,7 +2837,9 @@ def _resolver_class(value: str, selector: str = "") -> str | None:
     return None
 
 
-def _resolver_policy(values: Any, unsupported: list[dict[str, Any]], selector: str) -> tuple[str, list[str]]:
+def _resolver_policy(
+    values: Any, unsupported: list[dict[str, Any]], selector: str, *, platform: str | None = None,
+) -> tuple[str, list[str]]:
     if isinstance(values, str):
         raw_values = [values]
     elif isinstance(values, list) and all(isinstance(value, str) for value in values):
@@ -2413,7 +2850,7 @@ def _resolver_policy(values: Any, unsupported: list[dict[str, Any]], selector: s
     if not raw_values:
         unsupported.append({"id": selector, "reason": "resolver selector has no endpoints"})
         return "unsupported", []
-    classes = [_resolver_class(value, selector) for value in raw_values]
+    classes = [_resolver_class(value, selector, platform=platform) for value in raw_values]
     if any(value is None for value in classes):
         unsupported.append({"id": selector, "reason": "resolver endpoint is outside the known US/JP/DIRECT/system map"})
         return "unsupported", raw_values
@@ -2601,7 +3038,7 @@ def _dns_inline_selector_superseded_by_test(
             return False
 
     unsupported: list[dict[str, Any]] = []
-    intent, _ = _resolver_policy(target, unsupported, selector)
+    intent, _ = _resolver_policy(target, unsupported, selector, platform=platform)
     if intent not in {"US", "JP", "DIRECT", "TEST"}:
         return False
     if _has_private_dns_endpoint(target):
@@ -2659,13 +3096,13 @@ def _parse_old_dns(api: Any, platform: str, candidate: Any, baseline: Any, alias
                         continue
                     rules.extend(rule for rule in source_rules if rule.type in DOMAIN_RULE_TYPES)
                 extended = False
-            intent, raw_servers = _resolver_policy(normalized_target, unsupported, selector)
+            intent, raw_servers = _resolver_policy(normalized_target, unsupported, selector, platform="mihomo")
             if rules:
                 selectors.append(_stage(intent, None, rules, stage_id=f"old-dns-{platform}-{position}", extended=extended, dns=intent))
                 selectors[-1]["selector"] = selector
                 selectors[-1]["servers"] = raw_servers
         default_values = dns.get("nameserver", [])
-        default, _ = _resolver_policy(default_values, unsupported, "mihomo-default-dns")
+        default, _ = _resolver_policy(default_values, unsupported, "mihomo-default-dns", platform="mihomo")
     else:
         _, sections = _surge_sections(str(baseline))
         general = _section(sections, "General")
@@ -2679,7 +3116,7 @@ def _parse_old_dns(api: Any, platform: str, candidate: Any, baseline: Any, alias
                 # IPv4/IPv6 Host mappings are local exceptions, not DNS resolver rules.
                 continue
             rules, extended = _selector_rules(api, platform, selector, candidate, aliases, unsupported)
-            intent, raw_servers = _resolver_policy(_surge_server_values(target), unsupported, selector)
+            intent, raw_servers = _resolver_policy(_surge_server_values(target), unsupported, selector, platform="surge")
             selectors.append(_stage(intent, None, rules, stage_id=f"old-dns-{platform}-{position}", extended=extended, dns=intent))
             selectors[-1]["selector"] = selector
             selectors[-1]["servers"] = raw_servers
@@ -2692,7 +3129,9 @@ def _parse_old_dns(api: Any, platform: str, candidate: Any, baseline: Any, alias
             if key.casefold() in {"encrypted-dns-server", "dns-server"}:
                 general_by_key.setdefault(key.casefold(), []).extend(item.strip() for item in value.split(",") if item.strip())
         general_values = general_by_key.get("encrypted-dns-server") or general_by_key.get("dns-server", [])
-        default, _ = _resolver_policy(general_values, unsupported, "surge-default-dns") if general_values else ("system", [])
+        default, _ = _resolver_policy(
+            general_values, unsupported, "surge-default-dns", platform="surge",
+        ) if general_values else ("system", [])
     return selectors, default, []
 
 
@@ -2769,7 +3208,7 @@ def _domain_only_stages(stages: Sequence[Mapping[str, Any]], platform: str) -> l
     return result
 
 
-def _subject_examples(rule: Any) -> list[tuple[dict[str, Any], str]]:
+def _subject_examples(rule: Any, api: Any) -> list[tuple[dict[str, Any], str]]:
     rule_type, value = rule.type, rule.value
     if rule_type == "DOMAIN":
         return [({"domain": value}, "source-rule")]
@@ -2781,6 +3220,22 @@ def _subject_examples(rule: Any) -> list[tuple[dict[str, Any], str]]:
     if rule_type == "DOMAIN-WILDCARD":
         host = value.replace("*", "probe").replace("?", "x")
         return [({"domain": host}, "synthetic-wildcard-probe")]
+    if rule_type == "AND":
+        try:
+            components = api._and_components(value)
+        except Exception:
+            return []
+        protocol = next((item for kind, item in components if kind == "PROTOCOL"), None)
+        domain = next(((kind, item) for kind, item in components if kind != "PROTOCOL"), None)
+        if protocol is None or domain is None:
+            return []
+        kind, host = domain
+        if kind == "DOMAIN":
+            return [({"domain": host, "protocol": protocol}, "source-rule")]
+        return [
+            ({"domain": host, "protocol": protocol}, "source-rule-root"),
+            ({"domain": "probe." + host, "protocol": protocol}, "derived-subdomain"),
+        ]
     if rule_type in {"IP-CIDR", "IP-CIDR6"}:
         network = ipaddress.ip_network(value)
         address = network.network_address
@@ -2802,7 +3257,7 @@ def _matching_representatives(rule: Any, api: Any) -> list[tuple[dict[str, Any],
     if (rule.type, rule.value) == getattr(api, "SUKKA_IP_CANARY", None):
         return []
     result = []
-    for subject, evidence in _subject_examples(rule):
+    for subject, evidence in _subject_examples(rule, api):
         try:
             if api.rule_matches(rule, **subject):
                 result.append((subject, evidence))
@@ -2858,6 +3313,10 @@ def _retained_dns_stages(old_stages: Sequence[Mapping[str, Any]], candidate: Any
     retained: list[dict[str, Any]] = []
     for stage in old_stages:
         selector = stage.get("selector")
+        if isinstance(selector, str) and _retire_known_legacy_dns_selector(
+            platform, selector, stage.get("servers", []),
+        ):
+            continue
         if isinstance(selector, str) and _dns_inline_selector_superseded_by_test(
             selector, stage.get("servers", []), candidate, platform, api, {},
         ):

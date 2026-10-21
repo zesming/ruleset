@@ -99,7 +99,30 @@ class PriorityProfileTests(unittest.TestCase):
             ordinals: dict[tuple[str, str], int] = {}
             for group in groups:
                 old_id = old_compact_group_id(group, ordinals)
-                if old_id in EXPECTED_COMPACT_RENAMES:
+                source_stages = set(group["stages"])
+                if platform == "mihomo" and group["slot"] == "reject" and group["reject_mode"] == "drop":
+                    self.assertEqual(group["id"], "reject-drop")
+                elif platform == "mihomo" and group["slot"] == "reject" and group["reject_mode"] == "plain":
+                    expected_name = {
+                        "domain": "reject",
+                        "classical": "reject-rules",
+                        "domain-special": "reject-special",
+                    }[group["capability"]]
+                    self.assertEqual(group["id"], expected_name)
+                elif group["slot"] == "reject" and source_stages == {"reject-drop"}:
+                    self.assertEqual(group["id"], "reject-drop")
+                elif platform == "surge" and group["slot"] == "reject" and {
+                    "reject-domains", "reject-rules",
+                } <= source_stages:
+                    self.assertEqual(group["id"], "reject")
+                elif platform == "surge" and group["slot"] == "reject" and "reject-extra" in source_stages:
+                    self.assertEqual(group["id"], "reject-extra")
+                elif (
+                    platform == "surge" and group["slot"] == "cn-direct"
+                    and group["capability"] == "classical" and "cn-direct-domain" in source_stages
+                ):
+                    self.assertEqual(group["id"], "cn-direct")
+                elif old_id in EXPECTED_COMPACT_RENAMES:
                     self.assertEqual(group["id"], EXPECTED_COMPACT_RENAMES[old_id])
                 self.assertNotIn("priority-", group["id"])
                 self.assertNotIn("classical", group["id"])
@@ -217,21 +240,29 @@ class PriorityProfileTests(unittest.TestCase):
 
         for platform in ("mihomo", "surge"):
             direct_domains = slot_groups(candidate, platform, "cn-direct")
-            domain_group = next(group for group in direct_domains if group["capability"] == "domain")
-            complex_group = next(group for group in direct_domains if group["capability"] == "classical")
-            expected_extension = ".mrs" if platform == "mihomo" else ".set"
-            self.assertTrue(domain_group["path"].endswith(expected_extension))
-            domain_data = candidate.files[domain_group["path"]]
             if platform == "mihomo":
+                domain_group = next(group for group in direct_domains if group["capability"] == "domain")
+                complex_group = next(group for group in direct_domains if group["capability"] == "classical")
+                self.assertTrue(domain_group["path"].endswith(".mrs"))
+                domain_data = candidate.files[domain_group["path"]]
                 self.assertTrue(domain_data.startswith(b"MRS-fixture\n"))
+                self.assertIn("cn-direct-process", complex_group["stages"])
+                self.assertIn("cn-direct-special", complex_group["stages"])
+                self.assertEqual(domain_group["dns_path"], domain_group["path"])
+                self.assertEqual(complex_group["dns_path"], complex_group["path"])
             else:
-                domain_lines = domain_data.decode().splitlines()
+                self.assertEqual(len(direct_domains), 1)
+                complex_group = direct_domains[0]
+                domain_lines = candidate.files[complex_group["path"]].decode().splitlines()
                 self.assertTrue(domain_lines)
-                self.assertTrue(all("," not in line for line in domain_lines))
-            self.assertIn("cn-direct-process", complex_group["stages"])
-            self.assertIn("cn-direct-special", complex_group["stages"])
-            self.assertEqual(domain_group["dns_path"], domain_group["path"])
-            self.assertEqual(complex_group["dns_path"], complex_group["path"])
+                self.assertTrue(all("," in line for line in domain_lines))
+                self.assertEqual(complex_group["id"], "cn-direct")
+                self.assertEqual(complex_group["capability"], "classical")
+                self.assertTrue(complex_group["path"].endswith("/cn-direct.list"))
+                self.assertIn("cn-direct-domain", complex_group["stages"])
+                self.assertIn("cn-direct-process", complex_group["stages"])
+                self.assertIn("cn-direct-special", complex_group["stages"])
+                self.assertEqual(complex_group["dns_path"], complex_group["path"])
 
             us_groups = slot_groups(candidate, platform, "us")
             self.assertTrue(all(group["format"] == "text" for group in us_groups))
@@ -275,8 +306,15 @@ class PriorityProfileTests(unittest.TestCase):
         mihomo_rejects = slot_groups(candidate, "mihomo", "reject")
         surge_rejects = slot_groups(candidate, "surge", "reject")
 
-        self.assertEqual([group["reject_mode"] for group in mihomo_rejects], ["drop", "plain", "no-drop", "plain"])
+        self.assertEqual([group["reject_mode"] for group in mihomo_rejects], ["drop", "plain"])
         self.assertTrue(all(group["extended_matching"] is False for group in mihomo_rejects))
+        self.assertEqual(mihomo_rejects[1]["stages"], [
+            "reject-domains", "reject-extra", "reject-rules", "reject-no-drop", "sogouinput",
+        ])
+        self.assertEqual(
+            next(stage for stage in candidate.manifest["stages"] if stage["id"] == "reject-no-drop")["reject_mode"],
+            "no-drop",
+        )
         self.assertEqual(
             [group["reject_mode"] for group in surge_rejects],
             ["drop", "plain", "plain", "no-drop", "plain"],
@@ -285,7 +323,13 @@ class PriorityProfileTests(unittest.TestCase):
             [group["extended_matching"] for group in surge_rejects],
             [False, True, False, True, False],
         )
-        self.assertIn("reject-rules", surge_rejects[1]["stages"])
+        extended_reject = next(group for group in surge_rejects if "reject-domains" in group["stages"])
+        self.assertEqual(extended_reject["id"], "reject")
+        self.assertIn("reject-rules", extended_reject["stages"])
+        self.assertEqual(
+            next(group for group in surge_rejects if "reject-no-drop" in group["stages"])["reject_mode"],
+            "no-drop",
+        )
 
     def test_non_resolving_ip_rules_stay_in_their_original_priority_slots(self) -> None:
         snapshot = snapshots()
@@ -306,6 +350,8 @@ class PriorityProfileTests(unittest.TestCase):
             )
             self.assertIn(b"IP-CIDR,192.0.2.0/24,no-resolve", candidate.files[reject_classical["path"]])
             self.assertIn(b"IP-CIDR6,2001:db8::/32,no-resolve", candidate.files[direct_classical["path"]])
+            if platform == "mihomo":
+                self.assertEqual(reject_classical["id"], "reject-rules")
             self.assertEqual(slot_groups(candidate, platform, "reject-ip")[0]["stages"], ["reject-ip"])
 
     def test_small_mixed_run_uses_one_classical_resource_but_large_run_stays_split(self) -> None:
@@ -319,10 +365,13 @@ class PriorityProfileTests(unittest.TestCase):
         self.assertIn(b"DOMAIN-KEYWORD,lan", small.files[small_lan[0]["path"]])
 
         large_snapshot = snapshots()
+        large_snapshot["mihomo.reject_drop"] = b"PROCESS-NAME,drop-list\n"
         large_snapshot["mihomo.reject"] += "".join(
             f"DOMAIN-SUFFIX,blocked-{index}.large.example\n" for index in range(1000)
         ).encode()
         large_snapshot["mihomo.reject"] += b"DOMAIN-KEYWORD,large-block-list\n"
+        large_snapshot["mihomo.reject_no_drop"] += b"DOMAIN-KEYWORD,no-drop-block-list\n"
+        large_snapshot["mihomo.sogouinput"] += b"DOMAIN-KEYWORD,sogou-block-list\n"
         large = compile_candidate(large_snapshot)
         large_reject = [
             group for group in slot_groups(large, "mihomo", "reject")
@@ -334,6 +383,83 @@ class PriorityProfileTests(unittest.TestCase):
         self.assertTrue(any(group["path"].endswith(".list") for group in large_reject))
         classical = next(group for group in large_reject if group["capability"] == "classical")
         self.assertIn(b"DOMAIN-KEYWORD,large-block-list", large.files[classical["path"]])
+        self.assertEqual(classical["id"], "reject-rules")
+        self.assertEqual(classical["reject_mode"], "plain")
+        self.assertIn("reject-no-drop", classical["stages"])
+        self.assertIn("sogouinput", classical["stages"])
+        self.assertEqual(
+            next(stage for stage in large.manifest["stages"] if stage["id"] == "reject-no-drop")["reject_mode"],
+            "no-drop",
+        )
+
+        large_surge_snapshot = snapshots()
+        large_surge_snapshot["surge.reject_domains"] += "".join(
+            f".extended-{index}.large.example\n" for index in range(1001)
+        ).encode()
+        large_surge_snapshot["surge.reject"] += b"DOMAIN-KEYWORD,extended-large-block-list\n"
+        large_surge_snapshot["surge.reject_extra"] += "".join(
+            f".pure-domain-{index}.large.example\n" for index in range(1001)
+        ).encode()
+        large_surge = compile_candidate(large_surge_snapshot)
+        surge_reject = next(
+            group for group in slot_groups(large_surge, "surge", "reject")
+            if {"reject-domains", "reject-rules"} <= set(group["stages"])
+        )
+        self.assertEqual(surge_reject["id"], "reject")
+        self.assertEqual(surge_reject["capability"], "classical")
+        self.assertTrue(surge_reject["path"].endswith("/reject.list"))
+        self.assertEqual(surge_reject["behavior"], "classical")
+        self.assertTrue(surge_reject["extended_matching"])
+        self.assertIn(b"DOMAIN-KEYWORD,extended-large-block-list", large_surge.files[surge_reject["path"]])
+
+        pure_domain_reject = next(
+            group for group in slot_groups(large_surge, "surge", "reject")
+            if "reject-extra" in group["stages"]
+        )
+        self.assertEqual(pure_domain_reject["capability"], "domain")
+        self.assertTrue(pure_domain_reject["path"].endswith(".set"))
+        self.assertEqual(pure_domain_reject["behavior"], "domain-set")
+        self.assertEqual(
+            sum(group["reject_mode"] == "no-drop" for group in slot_groups(large_surge, "surge", "reject")),
+            1,
+        )
+
+    def test_physical_groups_deduplicate_exact_rules_without_crossing_surge_boundaries(self) -> None:
+        snapshot = snapshots()
+        duplicate = b"DOMAIN-KEYWORD,duplicate-reject\n"
+        snapshot["surge.reject"] += duplicate
+        snapshot["surge.reject_no_drop"] += duplicate + duplicate
+        candidate = compile_candidate(snapshot)
+
+        plain = next(
+            group for group in slot_groups(candidate, "surge", "reject")
+            if "reject-rules" in group["stages"] and group["reject_mode"] == "plain"
+        )
+        no_drop = next(
+            group for group in slot_groups(candidate, "surge", "reject")
+            if "reject-no-drop" in group["stages"]
+        )
+        self.assertEqual(candidate.files[plain["path"]].count(duplicate.strip()), 1)
+        self.assertEqual(candidate.files[no_drop["path"]].count(duplicate.strip()), 1)
+        for group in (plain, no_drop):
+            content = candidate.files[group["path"]]
+            self.assertEqual(group["rule_count"], len(content.decode().splitlines()))
+            compact_stage = next(
+                stage for stage in candidate.manifest["compact"]["stages"]["surge"]
+                if stage["id"] == group["id"]
+            )
+            self.assertEqual(compact_stage["rule_count"], group["rule_count"])
+            output = candidate.manifest["outputs"][group["path"]]
+            self.assertEqual(output["sha256"], personal_profile.sha256(content))
+            self.assertEqual(output["bytes"], len(content))
+            self.assertEqual(group["sha256"], output["sha256"])
+            self.assertEqual(group["bytes"], output["bytes"])
+        self.assertEqual(candidate.manifest["sources"]["surge.reject_no_drop"]["rules"], 3)
+        fine_source_stage = next(
+            stage for stage in candidate.manifest["stages"] if stage["id"] == "reject-no-drop"
+        )
+        self.assertEqual(fine_source_stage["reject_mode"], "no-drop")
+        self.assertEqual(fine_source_stage["rule_count_by_platform"]["surge"], 3)
 
     def test_post_ip_slots_coalesce_by_priority_and_keep_empty_jp_ip_interface(self) -> None:
         candidate = compile_candidate()
