@@ -1117,6 +1117,19 @@ def _requires_rule_dns(rules: Iterable[Rule], no_resolve: bool) -> bool:
     )
 
 
+def _stable_physical_rules(rules: Iterable[Rule]) -> list[Rule]:
+    """Drop exact duplicates within one emitted group, keeping the first source."""
+    result: list[Rule] = []
+    seen: set[tuple[str, str, str, tuple[str, ...]]] = set()
+    for rule in rules:
+        key = (rule.platform, rule.type, rule.value, rule.flags)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(rule)
+    return result
+
+
 def _render_compact_group_file(
     platform: str, group: Mapping[str, Any], rules: list[Rule], root: Path,
     converter_path: str | Path | None, mrs_converter: Callable[[bytes], bytes] | None,
@@ -1169,6 +1182,16 @@ def _compile_compact(
         used_group_ids: set[str] = set()
         fallback_name_counts: dict[str, int] = {}
 
+        def unique_group_id(base_id: str) -> str:
+            if base_id not in used_group_ids:
+                return base_id
+            candidate = f"{base_id}-extra"
+            extra_ordinal = 2
+            while candidate in used_group_ids:
+                candidate = f"{base_id}-extra-{extra_ordinal}"
+                extra_ordinal += 1
+            return candidate
+
         for slot in profile["compact"]["slots"]:
             slot_id = slot["id"]
             entries: list[dict[str, Any]] = []
@@ -1190,7 +1213,13 @@ def _compile_compact(
                 if rules:
                     entries.append({
                         "source": fine_id, "rules": rules, "action": fine["action"], "dns": slot.get("dns", fine["dns"]),
-                        "reject_mode": fine["reject_mode"],
+                        # Mihomo's physical REJECT provider uses the ordinary
+                        # REJECT action for both plain and no-drop source modes.
+                        # Keep the original mode on the fine stage manifest.
+                        "reject_mode": (
+                            "plain" if platform == "mihomo" and fine["reject_mode"] == "no-drop"
+                            else fine["reject_mode"]
+                        ),
                         "extended_matching": fine["extended_matching_by_platform"][platform] if platform == "surge" else False,
                         "no_resolve": fine["no_resolve"],
                     })
@@ -1275,9 +1304,11 @@ def _compile_compact(
                     ]
                     domain_count = sum(len(rules) for _, rules in domain_entries)
                     complex_count = sum(len(rules) for _, rules in complex_entries)
-                    if 0 < domain_count <= 1000 and complex_count:
-                        # Tiny mixed selectors are cheaper as one classical
-                        # resource; large pure-domain payloads keep MRS/sets.
+                    if complex_count and (platform == "surge" or domain_count <= 1000):
+                        # Surge can index domain rules inside RULE-SET, so any
+                        # compatible mixed run fits one classical resource.
+                        # Mihomo keeps large domain payloads in MRS and emits
+                        # their complex rules separately.
                         format_buckets = [("classical", [
                             (entry, list(entry["rules"])) for entry in run_entries
                         ])]
@@ -1309,6 +1340,51 @@ def _compile_compact(
                     group_id, has_legacy_mapping = _compact_group_name(
                         slot_id, first["action"], capability, ordinal,
                     )
+                    source_stage_ids = {
+                        entry["source"] for entry, _ in rules_with_sources if entry["source"] is not None
+                    }
+                    if (
+                        platform == "mihomo" and slot_id == "reject"
+                        and first["reject_mode"] in {"drop", "plain"}
+                    ):
+                        # Mihomo normalizes no-drop to plain before grouping.
+                        # Name physical resources by that effective mode and
+                        # output format instead of inferring behavior from the
+                        # historical per-format ordinal.
+                        if first["reject_mode"] == "drop":
+                            group_id = "reject-drop"
+                            if group_id in used_group_ids:
+                                format_name = "rules" if capability == "classical" else capability
+                                group_id = unique_group_id(f"reject-drop-{format_name}")
+                        else:
+                            plain_names = {
+                                "domain": "reject",
+                                "classical": "reject-rules",
+                                "domain-special": "reject-special",
+                            }
+                            group_id = unique_group_id(plain_names[capability])
+                        has_legacy_mapping = True
+                    elif platform == "surge" and slot_id == "reject" and source_stage_ids == {"reject-drop"}:
+                        group_id = "reject-drop" if "reject-drop" not in used_group_ids else unique_group_id(
+                            f"reject-drop-{'rules' if capability == 'classical' else capability}"
+                        )
+                        has_legacy_mapping = True
+                    elif platform == "surge" and slot_id == "reject":
+                        if {"reject-domains", "reject-rules"} <= source_stage_ids:
+                            # This mixed extended-matching run is now one
+                            # canonical RULE-SET, regardless of its input
+                            # DOMAIN-SET/complex source split.
+                            group_id, has_legacy_mapping = "reject", True
+                        elif "reject-extra" in source_stage_ids and "reject-domains" not in source_stage_ids:
+                            # Keep the ordinary, non-extended extra set's
+                            # meaningful ID when it is emitted before the
+                            # extended reject group.
+                            group_id, has_legacy_mapping = "reject-extra", True
+                    elif (
+                        platform == "surge" and slot_id == "cn-direct"
+                        and capability == "classical" and "cn-direct-domain" in source_stage_ids
+                    ):
+                        group_id, has_legacy_mapping = "cn-direct", True
                     if not has_legacy_mapping:
                         base_id = group_id
                         name_ordinal = fallback_name_counts.get(base_id, 0) + 1
@@ -1354,7 +1430,9 @@ def _compile_compact(
             group["path"] = path
             if path in output_files:
                 raise ProfileError(f"compact groups produce duplicate output path {path}")
-            rules = group_rule_map[group["id"]]
+            rules = _stable_physical_rules(group_rule_map[group["id"]])
+            group_rule_map[group["id"]] = rules
+            group["rule_count"] = len(rules)
             content = _render_compact_group_file(platform, group, rules, root, converter_path, mrs_converter)
             if not content:
                 raise ProfileError(f"generated compact resource {path} is empty")

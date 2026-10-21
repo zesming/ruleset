@@ -186,31 +186,34 @@
       "expected_new_action": "DIRECT"
     },
     {
-      "id": "retained-istatmenus-direct",
+      "id": "istatmenus-root-follows-default-us",
       "kind": "literal-domain",
       "platforms": ["mihomo", "surge"],
       "evidence": "baseline-inline",
       "subject": {"domain": "istatmenus.app"},
       "expected_old_action": "DIRECT",
-      "expected_new_action": "DIRECT"
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
     },
     {
-      "id": "retained-mihomo-dashboard-domains",
+      "id": "retired-dashboard-follows-us",
       "kind": "literal-domain",
       "platforms": ["mihomo"],
       "evidence": "baseline-inline",
       "subject": {"domain": "clash.razord.top"},
       "expected_old_action": "DIRECT",
-      "expected_new_action": "DIRECT"
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
     },
     {
-      "id": "retained-mihomo-yacd-domain",
+      "id": "retired-yacd-follows-us",
       "kind": "literal-domain",
       "platforms": ["mihomo"],
       "evidence": "baseline-inline",
       "subject": {"domain": "yacd.haishan.me"},
       "expected_old_action": "DIRECT",
-      "expected_new_action": "DIRECT"
+      "expected_new_action": "US",
+      "expected_new_dns": "US"
     },
     {
       "id": "unknown-domain-falls-back-to-us",
@@ -294,11 +297,20 @@
       "platforms": ["mihomo", "surge"],
       "evidence": "archive",
       "subject": {"domain": "speedtest.cn"},
-      "expected_old_action": "DIRECT",
       "expected_new_slot": "test",
       "expected_new_action": "TEST",
       "expected_new_dns": "TEST",
       "expected_membership": ["network-test"]
+    },
+    {
+      "id": "istatmenus-weather-follows-us",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "weather.istatmenus.app"},
+      "expected_new_action": "US",
+      "expected_new_dns": "US",
+      "expected_membership": ["cdn"]
     }
   ],
   "expected_changes": [
@@ -308,6 +320,7 @@
     {"id": "mihomo-test-selector", "description": "Mihomo keeps the US and JP TUIC leaves and Test selector with their deployed display names."},
     {"id": "surge-country-selectors", "description": "Surge keeps one Smart group per country with Snell v6 and TUIC; Test selects US, JP or Direct."},
     {"id": "legacy-auto-fixed-us", "description": "Legacy proxy and cross-country Smart targets are normalized to fixed US based on the observed baseline selection; country selection is explicit in the candidate."},
+    {"id": "retired-local-routing-exceptions", "description": "Retire broad iStat Menus and legacy dashboard exceptions; keep exact remote direct endpoints and use US for rule infrastructure."},
     {"id": "dns-endpoints", "description": "Keep the dual US and domestic resolver sets, use one JP endpoint and a dedicated TEST endpoint, and limit endpoint routing to protocol-qualified DoH rules."}
   ],
   "unsupported_cases": [

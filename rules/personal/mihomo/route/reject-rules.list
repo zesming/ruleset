@@ -204,3 +204,15 @@ IP-CIDR6,2402:db40:5100:1011::5/128,no-resolve
 IP-CIDR6,2402:4e00:1900:1700:0:9554:1ad9:c3a/128,no-resolve
 IP-CIDR6,240e:928:1400:10::25/128,no-resolve
 IP-CIDR6,2402:4e00:1200:ed00:0:9089:6dac:96b6/128,no-resolve
+DOMAIN-KEYWORD,-p2p.pull.yximgs.com
+DOMAIN-KEYWORD,-p2p-v2.pull.yximgs.com
+DOMAIN-WILDCARD,p2p*.qq.com
+DOMAIN-WILDCARD,p2p-*.douyucdn.cn
+DOMAIN-WILDCARD,p2pchunk-*.douyucdn.cn
+DOMAIN-WILDCARD,dyp2p-*.douyucdn.cn
+DOMAIN-WILDCARD,p2plive-*.douyucdn.cn
+DOMAIN-WILDCARD,stun*.douyucdn.cn
+DOMAIN-WILDCARD,upos-sz-302*.bilivideo.com
+PROCESS-NAME,SogouInput
+PROCESS-NAME,SogouTaskManager
+PROCESS-NAME,SogouServices

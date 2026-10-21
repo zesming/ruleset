@@ -538,7 +538,6 @@ DOMAIN-SUFFIX,phncdn.com
 DOMAIN-SUFFIX,pinimg.com
 DOMAIN-SUFFIX,pixhost.to
 DOMAIN,pixoraa.cc
-DOMAIN-SUFFIX,poecdn.net
 DOMAIN-SUFFIX,porn-d.xyz
 DOMAIN-SUFFIX,porn5.asia
 DOMAIN-SUFFIX,postimg.cc
@@ -930,7 +929,6 @@ DOMAIN-SUFFIX,lichess1.org
 DOMAIN-SUFFIX,line-cdn.net
 DOMAIN-SUFFIX,lllcdn.autos
 DOMAIN-SUFFIX,lowescdn.com
-DOMAIN-SUFFIX,manuscdn.com
 DOMAIN,media.dev.to
 DOMAIN,media.fs.com
 DOMAIN,media.mas.to
@@ -1226,7 +1224,6 @@ DOMAIN-SUFFIX,myvideos.info
 DOMAIN-SUFFIX,nhentaimg.com
 DOMAIN-SUFFIX,nodeimage.com
 DOMAIN,npm.antfu.dev
-DOMAIN-SUFFIX,oaistatic.com
 DOMAIN-SUFFIX,oculuscdn.com
 DOMAIN,p.typekit.net
 DOMAIN,panda.dmm.com
@@ -1409,7 +1406,6 @@ DOMAIN-SUFFIX,cms.replit.com
 DOMAIN-SUFFIX,codeforces.org
 DOMAIN,consent.dw.com
 DOMAIN,consent.fmm.io
-DOMAIN-SUFFIX,cursor-cdn.com
 DOMAIN,d.newsweek.com
 DOMAIN,dc-cdn.cdw.com
 DOMAIN-SUFFIX,descopecdn.com
@@ -2480,7 +2476,6 @@ DOMAIN-SUFFIX,e.crashlytics.com
 DOMAIN,edge.nodeseek.com
 DOMAIN,embed.zenn.studio
 DOMAIN,embedr.flickr.com
-DOMAIN-SUFFIX,envato-static.com
 DOMAIN,eomd1.fembeqq.xyz
 DOMAIN,error.c.cdn77.org
 DOMAIN-SUFFIX,f.hubspotfree.net
@@ -2886,7 +2881,6 @@ DOMAIN-SUFFIX,nel.cloudflare.com
 DOMAIN,newsstatic.rthk.hk
 DOMAIN-SUFFIX,notify.bugsnag.com
 DOMAIN,ns-cdn.neustar.biz
-DOMAIN-SUFFIX,oaiusercontent.com
 DOMAIN,objects.g0v.social
 DOMAIN,ocsp.usertrust.com
 DOMAIN,pbcdn1.podbean.com
@@ -3686,7 +3680,6 @@ DOMAIN,cdne-pics.youjizz.com
 DOMAIN,cdnjs.betterstack.com
 DOMAIN-SUFFIX,chargebeestaticv2.com
 DOMAIN,chat-assets.front.app
-DOMAIN-SUFFIX,claudeusercontent.com
 DOMAIN,cloud.typenetwork.com
 DOMAIN-SUFFIX,cloud1.influxdata.com
 DOMAIN-SUFFIX,cloud2.influxdata.com
@@ -3704,7 +3697,6 @@ DOMAIN,design.mayoclinic.org
 DOMAIN,docs.mrchromebox.tech
 DOMAIN,edge.sitecorecloud.io
 DOMAIN-SUFFIX,edge.storage-yahoo.jp
-DOMAIN-SUFFIX,envatousercontent.com
 DOMAIN,eu01ccistatic.zoom.us
 DOMAIN,event-assets.gsma.com
 DOMAIN,events-live.apple.com
@@ -4181,7 +4173,6 @@ DOMAIN,ni-assets.azureedge.net
 DOMAIN-SUFFIX,ogads-pa.googleapis.com
 DOMAIN,p-cdnstatic.svc.litv.tv
 DOMAIN,packages.jetbrains.team
-DOMAIN,pplx-res.cloudinary.com
 DOMAIN,prod.addictinggames.com
 DOMAIN,profile-images.xing.com
 DOMAIN,rbds-static.redbull.com
@@ -5007,4 +4998,3 @@ DOMAIN-SUFFIX,tdesktop.com
 DOMAIN-SUFFIX,telegram.dog
 DOMAIN-SUFFIX,telegram.org
 DOMAIN-SUFFIX,telegram.space
-DOMAIN-SUFFIX,cdn-telegram.org
