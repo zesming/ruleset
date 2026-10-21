@@ -20,6 +20,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
@@ -35,6 +36,7 @@ MANIFEST_PATH = "upstream/personal/manifest.json"
 MIHOMO_CONVERTER_ENV = "MIHOMO_CONVERTER"
 MAX_RESPONSE_BYTES = 12 * 1024 * 1024
 HTTP_TIMEOUT_SECONDS = 25
+SOURCE_FETCH_RETRY_DELAYS = (0.5, 1.0)
 HEX_256 = re.compile(r"^[0-9a-f]{64}$")
 DOMAIN_LABEL = re.compile(r"^[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?$")
 DOMAIN_TYPES = {"DOMAIN", "DOMAIN-SUFFIX"}
@@ -106,7 +108,7 @@ def _source_specs() -> dict[str, dict[str, Any]]:
             max_bytes = 8 * 1024 * 1024 if kind == "domainset" else 4 * 1024 * 1024
             result[source_id] = {
                 "id": source_id, "platform": platform, "kind": kind, "url": url,
-                "archive_path": archive, "max_bytes": max_bytes, "max_rules": 500_000,
+                "archive_path": archive, "max_bytes": max_bytes,
             }
         for rule_id, upstream_name in ip_sources:
             source_id = f"{platform}.{rule_id}"
@@ -114,7 +116,7 @@ def _source_specs() -> dict[str, dict[str, Any]]:
             archive = f"upstream/personal/{platform}/{rule_id}.{extension}"
             result[source_id] = {
                 "id": source_id, "platform": platform, "kind": "ip", "url": url,
-                "archive_path": archive, "max_bytes": 4 * 1024 * 1024, "max_rules": 300_000,
+                "archive_path": archive, "max_bytes": 4 * 1024 * 1024,
             }
     return result
 
@@ -482,8 +484,6 @@ def parse_source(data: bytes, source_id: str) -> list[Rule]:
             ]
             if not ip_types or unexpected:
                 raise ProfileError(f"{source_id} contains a non-IP rule outside the fixed Sukka canary")
-    if len(rules) > int(spec["max_rules"]):
-        raise ProfileError(f"{source_id} exceeds its rule-count limit")
     return rules
 
 
@@ -908,26 +908,6 @@ def _source_metadata(source_id: str, data: bytes, rules: list[Rule]) -> dict[str
         "archive_path": spec["archive_path"], "sha256": sha256(data),
         "bytes": len(data), "rules": len(rules),
     }
-
-
-def _source_counts_guard(previous: Mapping[str, Any] | None, current: Mapping[str, Any]) -> None:
-    if not previous:
-        return
-    old_sources = previous.get("sources")
-    if not isinstance(old_sources, Mapping):
-        raise ProfileError("previous personal manifest has no source baseline")
-    for source_id, metadata in current.items():
-        old = old_sources.get(source_id)
-        if not isinstance(old, Mapping):
-            raise ProfileError(f"previous manifest has no baseline for {source_id}")
-        old_count, new_count = old.get("rules"), metadata.get("rules")
-        old_size, new_size = old.get("bytes"), metadata.get("bytes")
-        if not all(isinstance(v, int) and v > 0 for v in (old_count, new_count, old_size, new_size)):
-            raise ProfileError(f"source baseline counts are invalid for {source_id}")
-        if new_count > old_count * 2 + 500 or new_size > old_size * 2 + 4096:
-            raise ProfileError(f"{source_id} grew beyond the 2x source-change gate")
-        if old_count >= 20 and new_count * 4 < old_count:
-            raise ProfileError(f"{source_id} fell below one quarter of the prior rule count")
 
 
 CLIENT_INTERFACE_FIELDS = (
@@ -1748,31 +1728,65 @@ def _fetch_one(source_id: str) -> tuple[str, bytes]:
             final = urllib.parse.urlparse(response.geturl())
             if response.status != 200 or final.scheme != "https" or final.hostname != url.hostname:
                 raise ProfileError(f"HTTP/redirect validation failed for {source_id}")
-            data = response.read(int(spec["max_bytes"]) + 1)
+            maximum = int(spec["max_bytes"])
+            raw_length = response.headers.get("Content-Length")
+            declared_length: int | None = None
+            if raw_length is not None:
+                if not isinstance(raw_length, str) or not re.fullmatch(r"[0-9]+", raw_length):
+                    raise ProfileError(f"{source_id} has an invalid Content-Length")
+                declared_length = int(raw_length)
+                if declared_length > maximum:
+                    raise ProfileError(f"{source_id} exceeds its byte limit")
+
+            chunks: list[bytes] = []
+            received = 0
+            while True:
+                read_size = min(64 * 1024, maximum + 1 - received)
+                chunk = response.read(read_size)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                received += len(chunk)
+                if received > maximum:
+                    raise ProfileError(f"{source_id} exceeds its byte limit")
+            if declared_length is not None and received != declared_length:
+                raise ProfileError(
+                    f"{source_id} Content-Length mismatch: declared {declared_length} bytes, received {received}"
+                )
+            data = b"".join(chunks)
     except ProfileError:
         raise
     except Exception as exc:
         raise ProfileError(f"could not fetch {source_id}: {exc}") from exc
-    if len(data) > int(spec["max_bytes"]):
-        raise ProfileError(f"{source_id} exceeds its byte limit")
     return source_id, data
 
 
 def fetch_sources() -> dict[str, bytes]:
-    """Fetch all registered Sukka sources concurrently; no writes occur here."""
+    """Fetch all registered Sukka sources, retrying only incomplete fetches."""
     result: dict[str, bytes] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(_fetch_one, source_id): source_id for source_id in SOURCE_SPECS}
-        errors: list[str] = []
-        for future in concurrent.futures.as_completed(futures):
-            source_id = futures[future]
-            try:
-                key, data = future.result()
-                result[key] = data
-            except Exception as exc:
-                errors.append(f"{source_id}: {exc}")
-        if errors:
-            raise ProfileError("Sukka source fetch failed: " + "; ".join(sorted(errors)))
+        pending = sorted(SOURCE_SPECS)
+        errors: dict[str, Exception] = {}
+        for attempt in range(len(SOURCE_FETCH_RETRY_DELAYS) + 1):
+            futures = {pool.submit(_fetch_one, source_id): source_id for source_id in pending}
+            errors = {}
+            for future in concurrent.futures.as_completed(futures):
+                source_id = futures[future]
+                try:
+                    key, data = future.result()
+                    result[key] = data
+                except Exception as exc:
+                    errors[source_id] = exc
+            if not errors:
+                return result
+            pending = sorted(errors)
+            if attempt < len(SOURCE_FETCH_RETRY_DELAYS):
+                time.sleep(SOURCE_FETCH_RETRY_DELAYS[attempt])
+    if errors:
+        details = "; ".join(f"{source_id}: {errors[source_id]}" for source_id in sorted(errors))
+        raise ProfileError(
+            f"Sukka source fetch failed after {len(SOURCE_FETCH_RETRY_DELAYS) + 1} attempts: {details}"
+        )
     return result
 
 
@@ -2031,7 +2045,6 @@ def update(
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ProfileError(f"cannot read prior personal manifest: {exc}") from exc
     candidate = compile(snapshot, legacy, profile, root=root_path, converter_path=converter_path)
-    _source_counts_guard(previous, candidate.manifest["sources"])
     _require_stable_client_interface(previous, candidate.manifest, accept_change=accept_interface_change)
     stale = _stale_legacy_compact_paths(previous, candidate.files)
     write_bundle_transactionally(root_path, candidate.files, delete_paths=stale)

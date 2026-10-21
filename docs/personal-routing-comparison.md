@@ -7,8 +7,8 @@
 | 顺序 | 规则 | 出口与 DNS |
 |---|---|---|
 | 1 | 节点端点、公司内网、LAN、本地明确例外 | 直连例外走 DIRECT；LAN/公司使用系统 DNS，普通必要直连使用国内 DNS；规则托管基础设施沿用各客户端既有明确出口 |
-| 2 | 网络测试、出口查询 | TEST；默认 US，DNS 随 TEST 选择 |
-| 3 | 拦截 | 保留 DROP / plain / NO-DROP 差异；域名解析采用 US 策略 |
+| 2 | 拦截 | 保留 DROP / plain / NO-DROP 差异；域名解析采用 US 策略 |
+| 3 | 网络测试、出口查询 | TEST；默认 US，DNS 随 TEST 选择 |
 | 4 | 已明确需要日本出口的业务 | JP；当前为空 |
 | 5 | 明确 US 与必须代理业务 | US；US DNS |
 | 6 | 大陆与普通直连白名单 | DIRECT；国内 DNS |
@@ -38,11 +38,13 @@ Sukka direct 的关键词、普通业务和进程规则继续归入后段直连�
 
 JP 不通过 `.jp`、日本 GeoIP 或 Nintendo 全平台自动归类。当前没有明确日本出口业务，JP 业务集合保持空；未来只加入有来源与理由的成员。Nintendo STUN 与 AT&T 的真实 IP 兼容例外保留，不因此将 Nintendo 全部导向 JP。
 
+`policy.json` 的 `direct_rules` 单独维护直连接口和混合业务，生成 `direct` 细分类并合入现有 `cn-direct`；生成 Test 时排除其覆盖范围。DNS 复用这些最终域名集合，客户端无需增加 provider。规则条数和增删幅度只记录差异，不阻止自动更新。
+
 ## DNS 与节点
 
 DNS 直接复用路由资源的域名匹配部分，不再为每个业务另建 DNS provider。[Surge Host](https://manual.nssurge.com/dns/local-dns-mapping.html) 的 RULE-SET 忽略 IP 项；Mihomo 的 classical DNS 匹配同样只采用域名规则。进程、IP、UA、URL、SNI 或协议条件不会凭空变成 DNS 域名条件。
 
-LAN 与本地 DNS 映射优先；随后按路由优先级依次绑定 TEST、REJECT、JP、US、普通直连的解析器。相同出口的不同优先级不能跨区段合并，否则会改变重叠域名的 DNS。Mihomo 只把同一区段的 provider 合并成一个 selector；Surge 每个资源一条 Host 引用。
+LAN 与本地 DNS 映射优先；随后按路由优先级依次绑定 REJECT、TEST、JP、US、普通直连的解析器。相同出口的不同优先级不能跨区段合并，否则会改变重叠域名的 DNS。Mihomo 只把同一区段的 provider 合并成一个 selector；Surge 每个资源一条 Host 引用。
 
 US 保留 Google/Cloudflare 双解析器，国内保留阿里/Tencent 双解析器。TEST 使用 `8.8.4.4` 并绑定 TEST，JP 使用 `1.0.0.1` 并绑定 JP；后两者目前各一个 anycast 地址，故障冗余少于双解析器。Surge 对端点的出口规则限定 PROTOCOL,DOH，同地址普通连接仍按业务规则判断。
 
@@ -58,9 +60,7 @@ Clash JP 显式使用 BBR、8000 毫秒保活和启用 SNI，保留原生 UDP �
 
 ## 验证与部署边界
 
-本次验收包括：旧细分类字节兼容、完整离线重放、实际客户端语法与资源加载、路由和 DNS 选择、TEST 切换、空 JP、DoH 与普通连接的区分、出站请求和全引用闭包。本轮需要完成冻结输入自动检查、独立路由/DNS 用例与代表样本对照。样本数包含派生与重复探测，不是请求量或独立主机数；最终结果以本轮 PR 与本地部署记录为准。
-
-桌面运行验证覆盖 Mihomo 的 24 个路由用例、24 个 DNS 选择用例和 18 个资源加载；这 24 个 DNS 选择用例使用真实 provider 与受控本地 UDP 解析器；同时检查真实 US/JP TEST 切换的对应国家出口、普通域名 fake-IP 与 AT&T 真实 IP 解析。Surge 覆盖 31 个路由用例、9 个 DNS 选择用例和 20 个资源加载，检查 TEST 的两种地区选择、真实出口、DNS 答案和 DoH 决策链。DNS 选择用例包含不存在域名的空答案，空答案只证明解析器选择，不算成功解析。两端验证均未抓包断言 DoH 实际出口。Snell 6 与 TUIC 的四个叶子需要分别收到 UDP 测试响应。
+校验覆盖离线重放、实际内核语法与资源加载、路由与 DNS 选择、Test 的 US/JP 出口、空 JP、fake-IP 和真实 IP 例外。新旧顺序均使用同一份当前来源快照，不还原客户端历史缓存。代表样本不等于全部流量覆盖；DNS 选择检查不等于 DoH 出口抓包。
 
 现用配置只有在配套 PR 合并、完整远端资源按哈希确认可用后才替换。替换前保存原文件并核验未被其他设备修改；校验失败可恢复同一版配置。一次 Git 提交保证服务端整版发布，不保证客户端同时刷新多个 main URL；接口变更由发布门禁阻止自动迁移。
 

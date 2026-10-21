@@ -24,7 +24,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 
 SCHEMA = 1
@@ -51,7 +51,6 @@ def _source_spec(
     archive_path: str,
     *,
     max_bytes: int,
-    max_rules: int,
     repository: str | None = None,
     branch: str | None = None,
     source_path: str | None = None,
@@ -60,7 +59,6 @@ def _source_spec(
     result: dict[str, Any] = {
         "archive_path": archive_path,
         "max_bytes": max_bytes,
-        "max_rules": max_rules,
     }
     if repository is not None:
         result.update(
@@ -81,7 +79,6 @@ SOURCE_SPECS: dict[str, dict[str, Any]] = {
     "china_max": _source_spec(
         "upstream/cn-direct/china-max-domain.txt",
         max_bytes=16 * 1024 * 1024,
-        max_rules=300_000,
         repository="blackmatrix7/ios_rule_script",
         branch="master",
         source_path="rule/Clash/ChinaMax/ChinaMax_Domain.txt",
@@ -89,7 +86,6 @@ SOURCE_SPECS: dict[str, dict[str, Any]] = {
     "acl_china_domain": _source_spec(
         "upstream/cn-direct/acl-china-domain.list",
         max_bytes=1024 * 1024,
-        max_rules=10_000,
         repository="ACL4SSR/ACL4SSR",
         branch="master",
         source_path="Clash/ChinaDomain.list",
@@ -97,25 +93,21 @@ SOURCE_SPECS: dict[str, dict[str, Any]] = {
     "sukka_direct_clash": _source_spec(
         "upstream/cn-direct/sukka-direct.txt",
         max_bytes=512 * 1024,
-        max_rules=10_000,
         url="https://ruleset-mirror.skk.moe/Clash/non_ip/direct.txt",
     ),
     "sukka_domestic_clash": _source_spec(
         "upstream/cn-direct/sukka-domestic.txt",
         max_bytes=512 * 1024,
-        max_rules=10_000,
         url="https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt",
     ),
     "sukka_direct_surge": _source_spec(
         "upstream/cn-direct/sukka-direct.conf",
         max_bytes=512 * 1024,
-        max_rules=10_000,
         url="https://ruleset-mirror.skk.moe/List/non_ip/direct.conf",
     ),
     "sukka_domestic_surge": _source_spec(
         "upstream/cn-direct/sukka-domestic.conf",
         max_bytes=512 * 1024,
-        max_rules=10_000,
         url="https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf",
     ),
 }
@@ -281,7 +273,7 @@ def validate_policy(cn_policy: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(cn_policy, Mapping):
         raise CnDirectError("policy.cn_direct must be an object")
     policy = dict(cn_policy)
-    required = {"schema", "sources", "limits", "acl_review", "china_max_initial_wide_suffixes", "china_max_wide_scope_review", "adds", "removes", "first_match_assertions", "converter"}
+    required = {"schema", "sources", "acl_review", "china_max_initial_wide_suffixes", "china_max_wide_scope_review", "adds", "removes", "first_match_assertions", "converter"}
     unknown = set(policy) - required
     missing = required - set(policy)
     if unknown or missing:
@@ -296,31 +288,17 @@ def validate_policy(cn_policy: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(source, Mapping):
             raise CnDirectError(f"policy.cn_direct.sources.{source_name} must be an object")
         expected = SOURCE_SPECS[source_name]
+        allowed_source_keys = {"archive_path", "max_bytes", "snapshot_sha256"}
+        if set(source) - allowed_source_keys:
+            raise CnDirectError(f"policy.cn_direct.sources.{source_name} has unknown fields")
         if source.get("archive_path") != expected["archive_path"]:
             raise CnDirectError(f"policy.cn_direct.sources.{source_name}.archive_path is fixed")
-        for key in ("max_bytes", "max_rules"):
-            value = source.get(key)
-            if not isinstance(value, int) or isinstance(value, bool) or value <= 0 or value > expected[key]:
-                raise CnDirectError(f"policy.cn_direct.sources.{source_name}.{key} must be in 1..{expected[key]}")
+        value = source.get("max_bytes")
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0 or value > expected["max_bytes"]:
+            raise CnDirectError(f"policy.cn_direct.sources.{source_name}.max_bytes must be in 1..{expected['max_bytes']}")
         snapshot_sha = source.get("snapshot_sha256")
         if snapshot_sha is not None and (not isinstance(snapshot_sha, str) or not HEX_256.fullmatch(snapshot_sha)):
             raise CnDirectError(f"policy.cn_direct.sources.{source_name}.snapshot_sha256 must be SHA-256 or null")
-    limits = policy["limits"]
-    if not isinstance(limits, Mapping):
-        raise CnDirectError("policy.cn_direct.limits must be an object")
-    limit_keys = {"maximum_added_minimum", "maximum_added_ratio", "maximum_removed_minimum", "maximum_removed_ratio", "minimum_output_rules", "maximum_output_rules"}
-    if set(limits) != limit_keys:
-        raise CnDirectError("policy.cn_direct.limits has missing or unknown keys")
-    for key in ("maximum_added_minimum", "maximum_removed_minimum", "minimum_output_rules", "maximum_output_rules"):
-        value = limits[key]
-        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-            raise CnDirectError(f"policy.cn_direct.limits.{key} must be a non-negative integer")
-    if limits["minimum_output_rules"] < 1 or limits["maximum_output_rules"] < limits["minimum_output_rules"]:
-        raise CnDirectError("cn_direct output rule limits are inconsistent")
-    for key in ("maximum_added_ratio", "maximum_removed_ratio"):
-        value = limits[key]
-        if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0 <= value <= 1:
-            raise CnDirectError(f"policy.cn_direct.limits.{key} must be between 0 and 1")
     acl_review = policy["acl_review"]
     if not isinstance(acl_review, Mapping):
         raise CnDirectError("policy.cn_direct.acl_review must be an object")
@@ -670,8 +648,8 @@ def parse_sources(raw_sources: Mapping[str, bytes], policy: Mapping[str, Any]) -
             records = _parse_sukka(data, source, source_policy["max_bytes"])
             if source.endswith("_clash") and any(rule.type == "USER-AGENT" for rule in records):
                 raise CnDirectError(f"{source} must not contain USER-AGENT rules")
-        if len(records) > source_policy["max_rules"]:
-            raise CnDirectError(f"{source} exceeds its policy rule-count limit")
+        if not records:
+            raise CnDirectError(f"{source} source contains no rules")
         parsed[source] = records
     return parsed
 
@@ -686,6 +664,8 @@ def _source_url(source: str, sha: str | None = None) -> str:
 
 
 def _http_bytes(url: str, maximum: int) -> bytes:
+    if not isinstance(maximum, int) or isinstance(maximum, bool) or maximum < 0:
+        raise CnDirectError("source byte limit must be a non-negative integer")
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme != "https" or parsed.hostname not in {"api.github.com", "raw.githubusercontent.com", "ruleset-mirror.skk.moe"}:
         raise CnDirectError(f"refusing unapproved source URL: {url}")
@@ -695,13 +675,42 @@ def _http_bytes(url: str, maximum: int) -> bytes:
             final = urllib.parse.urlparse(response.geturl())
             if response.status != 200 or final.scheme != "https" or final.hostname != parsed.hostname:
                 raise CnDirectError(f"upstream HTTP/redirect validation failed for {url}")
-            data = response.read(maximum + 1)
+            length_header = response.headers.get("Content-Length")
+            declared_length: int | None = None
+            if length_header is not None:
+                if not isinstance(length_header, str) or not re.fullmatch(r"[0-9]+", length_header.strip()):
+                    raise CnDirectError(f"upstream response has an invalid Content-Length header: {url}")
+                normalized_length = length_header.strip().lstrip("0") or "0"
+                maximum_text = str(maximum)
+                if len(normalized_length) > len(maximum_text) or (
+                    len(normalized_length) == len(maximum_text) and normalized_length > maximum_text
+                ):
+                    raise CnDirectError(f"upstream response exceeds {maximum} bytes: {url}")
+                declared_length = int(normalized_length)
+
+            chunks: list[bytes] = []
+            total = 0
+            while True:
+                # Continue after short reads; one read is not necessarily the
+                # whole response. The extra byte detects an unknown/false size.
+                chunk = response.read(min(64 * 1024, maximum - total + 1))
+                if not isinstance(chunk, bytes):
+                    raise CnDirectError(f"upstream response was not returned as bytes: {url}")
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > maximum:
+                    raise CnDirectError(f"upstream response exceeds {maximum} bytes: {url}")
+                chunks.append(chunk)
+            if declared_length is not None and total != declared_length:
+                raise CnDirectError(
+                    f"upstream response length {total} does not match Content-Length {declared_length}: {url}"
+                )
+            data = b"".join(chunks)
     except CnDirectError:
         raise
     except Exception as exc:
         raise CnDirectError(f"could not fetch {url}: {exc}") from exc
-    if len(data) > maximum:
-        raise CnDirectError(f"upstream response exceeds {maximum} bytes: {url}")
     return data
 
 
@@ -805,6 +814,7 @@ def _wide_scope_candidates(
     current_domains: list[dict[str, Any]],
     previous_domains: Any,
     psl: PublicSuffixList,
+    explicitly_reviewed_scopes: set[tuple[str, str]] | None = None,
 ) -> list[dict[str, str]]:
     """Flag newly introduced broad merged scopes against the last accepted output."""
     if not isinstance(previous_domains, list):
@@ -823,6 +833,7 @@ def _wide_scope_candidates(
         labels = value.split(".")
         previous_ancestors.update(".".join(labels[index:]) for index in range(1, len(labels)))
     candidates: list[dict[str, str]] = []
+    explicitly_reviewed_scopes = explicitly_reviewed_scopes or set()
     for item in current_domains:
         typ, value = item["type"], item["value"]
         if typ != "DOMAIN-SUFFIX" or (typ, value) in previous_keys:
@@ -831,6 +842,10 @@ def _wide_scope_candidates(
         if _scope_covered_by_index(scope, previous_suffixes, previous_exacts):
             continue
         is_tld_or_psl = "." not in value or psl.suffix_for(value) == value
+        # An explicit direct policy selector is reviewed for its stated scope,
+        # but it must not silently waive the separate public-suffix safeguard.
+        if (typ, value) in explicitly_reviewed_scopes and not is_tld_or_psl:
+            continue
         widens_old_scope = value in previous_ancestors or value in previous_exacts
         if is_tld_or_psl or widens_old_scope:
             candidates.append({"type": typ, "value": value})
@@ -1043,6 +1058,44 @@ def _validate_first_match_evidence_refs(assertions: list[Any], domain_rules: lis
     return checked
 
 
+def _explicit_direct_rule_records(items: Iterable[Mapping[str, Any]]) -> list[Rule]:
+    records: list[Rule] = []
+    seen: set[tuple[str, str]] = set()
+    psl: PublicSuffixList | None = None
+    for index, item in enumerate(items):
+        label = f"explicit_direct_rules[{index}]"
+        if not isinstance(item, Mapping) or set(item) != {"type", "value", "reason", "reference", "review_date"}:
+            raise CnDirectError(f"{label} must use the reviewed direct-rule fields")
+        rule_type = item["type"]
+        if not isinstance(rule_type, str) or rule_type not in DOMAIN_TYPES:
+            raise CnDirectError(f"{label}.type must be DOMAIN or DOMAIN-SUFFIX")
+        value = canonical_policy_domain(item["value"], f"{label}.value")
+        if rule_type == "DOMAIN-SUFFIX":
+            if "." not in value:
+                raise CnDirectError(f"{label} cannot use a single-label DOMAIN-SUFFIX selector")
+            if psl is None:
+                psl = load_public_suffix_list()
+            if psl.suffix_for(value) == value:
+                raise CnDirectError(f"{label} cannot use a public-suffix DOMAIN-SUFFIX selector")
+        key = (rule_type, value)
+        if key in seen:
+            raise CnDirectError(f"duplicate explicit direct rule: {rule_type},{value}")
+        seen.add(key)
+        _nonempty_text(item["reason"], f"{label}.reason")
+        _nonempty_text(item["reference"], f"{label}.reference")
+        review_date = item["review_date"]
+        if not isinstance(review_date, str):
+            raise CnDirectError(f"{label}.review_date must be an ISO date")
+        try:
+            parsed_date = dt.date.fromisoformat(review_date)
+        except ValueError as exc:
+            raise CnDirectError(f"{label}.review_date must be an ISO date") from exc
+        if parsed_date.isoformat() != review_date:
+            raise CnDirectError(f"{label}.review_date must use YYYY-MM-DD")
+        records.append(Rule(rule_type, value, "policy.direct_rules", index + 1, f"{rule_type},{value}"))
+    return records
+
+
 def build_candidate(
     raw_sources: Mapping[str, bytes],
     policy: Mapping[str, Any],
@@ -1050,6 +1103,7 @@ def build_candidate(
     baseline: Mapping[str, Any] | None = None,
     converter_path: str | Path | None = None,
     source_provenance: Mapping[str, Any] | None = None,
+    explicit_direct_rules: Iterable[Mapping[str, Any]] = (),
 ) -> CnDirectCandidate:
     """Build all cn-direct client outputs from one six-source snapshot.
 
@@ -1059,6 +1113,8 @@ def build_candidate(
     bundle pending review.
     """
     policy = validate_policy(policy)
+    explicit_direct_rules = list(explicit_direct_rules)
+    direct_records = _explicit_direct_rule_records(explicit_direct_rules)
     if converter_path is None:
         raise CnDirectError("an approved --mrs-converter PATH is required for a complete cn-direct candidate")
     psl = load_public_suffix_list()
@@ -1115,6 +1171,10 @@ def build_candidate(
     for item in policy["adds"]:
         merge_records.append(Rule(item["type"], item["value"], "policy.adds", 0, f"{item['type']},{item['value']}"))
     merge_records, removed_rules = _remove_rules(merge_records, policy["removes"])
+    # These reviewed policy selectors are an independent direct source. Append
+    # them after source removals so they are never mistaken for cn_direct.adds.
+    merge_records.extend(direct_records)
+    direct_metadata = {(item["type"], item["value"]): dict(item) for item in explicit_direct_rules}
     accepted_domain_rules = [
         {
             "type": rule.type,
@@ -1122,6 +1182,7 @@ def build_candidate(
             "source": rule.source,
             "line": rule.line,
             "raw": rule.raw,
+            **(direct_metadata.get(rule.key, {}) if rule.source == "policy.direct_rules" else {}),
         }
         for rule in sorted(
             merge_records,
@@ -1135,8 +1196,8 @@ def build_candidate(
         or _acl_scope_has_qualified_accept(rule.key, decisions, psl)
     ]
     domain_rules, rule_origins = compress_domain_rules(merge_records)
-    if not policy["limits"]["minimum_output_rules"] <= len(domain_rules) <= policy["limits"]["maximum_output_rules"]:
-        raise CnDirectError("compressed cn-direct domain count is outside its hard policy limit")
+    if not domain_rules:
+        raise CnDirectError("compressed cn-direct domain output cannot be empty")
     assertions = _validate_first_match_evidence_refs(policy["first_match_assertions"], domain_rules)
     mihomo_special = sorted(
         {rule.key for name in ("sukka_direct_clash", "sukka_domestic_clash") for rule in parsed[name] if rule.type in {"DOMAIN-KEYWORD", "DOMAIN-WILDCARD"}},
@@ -1190,38 +1251,27 @@ def build_candidate(
             if declared[name].get("sha256") != source_hashes[name]:
                 raise CnDirectError(f"source_provenance SHA does not match {name} snapshot")
     source_diffs: dict[str, Any] = {}
-    quantity_errors: list[str] = []
     baseline_sources = baseline.get("source_rules", {}) if isinstance(baseline, Mapping) else {}
     for name in SOURCE_ORDER:
         previous = baseline_sources.get(name) if isinstance(baseline_sources, Mapping) else None
         delta = _set_delta({(item["type"], item["value"]) for item in source_rules[name]}, previous)
         source_diffs[name] = delta
-        if delta["before"]:
-            limits = policy["limits"]
-            allowed_add = max(limits["maximum_added_minimum"], int(delta["before"] * limits["maximum_added_ratio"]))
-            allowed_remove = max(limits["maximum_removed_minimum"], int(delta["before"] * limits["maximum_removed_ratio"]))
-            if delta["added"] > allowed_add:
-                quantity_errors.append(f"{name} added {delta['added']} rules; maximum is {allowed_add}")
-            if delta["removed"] > allowed_remove:
-                quantity_errors.append(f"{name} removed {delta['removed']} rules; maximum is {allowed_remove}")
     normalized_domain = [{"type": item["type"], "value": item["value"]} for item in domain_rules]
     wide_candidates = _wide_scope_candidates(
         normalized_domain,
         baseline.get("domain_rules") if isinstance(baseline, Mapping) else None,
         psl,
+        explicitly_reviewed_scopes={
+            (item["type"], item["value"])
+            for item in explicit_direct_rules
+            if item["type"] == "DOMAIN-SUFFIX"
+        },
     )
-    if wide_candidates:
-        quantity_errors.extend(
-            f"new broad cn-direct merged suffix requires review: {item['value']}"
-            for item in wide_candidates
-        )
+    semantic_review_errors = [
+        f"new broad cn-direct merged suffix requires review: {item['value']}"
+        for item in wide_candidates
+    ]
     domain_delta = _set_delta({(item["type"], item["value"]) for item in normalized_domain}, baseline.get("domain_rules") if isinstance(baseline, Mapping) else None)
-    if domain_delta["before"]:
-        limits = policy["limits"]
-        if domain_delta["added"] > max(limits["maximum_added_minimum"], int(domain_delta["before"] * limits["maximum_added_ratio"])):
-            quantity_errors.append(f"merged cn-direct domain output added {domain_delta['added']} rules above its limit")
-        if domain_delta["removed"] > max(limits["maximum_removed_minimum"], int(domain_delta["before"] * limits["maximum_removed_ratio"])):
-            quantity_errors.append(f"merged cn-direct domain output removed {domain_delta['removed']} rules above its limit")
     acl_excluded_counts = _rule_counts([rule for rule in parsed["acl_china_domain"] if rule.type in ACL_EXCLUDED_TYPES])
     acl_counts = _rule_counts(parsed["acl_china_domain"])
     source_counts = {name: len(source_rules[name]) for name in SOURCE_ORDER}
@@ -1277,7 +1327,7 @@ def build_candidate(
             },
         },
         "diffs": {"sources": source_diffs, "domain_output": domain_delta},
-        "quantity_errors": quantity_errors,
+        "semantic_review_errors": semantic_review_errors,
         "wide_scope_review_candidates": wide_candidates,
     }
     source_metadata["converter_execution"] = converter_execution

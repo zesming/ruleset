@@ -75,6 +75,27 @@ class CrossPlatformReplayTests(unittest.TestCase):
             self.assertEqual(proof["replay_execution"], actual)
             self.assertEqual(proof["output_sha256"], {p: build.sha256(data) for p, data in candidate.outputs.items()})
 
+    def test_offline_replay_forwards_uncompressed_policy_direct_rules(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate, manifest, published, _, _ = self.prepare(root)
+            candidate.provenance["converter_execution"] = published
+            direct_rules = [
+                {
+                    "type": "DOMAIN-SUFFIX",
+                    "value": "reviewed-direct.example.test",
+                    "reason": "Reviewed suffix selector.",
+                    "reference": "https://example.test/direct",
+                    "review_date": "2026-10-21",
+                },
+            ]
+            policy = {"cn_direct": {}, "direct_rules": direct_rules}
+            with mock.patch.object(build, "_build_cn_candidate", return_value=candidate) as build_cn:
+                replayed = build._replay_cn_candidate(root, policy, None, manifest)
+
+            self.assertIs(replayed, candidate)
+            self.assertEqual(build_cn.call_args.args[0]["direct_rules"], direct_rules)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -105,6 +105,39 @@ def _compact_candidate():
     return candidate
 
 
+def _candidate_with_test_dns_domains():
+    candidate = _candidate()
+    test_stage = {
+        "id": "network-test", "action": "TEST", "dns": "test", "reject_mode": None,
+        "extended_matching": False, "no_resolve": True,
+        "group_by_platform": {},
+        "rules": [
+            profile.Rule(rule_type, domain, (), "fixture", 1, platform)
+            for platform in ("mihomo", "surge")
+            for rule_type, domain in (
+                ("DOMAIN-SUFFIX", "speedtest.cn"),
+                ("DOMAIN-SUFFIX", "internal"),
+                ("DOMAIN", "api.istatmenus.app"),
+                ("DOMAIN", "api.us.zesming.fun"),
+            )
+        ],
+    }
+    content = b".speedtest.cn\n.internal\napi.istatmenus.app\napi.us.zesming.fun\n"
+    for platform in ("mihomo", "surge"):
+        extension = "mrs" if platform == "mihomo" else "set"
+        group, path, _ = _group(platform, "network-test", "network-test", "TEST")
+        group.update({
+            "dns": "test", "dns_path": path, "dns_kind": "route",
+            "dns_behavior": "domain-set", "dns_format": extension,
+            "sha256": hashlib.sha256(content).hexdigest(),
+        })
+        candidate.manifest["groups"][platform].insert(1, group)
+        candidate.files[path] = content
+        test_stage["group_by_platform"][platform] = group["id"]
+    candidate.stages.insert(1, test_stage)
+    return candidate
+
+
 class RendererOrderTests(unittest.TestCase):
     def test_jp_tuic_uses_its_own_endpoint_and_an_alpn_array(self):
         _, sections = clients._surge_sections("[Proxy]\nJP node = tuic-v5, jp.example, 443, uuid=fixture, password=fixture, alpn=h3\n")
@@ -790,6 +823,180 @@ class LegacyDnsSelectorTests(unittest.TestCase):
         self.assertFalse(extended)
         self.assertEqual([(rule.type, rule.value) for rule in rules], [("DOMAIN-WILDCARD", "*.byted.org")])
 
+    def test_mihomo_retires_fully_test_covered_public_dns_overrides(self):
+        candidate = _candidate_with_test_dns_domains()
+        policies = {
+            "+.speedtest.cn": ["https://dns.alidns.com/dns-query#DIRECT"],
+            "api.speedtest.cn": ["https://dns.google/dns-query#US"],
+            "*.speedtest.cn": ["https://dns.alidns.com/dns-query#DIRECT"],
+            "+.cn": ["https://dns.alidns.com/dns-query#DIRECT"],
+            "health.speedtest.cn": ["system"],
+            "+.internal": ["https://dns.alidns.com/dns-query#DIRECT"],
+            "custom.speedtest.cn": ["https://10.0.0.53/dns-query"],
+            "private.speedtest.cn": ["https://192.168.0.53/dns-query#DIRECT"],
+            "private-port.speedtest.cn": ["192.168.0.53:53#DIRECT"],
+            "private-v6.speedtest.cn": ["[fd00::53]:53#DIRECT"],
+        }
+        config = {
+            "rule-providers": {},
+            "dns": {"nameserver-policy": policies, "fake-ip-filter": []},
+            "proxies": [],
+        }
+
+        clients._set_mihomo_providers(config, candidate, "https://example.invalid/ref", ROOT)
+
+        migrated = config["dns"]["nameserver-policy"]
+        self.assertNotIn("+.speedtest.cn", migrated)
+        self.assertNotIn("api.speedtest.cn", migrated)
+        self.assertNotIn("*.speedtest.cn", migrated)
+        self.assertIn("+.cn", migrated)
+        self.assertIn("health.speedtest.cn", migrated)
+        self.assertIn("+.internal", migrated)
+        self.assertIn("custom.speedtest.cn", migrated)
+        self.assertIn("private.speedtest.cn", migrated)
+        self.assertIn("private-port.speedtest.cn", migrated)
+        self.assertIn("private-v6.speedtest.cn", migrated)
+
+    def test_retained_dns_comparison_uses_the_same_test_scope_retirement(self):
+        candidate = _candidate_with_test_dns_domains()
+        api = clients._load_api(ROOT)
+        aliases = clients._source_aliases(candidate, api)
+        baseline = {
+            "rule-providers": {},
+            "dns": {"nameserver-policy": {
+                "+.speedtest.cn": ["https://dns.alidns.com/dns-query#DIRECT"],
+                "api.speedtest.cn": ["https://dns.google/dns-query#US"],
+                "+.cn": ["https://dns.alidns.com/dns-query#DIRECT"],
+                "health.speedtest.cn": ["system"],
+                "+.internal": ["https://dns.alidns.com/dns-query#DIRECT"],
+                "custom.speedtest.cn": ["https://10.0.0.53/dns-query"],
+                "private.speedtest.cn": ["https://192.168.0.53/dns-query#DIRECT"],
+                "private-port.speedtest.cn": ["192.168.0.53:53#DIRECT"],
+                "private-v6.speedtest.cn": ["[fd00::53]:53#DIRECT"],
+            }},
+        }
+        unsupported = []
+        old_stages, _, _ = clients._parse_old_dns(api, "mihomo", candidate, baseline, aliases, unsupported)
+
+        retained = clients._retained_dns_stages(old_stages, candidate, "mihomo")
+
+        selectors = {stage["selector"] for stage in retained}
+        self.assertNotIn("+.speedtest.cn", selectors)
+        self.assertNotIn("api.speedtest.cn", selectors)
+        self.assertIn("+.cn", selectors)
+        self.assertIn("health.speedtest.cn", selectors)
+        self.assertIn("+.internal", selectors)
+        self.assertIn("custom.speedtest.cn", selectors)
+        self.assertIn("private.speedtest.cn", selectors)
+        self.assertIn("private-port.speedtest.cn", selectors)
+        self.assertIn("private-v6.speedtest.cn", selectors)
+
+    def test_surge_retires_only_fully_test_covered_public_dns_host_selectors(self):
+        candidate = _candidate_with_test_dns_domains()
+        lines = [
+            "*.speedtest.cn = server:https://223.5.5.5/dns-query",
+            "api.speedtest.cn = server:https://8.8.8.8/dns-query",
+            "*.cn = server:https://223.5.5.5/dns-query",
+            "health.speedtest.cn = server:system",
+            "*.internal = server:https://223.5.5.5/dns-query",
+            "custom.speedtest.cn = server:https://10.0.0.53/dns-query",
+            "private.speedtest.cn = server:https://192.168.0.53/dns-query#DIRECT",
+            "private-port.speedtest.cn = server:192.168.0.53:53#DIRECT",
+            "private-v6.speedtest.cn = server:[fd00::53]:53#DIRECT",
+            "mapped.speedtest.cn = 192.0.2.1",
+        ]
+        host = clients.SurgeSection("Host", "[Host]", list(lines))
+
+        clients._surge_dns(host, candidate, "https://example.invalid/ref", ROOT)
+
+        retained = set(host.lines)
+        self.assertNotIn(lines[0], retained)
+        self.assertNotIn(lines[1], retained)
+        for line in lines[2:]:
+            self.assertIn(line, retained)
+
+    def test_private_inline_direct_aliases_are_retired_only_when_they_are_builtin(self):
+        candidate = _candidate_with_test_dns_domains()
+        api = clients._load_api(ROOT)
+        aliases = clients._source_aliases(candidate, api)
+        route_lines = [
+            "DOMAIN-SUFFIX,speedtest.cn,🚀 Direct",
+            "DOMAIN-SUFFIX,speedtest.cn,direct-plus-proxy",
+            "DOMAIN-SUFFIX,speedtest.cn,dynamic-direct-alias",
+        ]
+
+        mihomo = {
+            "proxies": [{"name": "node"}],
+            "proxy-groups": [
+                {"name": "🚀 Direct", "proxies": ["DIRECT"]},
+                {"name": "direct-plus-proxy", "proxies": ["DIRECT", "node"]},
+                {
+                    "name": "dynamic-direct-alias", "proxies": ["DIRECT"],
+                    "use": ["provider"], "include-all": True,
+                },
+            ],
+            "rules": route_lines,
+        }
+        surge = (
+            "[Proxy]\n🚀 Direct = direct\nnode = ss, node.example, 443, "
+            "encrypt-method=aes-128-gcm, password=x\n"
+            "[Proxy Group]\ndirect-plus-proxy = select, DIRECT, node\n"
+            "dynamic-direct-alias = select, DIRECT, node\n"
+            "[Rule]\n" + "\n".join(route_lines) + "\n"
+        )
+
+        for platform, baseline in (("mihomo", mihomo), ("surge", surge)):
+            with self.subTest(platform=platform):
+                local = clients._private_inline_stages(
+                    api, platform, baseline, candidate, aliases, [],
+                )
+                retained_ids = {stage["id"] for stage in local}
+                self.assertNotIn(f"local-inline-{platform}-1", retained_ids)
+                self.assertIn(f"local-inline-{platform}-2", retained_ids)
+                self.assertIn(f"local-inline-{platform}-3", retained_ids)
+
+    def test_private_inline_direct_rules_yield_fully_covered_test_domains(self):
+        candidate = _candidate_with_test_dns_domains()
+        route_lines = [
+            "DOMAIN-SUFFIX,speedtest.cn,DIRECT",
+            "DOMAIN,probe.speedtest.cn,DIRECT",
+            "DOMAIN-SUFFIX,istatmenus.app,DIRECT",
+            "DOMAIN-SUFFIX,us.zesming.fun,DIRECT",
+            "DOMAIN,bootstrap.us.zesming.fun,DIRECT",
+            "DOMAIN-SUFFIX,company.internal,DIRECT",
+            "DOMAIN,portal.speedtest.cn,REJECT",
+        ]
+
+        for platform in ("mihomo", "surge"):
+            with self.subTest(platform=platform):
+                api = clients._load_api(ROOT)
+                aliases = clients._source_aliases(candidate, api)
+                baseline = (
+                    {"rules": route_lines, "rule-providers": {}}
+                    if platform == "mihomo"
+                    else "[Proxy]\n\n[Proxy Group]\n\n[Rule]\n" + "\n".join(route_lines) + "\n"
+                )
+                local = clients._private_inline_stages(api, platform, baseline, candidate, aliases, [])
+                retained = {(stage["action"], stage["rules"][0].type, stage["rules"][0].value) for stage in local}
+
+                self.assertNotIn(("DIRECT", "DOMAIN-SUFFIX", "speedtest.cn"), retained)
+                self.assertNotIn(("DIRECT", "DOMAIN", "probe.speedtest.cn"), retained)
+                self.assertIn(("DIRECT", "DOMAIN-SUFFIX", "istatmenus.app"), retained)
+                self.assertIn(("DIRECT", "DOMAIN-SUFFIX", "us.zesming.fun"), retained)
+                self.assertIn(("DIRECT", "DOMAIN", "bootstrap.us.zesming.fun"), retained)
+                self.assertIn(("DIRECT", "DOMAIN-SUFFIX", "company.internal"), retained)
+                self.assertIn(("REJECT", "DOMAIN", "portal.speedtest.cn"), retained)
+
+                if platform == "mihomo":
+                    test_stage = next(stage for stage in clients._make_dns_stages(candidate, platform) if stage["action"] == "TEST")
+                    subject = {"domain": "speedtest.cn"}
+                    route_index = api.RuleIndex([*local, test_stage], platform)
+                    route = clients._first_route(route_index, [*local, test_stage], subject, platform, api)
+                    dns_index = api.RuleIndex([test_stage], platform)
+                    dns, _, _ = clients._dns_match(dns_index, [test_stage], subject, platform, "US")
+                    self.assertEqual(route.action, "TEST")
+                    self.assertEqual(dns, "TEST")
+
     def test_legacy_provider_paths_resolve_to_canonical_source_identity(self):
         candidate = SimpleNamespace(stages=[{
             "rules": [
@@ -865,6 +1072,66 @@ class LegacyDnsSelectorTests(unittest.TestCase):
         self.assertEqual([rule.value for rule in replayed], ["att.example"])
         source_ids = clients._group_rule_sources(candidate, aliases.group_sources[source_id], "mihomo")
         self.assertEqual(source_ids, {"fixture"})
+
+    def test_old_compact_membership_count_does_not_limit_current_archived_rules(self):
+        candidate = _compact_candidate()
+        current = candidate.manifest["compact"]["groups"]["mihomo"][0]
+        old_group = {
+            **current,
+            "path": "rules/personal/mihomo/old-att-us-classical.mrs",
+            "rule_count": 316,
+        }
+        manifest = {"compact": {"groups": {"mihomo": [old_group], "surge": []}}}
+        aliases = clients._source_aliases(candidate, clients._load_api(ROOT), manifest)
+        source_id = clients._resolve_source_reference(old_group["path"], aliases, platform="mihomo")
+
+        replayed = clients._source_rules(candidate, source_id, "mihomo", aliases)
+
+        self.assertEqual([rule.value for rule in replayed], ["att.example"])
+
+    def test_old_compact_slot_mapping_rejects_semantically_ambiguous_current_groups(self):
+        candidate = _compact_candidate()
+        current = candidate.manifest["compact"]["groups"]["mihomo"][0]
+        physical = next(
+            stage for stage in candidate.compact_stages["mihomo"]
+            if stage["id"] == current["id"]
+        )
+        duplicate_id = "att-us-copy"
+        duplicate_group = {**current, "id": duplicate_id, "path": "rules/personal/mihomo/att-us-copy.mrs"}
+        duplicate_stage = {
+            **physical,
+            "id": duplicate_id,
+            "group_by_platform": {"mihomo": duplicate_id},
+        }
+        candidate.manifest["compact"]["groups"]["mihomo"].append(duplicate_group)
+        candidate.compact_stages["mihomo"].insert(len(candidate.manifest["compact"]["groups"]["mihomo"]) - 1, duplicate_stage)
+
+        old_group = {
+            **current,
+            "id": "old-att-us",
+            "path": "rules/personal/mihomo/old-att-us.mrs",
+            "rule_count": 316,
+        }
+        manifest = {"compact": {"groups": {"mihomo": [old_group], "surge": []}}}
+        aliases = clients._source_aliases(candidate, clients._load_api(ROOT), manifest)
+        source_id = clients._resolve_source_reference(old_group["path"], aliases, platform="mihomo")
+
+        with self.assertRaisesRegex(clients.ProfileClientsError, "semantically matching current archived group"):
+            clients._source_rules(candidate, source_id, "mihomo", aliases)
+
+    def test_report_markdown_discloses_current_archived_source_membership(self):
+        rendered = clients.render_report_markdown({
+            "source_membership": {
+                "basis": "current_archived_inputs",
+                "historic_baseline_membership_reconstructed": False,
+            },
+            "platforms": {},
+            "limitations": [
+                "Source membership basis is current_archived_inputs: baseline source references resolve to current archived inputs for both old and new configuration order; historical baseline source bytes and membership are not reconstructed.",
+            ],
+        })
+        self.assertIn("current_archived_inputs", rendered)
+        self.assertIn("historical baseline source bytes and membership are not reconstructed", rendered)
 
     def test_v1_manifest_full_github_urls_resolve_exact_platform_group(self):
         candidate = _candidate()
