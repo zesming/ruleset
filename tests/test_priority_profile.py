@@ -58,7 +58,7 @@ class PriorityProfileTests(unittest.TestCase):
     def test_compact_stages_follow_priority_order_and_keep_terminals_last(self) -> None:
         candidate = compile_candidate()
         expected = [
-            "lan", "test", "reject", "jp", "us", "cn-direct",
+            "lan", "reject", "test", "jp", "us", "cn-direct",
             "lan-ip", "reject-ip", "jp-ip", "us-ip", "direct-ip", "us-ip-late", "cn-ip",
         ]
 

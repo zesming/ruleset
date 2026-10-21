@@ -519,51 +519,37 @@
       "version": "v1.19.17"
     },
     "first_match_assertions": [],
-    "limits": {
-      "maximum_added_minimum": 0,
-      "maximum_added_ratio": 0.2,
-      "maximum_output_rules": 300000,
-      "maximum_removed_minimum": 0,
-      "maximum_removed_ratio": 0.1,
-      "minimum_output_rules": 1
-    },
     "removes": [],
     "schema": 1,
     "sources": {
       "acl_china_domain": {
         "archive_path": "upstream/cn-direct/acl-china-domain.list",
         "max_bytes": 1048576,
-        "max_rules": 10000,
         "snapshot_sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08"
       },
       "china_max": {
         "archive_path": "upstream/cn-direct/china-max-domain.txt",
         "max_bytes": 16777216,
-        "max_rules": 300000,
         "snapshot_sha256": "92f59e48f855628936e089989b58e55677adbf0cdd09d7dad507aac578574c6e"
       },
       "sukka_direct_clash": {
         "archive_path": "upstream/cn-direct/sukka-direct.txt",
         "max_bytes": 524288,
-        "max_rules": 10000,
         "snapshot_sha256": "881e44c53f74bb33e4ef7d132322d44ccfdb9cf403a3598bb4d83e127829343a"
       },
       "sukka_direct_surge": {
         "archive_path": "upstream/cn-direct/sukka-direct.conf",
         "max_bytes": 524288,
-        "max_rules": 10000,
         "snapshot_sha256": "46c65d1a59289d07f52f7652f9d1695d2996f65c125a14593b3eb7322086f8ec"
       },
       "sukka_domestic_clash": {
         "archive_path": "upstream/cn-direct/sukka-domestic.txt",
         "max_bytes": 524288,
-        "max_rules": 10000,
         "snapshot_sha256": "239960f1a15b76abef0f3bd78b66f0f502bf3bbdb5c1caaef5870e181deaec39"
       },
       "sukka_domestic_surge": {
         "archive_path": "upstream/cn-direct/sukka-domestic.conf",
         "max_bytes": 524288,
-        "max_rules": 10000,
         "snapshot_sha256": "b939098609fd21d1e7e1efed05947fc7f55856d12e016944635bc64d2d8470c2"
       }
     },
@@ -608,21 +594,12 @@
       "url": "https://raw.githubusercontent.com/publicsuffix/list/6cd82aff889e3d64e5e03bc5c1f43da1934a960a/LICENSE"
     }
   },
-  "limits": {
-    "maximum_added_minimum": 10,
-    "maximum_added_ratio": 0.2,
-    "maximum_removed_minimum": 5,
-    "maximum_removed_ratio": 0.1,
-    "maximum_rules_per_category": 1000,
-    "minimum_rules_per_category": 1
-  },
   "moves": [],
   "publish_hold": {
     "enabled": false,
     "reason": "",
     "rolled_back_release_id": ""
   },
-  "quantity_approvals": [],
   "regex_adapters": [
     {
       "output_type": "DOMAIN-WILDCARD",
@@ -692,10 +669,6 @@
     {
       "category": "network-test",
       "host": "ipinfo.io"
-    },
-    {
-      "category": "network-test",
-      "host": "whatismyip.akamai.com"
     }
   ],
   "schema": 1,
@@ -720,6 +693,183 @@
       "reason": "Observed as a CNAME alias for the ePDG endpoint in the local device capture; retained as this exact hostname without claiming it ensures successful calls.",
       "reference": "https://www.att.com/support/article/wireless/KM1114459/ (general background, not confirmation of this hostname); local device capture and CNAME observation 2026-10-18",
       "review_date": "2026-10-18"
+    }
+  ],
+  "direct_rules": [
+    {
+      "type": "DOMAIN",
+      "value": "ip.istatmenus.app",
+      "reason": "iStat Menus uses this exact endpoint to retrieve the public address and country JSON for its network menu. This entry remains exact-host scoped. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "https://ip.istatmenus.app/; https://bjango.com/help/istatmenus7/domains/; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ip.plyz.net",
+      "reason": "A documented consumer calls this host IP lookup API. It can accept a specified IP, so this does not imply every request reflects the caller or that it is required by shopping, login, or DDNS. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "https://github.com/leafney/rose-ip2region/blob/main/ipplyz/client.go; https://res.easydoc.net/doc/88522047/y5SMdgeJ/dvhjNKwZ; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ip.taobao.com",
+      "reason": "This is a legacy IP geolocation API host. The service announced permanent shutdown in 2022; retain the prior exact DIRECT behavior for compatibility without treating it as a shopping, login, or payment dependency. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "http://ip.taobao.com/instructions.php; https://ip.taobao.com/; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ip4.istatmenus.app",
+      "reason": "The reviewed iStat Menus service responds with public-address JSON on this exact IPv4 endpoint. This entry does not cover sibling or other iStat Menus hosts.",
+      "reference": "https://ip4.istatmenus.app/; https://bjango.com/help/istatmenus7/domains/; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ip6.istatmenus.app",
+      "reason": "The reviewed iStat Menus service responds with public-address JSON on this exact IPv6 endpoint. This entry does not cover sibling or other iStat Menus hosts.",
+      "reference": "https://ip6.istatmenus.app/; https://bjango.com/help/istatmenus7/domains/; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ipv4.ddnspod.com",
+      "reason": "This exact endpoint reports the caller public IPv4 address and is used by a documented DDNS client to update an A record. Proxying a caller can publish the proxy address; no assumption is made that users run this client. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "https://github.com/ddnspod/ddnspod.github.io; https://github.com/hex0x0/free-ddns; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ipv4.whatismyip.akamai.com",
+      "reason": "OPNsense identifies this exact IPv4 endpoint as a checkip provider and consumes its parsed address for DDNS. The selector does not cover other Akamai services. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "https://github.com/opnsense/plugins/blob/68646063/dns/ddclient/src/opnsense/scripts/ddclient/lib/address.py; https://github.com/opnsense/plugins/blob/68646063/dns/ddclient/src/opnsense/service/templates/OPNsense/ddclient/ddclient.conf; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ipv6.ddnspod.com",
+      "reason": "This exact endpoint reports the caller public IPv6 address and is used by a documented DDNS client to update an AAAA record. No assumption is made that users run this client. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "https://github.com/ddnspod/ddnspod.github.io; https://github.com/hex0x0/free-ddns; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "ipv6.whatismyip.akamai.com",
+      "reason": "OPNsense identifies this exact IPv6 endpoint as a checkip provider and consumes its parsed address for DDNS. The selector does not cover other Akamai services. Reviewed in the 2026-10-21 exact-endpoint audit.",
+      "reference": "https://github.com/opnsense/plugins/blob/68646063/dns/ddclient/src/opnsense/scripts/ddclient/lib/address.py; https://github.com/opnsense/plugins/blob/68646063/dns/ddclient/src/opnsense/service/templates/OPNsense/ddclient/ddclient.conf; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN",
+      "value": "whatismyip.akamai.com",
+      "reason": "The Akamai public endpoint reports the caller address. Keep this exact host direct; do not extend the rule to other Akamai hosts.",
+      "reference": "https://github.com/akamai/cli-eaa/blob/main/docs/commands/akamai-eaa-connector.md; .devflow/actions-network-test/audit-direct-api.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "check-host.cn",
+      "reason": "Root advertises IP/domain WHOIS, BGP/ASN lookup and real-time server, website and critical-service monitoring; not solely the visitor's exit-IP check. Same brand on .cc/.net not assumed same ownership. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://check-host.cn; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "cz88.net",
+      "reason": "Official product catalogue offers online geolocation APIs, network-risk APIs and downloadable offline IP databases for production user positioning, advertising, anti-fraud, and local deployment. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://cz88.net; https://www.cz88.net/geo-commercial; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ifconfig.cc",
+      "reason": "Root documents caller-IP HTTP/CLI access and explicitly advertises ip2region MCP at mcp.ifconfig.cc. Whole suffix also captures MCP geolocation tooling; MCP endpoint returned 406 to crawler, so no runtime protocol test performed. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ifconfig.cc; https://mcp.ifconfig.cc; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip-api.cn",
+      "reason": "Own root documents WHOIS /whois, geolocation /ip/{ip}, and website screenshot /web_thumbnail REST APIs for integration. Do not identify it with ip-api.com by its similar name. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ip-api.cn; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip-api.com.cn",
+      "reason": "Own root and /docs position this as a developer geolocation service with user-browser/server integration, batch API and DNS API. Branding duplicates IP-API.com; ownership/alias relationship and actual API host remain unverified. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ip-api.com.cn; https://ip-api.com.cn/docs/; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip.cn",
+      "reason": "Official root lists phone location, ICP/WHOIS/DNS lookup, password generation, conversion/calculation, mortgage, gold price, exchange rates, weather, train, sports, identity and parcel lookup. Toolbox routing is affected in addition to exit lookup. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ip.cn; http://www.ip.cn/beian.html; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip.com.cn",
+      "reason": "HTTPS apex/www gave crawl errors; HTTP apex timed out. Two targeted searches produced no qualifying exact-domain official content. Similar ip.cn results deliberately excluded. Current business and all subdomains unresolved. Keep the existing DIRECT suffix behavior for compatibility; business and subdomain scope remain unknown.",
+      "reference": "https://ip.com.cn; https://www.ip.com.cn; http://ip.com.cn; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip.plus",
+      "reason": "Official docs explicitly publish api.ip.plus, api4.ip.plus and api6.ip.plus for arbitrary-IP geolocation. Official download page publishes files.ip.plus/Country.mmdb and files.ip.plus/chnroutes.mmdb; suffix change would capture database downloads/automated route-list updates as well as checkers 4.ip.plus and 6.ip.plus. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ip.plus/docs; https://ip.plus/download; https://ip.plus/whois/; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip138.com",
+      "reason": "Official homepage contains extensive daily-life/developer tools; user.ip138.com documents paid IP and phone lookup APIs. Official IP documentation names api.ip138.com/ipdata/ and /status/, supports optional target IP (otherwise caller IP), and provides frontend JavaScript integration examples. qq.ip138.com/train/ is a same-suffix train utility. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ip138.com; https://user.ip138.com/; https://user.ip138.com/ip/doc/; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ip9.com.cn",
+      "reason": "Official page documents GET /get for caller IP and /get?ip= for arbitrary-IP geolocation, code samples, 60/min per-IP limits, VIP/private deployment and production scenarios including personalization, advertising, anti-fraud and network optimization. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "http://ip9.com.cn; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ipchaxun.com",
+      "reason": "Official root currently displays DNSDB/domain-IP lookup and a large IP/domain history database, not just the current public IP. An official indexed IP-specific page lists historical domain-to-IP associations. Redirect/branding relationship with dnsdblookup.com not verified. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ipchaxun.com; https://ipchaxun.com/119.96.249.136/; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ipchaxun.net",
+      "reason": "Root shows IPv6 lookup and navigation labelled IP calculator, train query, IP testing and weather. The fetched text does not establish whether train/weather destinations share this suffix; www fetch returned a 301 response. Broader hosted-tool scope remains uncertain. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ipchaxun.net; https://www.ipchaxun.net/; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ipsearch.com.cn",
+      "reason": "Own landing page advertises batch IP processing, download/install workflow and a paid high-concurrency business API for fraud control, profiling and advertising. No concrete API endpoint or independently verified integration found; catalogue statements warrant conservative scope treatment. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ipsearch.com.cn; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "ipsee.cn",
+      "reason": "Own root documents /api/v2?ip= JSON and /api/v1?ip= text arbitrary IPv4 geolocation plus separate /api/myip endpoint. Same apex/www host serves API paths, so exact-host narrowing cannot isolate self-IP paths. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://ipsee.cn; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
+      "value": "todetect.cn",
+      "reason": "Root provides IP/DNS/WebRTC plus Canvas/WebGL/device fingerprint diagnostics. Official about page positions the business as security services for enterprises and developers; official article advertises API integration (JavaScript/Python/PHP). Concrete API host/endpoint and actual production callers are unverified. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
+      "reference": "https://todetect.cn; https://www.todetect.cn/aboutus/; https://www.todetect.cn/article/industry-trends/todetect-browser-fingerprint-tool/; .devflow/actions-network-test/audit-direct-suffix.json",
+      "review_date": "2026-10-21"
     }
   ],
   "surge_process_rules": [

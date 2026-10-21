@@ -14,7 +14,6 @@
   "network-test": [
     "ipinfo.io",
     "speedtest.net",
-    "whatismyip.akamai.com",
     "whatismyip.com"
   ]
 }

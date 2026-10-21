@@ -80,14 +80,15 @@
       "expected_stage_match": true
     },
     {
-      "id": "test-cn-overlap-witness",
+      "id": "public-address-api-stays-direct",
       "kind": "literal-domain",
       "platforms": ["mihomo", "surge"],
       "evidence": "archive",
       "subject": {"domain": "whatismyip.akamai.com"},
-      "expected_new_slot": "test",
-      "expected_new_action": "TEST",
-      "expected_membership": ["network-test", "cn-direct-domain"]
+      "expected_new_slot": "cn-direct",
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "DIRECT",
+      "expected_membership": ["cn-direct-domain"]
     },
     {
       "id": "company-lan-archived-member",
@@ -194,15 +195,6 @@
       "expected_new_action": "DIRECT"
     },
     {
-      "id": "retained-speedtest-before-test-stage",
-      "kind": "literal-domain",
-      "platforms": ["mihomo", "surge"],
-      "evidence": "baseline-inline",
-      "subject": {"domain": "speedtest.cn"},
-      "expected_old_action": "DIRECT",
-      "expected_new_action": "DIRECT"
-    },
-    {
       "id": "retained-mihomo-dashboard-domains",
       "kind": "literal-domain",
       "platforms": ["mihomo"],
@@ -230,14 +222,91 @@
       "expected_new_stage_last": true,
       "expected_new_action": "US",
       "expected_new_dns": "US"
+    },
+    {
+      "id": "tracking-test-domain-is-rejected",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "iplogger.com"},
+      "expected_new_slot": "reject",
+      "expected_new_action": "REJECT",
+      "expected_new_dns": "US",
+      "expected_membership": ["reject-extra"]
+    },
+    {
+      "id": "ipv4-ddns-discovery-stays-direct",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "ipv4.ddnspod.com"},
+      "expected_new_slot": "cn-direct",
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "DIRECT",
+      "expected_membership": ["cn-direct-domain"]
+    },
+    {
+      "id": "application-public-address-stays-direct",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "ip4.istatmenus.app"},
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "DIRECT",
+      "expected_membership": ["cn-direct-domain"]
+    },
+    {
+      "id": "database-download-stays-direct",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "files.ip.plus"},
+      "expected_new_slot": "cn-direct",
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "DIRECT",
+      "expected_membership": ["cn-direct-domain"]
+    },
+    {
+      "id": "paid-geolocation-api-stays-direct",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "api.ip138.com"},
+      "expected_new_slot": "cn-direct",
+      "expected_new_action": "DIRECT",
+      "expected_new_dns": "DIRECT",
+      "expected_membership": ["cn-direct-domain"]
+    },
+    {
+      "id": "interactive-exit-check-follows-test",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "cip.cc"},
+      "expected_new_slot": "test",
+      "expected_new_action": "TEST",
+      "expected_new_dns": "TEST",
+      "expected_membership": ["network-test"]
+    },
+    {
+      "id": "test-site-dns-follows-selected-exit",
+      "kind": "literal-domain",
+      "platforms": ["mihomo", "surge"],
+      "evidence": "archive",
+      "subject": {"domain": "speedtest.cn"},
+      "expected_old_action": "DIRECT",
+      "expected_new_slot": "test",
+      "expected_new_action": "TEST",
+      "expected_new_dns": "TEST",
+      "expected_membership": ["network-test"]
     }
   ],
   "expected_changes": [
     {"id": "mihomo-fake-ip-explicit", "description": "Keep the deployed fake-ip mode and real-IP exclusions; report resolver ownership separately."},
     {"id": "nintendo-real-ip", "description": "Preserve both ATT real-IP entries and the existing srv.nintendo.net and n.n.srv.nintendo.net STUN exclusions."},
     {"id": "node-endpoint-bypass", "description": "Add direct rules for upstream proxy node IPs and hostnames to prevent proxy and DNS loops."},
-    {"id": "mihomo-test-selector", "description": "Mihomo exposes the US and JP TUIC nodes as direct leaves and retains only TEST = select, US, JP, DIRECT."},
-    {"id": "surge-country-selectors", "description": "Surge retains one Snell protocol version 6 and one TUIC leaf per country; TEST lists those four direct leaves and DIRECT."},
+    {"id": "mihomo-test-selector", "description": "Mihomo keeps the US and JP TUIC leaves and Test selector with their deployed display names."},
+    {"id": "surge-country-selectors", "description": "Surge keeps one Smart group per country with Snell v6 and TUIC; Test selects US, JP or Direct."},
     {"id": "legacy-auto-fixed-us", "description": "Legacy proxy and cross-country Smart targets are normalized to fixed US based on the observed baseline selection; country selection is explicit in the candidate."},
     {"id": "dns-endpoints", "description": "Keep the dual US and domestic resolver sets, use one JP endpoint and a dedicated TEST endpoint, and limit endpoint routing to protocol-qualified DoH rules."}
   ],

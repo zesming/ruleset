@@ -17,9 +17,11 @@
 
 AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 的 `meta` 分支，每轮固定到一个提交。
 
+`direct` 与 `us` 是单独的人工维护入口。`direct_rules` 生成 `rules/direct.list` 和 `rules/surge/direct.set`，同一份域名范围合入 `cn-direct`，并从 Test 输出排除。Test 后缀覆盖某个精确直连子域时，保守移除该 Test 父域并记录影响范围，不扩大直连范围。客户端继续引用现有聚合。
+
 `us` 是单独的人工维护入口，不属于 Meta 来源类别，也不参与 AI 的 `cn-direct` 自动分类。编辑 `policy.json` 的 `us_rules` 后，构建会生成 `rules/us.list`（Mihomo / classical）和 `rules/surge/us.set`（Surge domain-set），并把二者的哈希、数量、来源和复核日期写入 `manifest.json`。精确 `DOMAIN` 在 Surge `.set` 中不带前导点；若经复核以后加入 `DOMAIN-SUFFIX`，则使用前导点表达后缀范围。
 
-目前只有三个逐主机规则：`sentitlement2.mobile.att.net`、`epdg.epc.att.net`、`epdg.epc.att-idns.net`。后一个主机来自本机抓包中的 CNAME 观察。AT&T 文档 [KM1114459](https://www.att.com/support/article/wireless/KM1114459/) 作一般背景参考，主机范围来自本机验证；规则选择出口，不保证通话成功。客户端需单独维护所需的真实 DNS，个人聚合中将它们归入 `US`，位于基础设施直连、TEST 和拦截之后、普通直连之前；绑定到具备所需 UDP 能力的美国节点。单独接入此细分类的消费者自行确定顺序。
+目前只有三个逐主机规则：`sentitlement2.mobile.att.net`、`epdg.epc.att.net`、`epdg.epc.att-idns.net`。后一个主机来自本机抓包中的 CNAME 观察。AT&T 文档 [KM1114459](https://www.att.com/support/article/wireless/KM1114459/) 作一般背景参考，主机范围来自本机验证；规则选择出口，不保证通话成功。客户端需单独维护所需的真实 DNS，个人聚合中将它们归入 `US`，位于基础设施直连、拦截和 TEST 之后、普通直连之前；绑定到具备所需 UDP 能力的美国节点。单独接入此细分类的消费者自行确定顺序。
 
 国内直连聚合 3 个上游项目、4 个逻辑集合、6 个实际输入：ChinaMax Domain、ACL4SSR ChinaDomain，以及 Sukka direct/domestic 的 Clash、Surge 版本。ChinaMax 和 ACL 各固定一个 Git 提交；Sukka 的四份官方发布文件分别记录哈希和头部信息。原文保存在 `upstream/cn-direct/`，域名跨平台合并，平台表达式分别输出；ACL 待审增量不进入直连规则。
 
@@ -29,7 +31,7 @@ AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX
 
 每次构建会在应用 `policy.json` 后，读取 `cn_direct` 聚合器提供的已接受纯域名输入：删除项已移除、域名压缩尚未执行。ACL 域名只有在 `acl_review` 对相应范围显式标记 `accept` 后，才会作为自动分类证据；即使该 ACL 项被更宽的 base 域名覆盖、因此继续留在 cn-direct 合并输出中，`candidate`、`reject` 和未审记录都不提供窄范围证据。只有当一个 `ai-global` `DOMAIN` 或 `DOMAIN-SUFFIX` 的完整匹配范围被一个 `cn-direct` 纯域名规则完整覆盖时，构建才把它归入 `ai-cn` 的直连路由分类。直连证据必须是多标签且不是有效公共后缀；待审 ACL、关键词、通配符、进程、IP、PSL 父域以及 GeoIP 不会推动自动归类。
 
-显式全局 `adds` 或 `moves` 只要与整条规则语义重叠，就保护该全局规则。单个精确域名不能覆盖后缀规则；子后缀或子域名只构成部分重叠时，规则保留原分类，审计会给出范围和来源摘要。全局通配符只审计、不自动移动；`ai-cn` 与直连规则可以重叠，`network-test` 始终保持 TEST。构建重新计算分类，不改写 Meta 来源类别，因此来源迁移 gate 仍按原类别运行；直连证据消失时，规则下一轮恢复到来源分类，输出差异继续经过数量和发布身份检查。`manifest.json` 的 `routing_ownership` 汇总归属与重叠，输出来源清单记录自动分类所用的直连规则、来源哈希、归档路径、行号和原文。此分类描述路由选择，不代表服务商国籍、产品地区或服务可用性。
+显式全局 `adds` 或 `moves` 只要与整条规则语义重叠，就保护该全局规则。单个精确域名不能覆盖后缀规则；子后缀或子域名只构成部分重叠时，规则保留原分类，审计会给出范围和来源摘要。全局通配符只审计、不自动移动；`ai-cn` 与直连规则可以重叠，`network-test` 除显式 `direct_rules` 排除范围外保持 TEST。构建重新计算分类，不改写 Meta 来源类别，因此来源差异仍按原类别记录；直连证据消失时，规则下一轮恢复到来源分类。输出变更保留差异和发布身份校验，不设规则条数或增删比例门槛。`manifest.json` 的 `routing_ownership` 汇总归属与重叠，输出来源清单记录自动分类所用的直连规则、来源哈希、归档路径、行号和原文。此分类描述路由选择，不代表服务商国籍、产品地区或服务可用性。
 
 ## 怎么用
 
@@ -44,11 +46,11 @@ AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX
 | `route_assertions` | 校验指定域名的预期分类 |
 | `surge_process_rules` | 维护 Surge macOS 的 AI 进程兜底，附 `reference` 与 `review_date` |
 | `us_rules` | 维护需要固定到美国出口的逐主机规则；每项须有 `reason`、`reference` 与 `review_date` |
-| `cn_direct` | 国内直连来源、类型白名单、ACL 增量、宽后缀复核、补充/排除与规模门槛 |
-| `quantity_approvals` | 按完整候选身份批准需人工复核的变化 |
+| `direct_rules` | 单独维护应直连的后台接口、API 与混合业务范围；同时合入 cn-direct 并从 Test 排除 |
+| `cn_direct` | 国内直连来源、类型白名单、ACL 增量、宽后缀复核和补充/排除 |
 | `publish_hold` | 暂停发布，保留当前规则版本 |
 
-人工补充与上游或其他分类冲突时构建会停止。新增 `us_rules` 时，只加入已复核的必要范围并使用精确 `DOMAIN` 限定单主机；Surge `.set` 对精确域名不加前导点。该字段不改变 `network-test`、AI 或 `cn-direct` 的自动分类。客户端单独维护所需的真实 DNS，并确认绑定的美国出口能承载所需 UDP。
+规则重复会去重；多个分类覆盖同一请求时按阶段优先级选择。互相矛盾的人工补充、移动或排除仍会停止构建。新增 `us_rules` 时，只加入已复核的必要范围并使用精确 `DOMAIN` 限定单主机；Surge `.set` 对精确域名不加前导点。该字段不改变 `network-test`、AI 或 `cn-direct` 的自动分类。客户端单独维护所需的真实 DNS，并确认绑定的美国出口能承载所需 UDP。
 
 ### 构建和验证
 
@@ -62,7 +64,7 @@ python3 scripts/build.py update
 python3 scripts/build.py validate --offline
 ```
 
-`update` 抓取上游、生成候选并验证；`validate --offline` 用仓库内快照重放。下载、语法、分类、规模、复核或重放失败时，Actions 保留最后一个可用版本，诊断见 `.build-report/` 或对应工作流的 artifact。
+`update` 抓取上游、生成候选并验证；`validate --offline` 用仓库内快照重放。下载、语法、人工意图、范围复核或重放失败时，Actions 保留最后一个可用版本，诊断见 `.build-report/` 或对应工作流的 artifact。
 
 离线重放默认要求原发布平台。需要在另一允许平台验证时使用：
 
@@ -100,11 +102,11 @@ python3 scripts/personal_profile.py validate --offline
 python3 scripts/profile_clients.py render
 ```
 
-客户端顺序为：必要直连例外 → TEST → REJECT → JP → US/必须代理 → 普通直连 → 后置 IP 规则 → GEOIP CN → US。LAN 使用系统 DNS，普通直连使用国内 DNS；节点与本地明确例外仍按客户端原有设置处理。Sukka direct 的宽范围业务规则并入后段普通直连，避免盖过拦截或明确代理。
+客户端顺序为：必要直连例外 → REJECT → TEST → JP → US/必须代理 → 普通直连 → 后置 IP 规则 → GEOIP CN → US。LAN 使用系统 DNS，普通直连使用国内 DNS；节点与本地明确例外仍按客户端原有设置处理。Sukka direct 的宽范围业务规则并入后段普通直连，避免盖过拦截或明确代理。
 
 纯域名的 Mihomo 输出使用同一个已注册的 `MIHOMO_CONVERTER`，Surge 使用 DOMAIN-SET；包含通配符、关键词、进程或 IP 的输出保留对应规则类型。拒绝子类型、Surge extended-matching 与 no-resolve 作为语义边界保留，不按出口名称直接压成四个文件。终结 GEOIP/MATCH/FINAL 规则保留在客户端规则段，不嵌入远端集合。
 
-`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希；`compact` 记录客户端物理聚合顺序，原 `groups` 保留细分类接口。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、数量门槛或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
+`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希；`compact` 记录客户端物理聚合顺序，原 `groups` 保留细分类接口。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、完整性或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
 
 普通成员变化允许自动更新。输出路径、动作、DNS 意图、格式、标志或阶段组合发生变化时属于客户端接口迁移，应同步生成、对照并验证新配置后显式接受；不得让日常更新静默删除旧客户端正在订阅的资源。
 

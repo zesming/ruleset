@@ -9,7 +9,7 @@
 | `rules/personal/` | `mihomo/route/` 与 `surge/route/` 下的客户端聚合规则，如 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test` |
 | `rules/` | 细分类规则 |
 | `profiles/us-primary.json` | 个人分流顺序与聚合定义 |
-| `policy.json` | 人工规则与复核决定 |
+| `policy.json` | 人工规则与复核决定；`direct_rules` 合入直连并从 Test 排除 |
 | `upstream/` | 来源快照、清单与内容哈希 |
 
 接入片段：[Mihomo / OpenClash](examples/personal-mihomo.yaml)、[Surge](examples/personal-surge.conf)。细分类示例：[Mihomo](examples/mihomo.yaml)、[Surge](examples/surge.conf)。

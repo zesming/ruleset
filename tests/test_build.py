@@ -82,7 +82,7 @@ def cn_candidate_with_scopes(*scopes: tuple[str, str], source_hash: str = "c" * 
         accepted_domain_rules=accepted,
         source_hashes={"china_max": source_hash},
         outputs={},
-        manifest={"converter": None, "quantity_errors": []},
+        manifest={"converter": None, "semantic_review_errors": []},
         provenance={},
     )
 
@@ -625,37 +625,29 @@ class PolicyAndBuildTests(unittest.TestCase):
         right["moves"] = list(reversed(right["moves"]))
         self.assertEqual(build.canonical_bytes(build.semantic_policy(left)), build.canonical_bytes(build.semantic_policy(right)))
 
-    def test_quantity_gate_reports_stable_candidate_and_exact_approval_bypasses_only_quantity(self) -> None:
+    def test_large_source_and_output_delta_is_accepted_and_reported(self) -> None:
         first = candidate()
         baseline = baseline_from(first)
         new_sources = fixture_sources()
-        new_sources["global"] = append_rules(new_sources["global"], *(f"DOMAIN,new-{index}.example" for index in range(11)))
-        policy = policy_value()
-        rejected = candidate(new_sources, policy=policy, baseline=baseline, meta_sha=META_SHA_B)
-        self.assertTrue(rejected.quantity_errors)
-        with self.assertRaisesRegex(build.BuildError, rejected.candidate_id):
-            build.enforce_quantity_gate(rejected, policy)
-        policy["quantity_approvals"] = [{"candidate_id": rejected.candidate_id, "reason": "Reviewed source change.", "approved_on": "2026-09-26"}]
-        approved = candidate(new_sources, policy=policy, baseline=baseline, meta_sha=META_SHA_B)
-        self.assertEqual(rejected.candidate_id, approved.candidate_id)
-        build.enforce_quantity_gate(approved, policy)
-        self.assertTrue(approved.quantity_errors)
+        additions = [f"DOMAIN,new-{index}.example" for index in range(1_101)]
+        new_sources["global"] = append_rules(new_sources["global"], *additions)
+        result = candidate(new_sources, baseline=baseline, meta_sha=META_SHA_B)
 
-    def test_additions_and_removals_are_gated_separately_even_at_net_zero(self) -> None:
+        self.assertEqual(len(result.manifest["diffs"]["source"]["global"]["added"]), 1_101)
+        self.assertEqual(len(result.manifest["diffs"]["output"]["global"]["added"]), 1_101)
+        self.assertGreater(len(result.manifest["outputs"]["global"]["rules"]), 1_000)
+        self.assertNotIn("quantity_errors", result.manifest)
+
+    def test_upstream_byte_limit_and_nonempty_format_guards_remain(self) -> None:
         sources = fixture_sources()
-        filler = [f"DOMAIN,old-{index}.example" for index in range(20)]
-        sources["global"] = append_rules(sources["global"], *filler)
-        first = candidate(sources)
-        baseline = baseline_from(first)
-        changed = remove_rule(sources["global"], "DOMAIN,old-0.example")
-        for index in range(1, 11):
-            changed = remove_rule(changed, f"DOMAIN,old-{index}.example")
-        changed = append_rules(changed, *(f"DOMAIN,new-{index}.example" for index in range(11)))
-        changed_sources = {**sources, "global": changed}
-        result = candidate(changed_sources, baseline=baseline, meta_sha=META_SHA_B)
-        self.assertEqual(len(result.manifest["diffs"]["source"]["global"]["added"]), 11)
-        self.assertEqual(len(result.manifest["diffs"]["source"]["global"]["removed"]), 11)
-        self.assertGreaterEqual(len(result.quantity_errors), 2)
+        sources["global"] = b"x" * (build.MAX_SOURCE_BYTES + 1)
+        with self.assertRaisesRegex(build.BuildError, "global source exceeds the size limit"):
+            candidate(sources)
+
+        empty_sources = fixture_sources()
+        empty_sources["network-test"] = b""
+        with self.assertRaisesRegex(build.BuildError, "network-test source is empty"):
+            candidate(empty_sources)
 
     def test_candidate_changes_when_source_tool_semantics_or_baseline_changes(self) -> None:
         base = candidate()
@@ -690,8 +682,10 @@ class NetworkTestCategoryTests(unittest.TestCase):
         self.assertIn(("DOMAIN-SUFFIX", "whatismyip.com"), nt_rules)
         self.assertIn(("DOMAIN-SUFFIX", "speedtest.net"), nt_rules)
         self.assertIn(("DOMAIN-SUFFIX", "ipinfo.io"), nt_rules)
-        self.assertIn(("DOMAIN", "whatismyip.akamai.com"), nt_rules)
+        self.assertNotIn(("DOMAIN", "whatismyip.akamai.com"), nt_rules)
         self.assertIn(("DOMAIN-SUFFIX", "fast.com"), nt_rules)
+        direct_lines = result.manual_files[build.DIRECT_RULES_PATH].decode("utf-8").splitlines()
+        self.assertIn("DOMAIN,whatismyip.akamai.com", direct_lines)
 
     def test_surge_domain_set_conversion_matches_classical_semantics(self) -> None:
         rules = [
@@ -738,6 +732,48 @@ class NetworkTestCategoryTests(unittest.TestCase):
             self.assertEqual({r.category for r in records if build.rule_matches_host(r, host)}, {"network-test"})
 
 
+class HTTPResponseTests(unittest.TestCase):
+    url = "https://raw.githubusercontent.com/example/repo/main/rules.list"
+
+    def response(self, *, chunks: list[bytes], headers: dict[str, str] | None = None):
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.status = 200
+        response.headers = headers or {}
+        response.geturl.return_value = self.url
+        response.read.side_effect = chunks
+        return response
+
+    def test_response_bytes_rejects_truncated_declared_body(self) -> None:
+        response = self.response(chunks=[b"DOMAIN", b""], headers={"Content-Length": "10"})
+        with mock.patch.object(build.urllib.request, "urlopen", return_value=response):
+            with self.assertRaisesRegex(build.BuildError, "does not match Content-Length 10"):
+                build._response_bytes(self.url, 100)
+
+    def test_response_bytes_collects_short_reads_until_eof_without_length(self) -> None:
+        chunks = [b"DOM", b"AIN,valid.", b"example\n", b""]
+        response = self.response(chunks=chunks)
+        with mock.patch.object(build.urllib.request, "urlopen", return_value=response):
+            self.assertEqual(build._response_bytes(self.url, 100), b"".join(chunks[:-1]))
+        self.assertEqual(response.read.call_count, len(chunks))
+
+    def test_response_bytes_rejects_unknown_length_overflow(self) -> None:
+        response = self.response(chunks=[b"abc", b"def"], headers={})
+        with mock.patch.object(build.urllib.request, "urlopen", return_value=response):
+            with self.assertRaisesRegex(build.BuildError, "exceeds the 5-byte limit"):
+                build._response_bytes(self.url, 5)
+
+    def test_response_bytes_rejects_invalid_or_over_limit_length_headers(self) -> None:
+        for header in ("-1", "abc", "6"):
+            response = self.response(chunks=[b""], headers={"Content-Length": header})
+            with self.subTest(content_length=header), mock.patch.object(
+                build.urllib.request, "urlopen", return_value=response
+            ):
+                with self.assertRaises(build.BuildError):
+                    build._response_bytes(self.url, 5)
+            response.read.assert_not_called()
+
+
 class FetchAndUpdateTests(unittest.TestCase):
     def test_cn_direct_cannot_be_implicitly_retired_by_removing_policy(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -755,6 +791,8 @@ class FetchAndUpdateTests(unittest.TestCase):
                     build.SURGE_PROCESS_RULES_PATH,
                     build.US_RULES_PATH,
                     build.SURGE_US_RULES_PATH,
+                    build.DIRECT_RULES_PATH,
+                    build.SURGE_DIRECT_RULES_PATH,
                     "manifest.json",
                     "upstream/provenance.json",
                     "CHECKED_AT.json",
@@ -819,6 +857,8 @@ class FetchAndUpdateTests(unittest.TestCase):
                 build.SURGE_PROCESS_RULES_PATH,
                 build.US_RULES_PATH,
                 build.SURGE_US_RULES_PATH,
+                build.DIRECT_RULES_PATH,
+                build.SURGE_DIRECT_RULES_PATH,
                 "upstream/provenance.json",
                 "manifest.json",
                 "CHECKED_AT.json",
@@ -840,6 +880,8 @@ class FetchAndUpdateTests(unittest.TestCase):
                 build.SURGE_PROCESS_RULES_PATH,
                 build.US_RULES_PATH,
                 build.SURGE_US_RULES_PATH,
+                build.DIRECT_RULES_PATH,
+                build.SURGE_DIRECT_RULES_PATH,
                 "upstream/provenance.json",
                 "manifest.json",
                 "CHECKED_AT.json",
@@ -878,7 +920,7 @@ class FetchAndUpdateTests(unittest.TestCase):
             self.assertTrue((root / ".build-report/evidence/source-meta.json").is_file())
             self.assertFalse((root / "manifest.json").exists())
 
-    def test_quantity_failure_report_has_exact_candidate_and_diff_then_exact_approval_replays(self) -> None:
+    def test_large_source_delta_is_published_and_offline_replay_needs_no_quantity_approval(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             prepare_temp_root(root)
@@ -889,29 +931,15 @@ class FetchAndUpdateTests(unittest.TestCase):
             commit_workspace(root, "first accepted fixture release")
 
             changed_sources = dict(base_sources)
-            changed_sources["global"] = append_rules(base_sources["global"], *(f"DOMAIN,new-{index}.example" for index in range(11)))
+            changed_sources["global"] = append_rules(
+                base_sources["global"], *(f"DOMAIN,new-{index}.example" for index in range(1_101))
+            )
             with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(changed_sources, META_SHA_B)):
-                with self.assertRaisesRegex(build.BuildError, "Quantity gate rejected candidate"):
-                    build.run_update(root, "2026-09-02T00:00:00Z")
+                accepted = build.run_update(root, "2026-09-02T00:00:00Z")
+            self.assertEqual(accepted["status"], "released")
             report = json.loads((root / ".build-report/result.json").read_text(encoding="utf-8"))
             self.assertRegex(report["candidate_id"], r"^[0-9a-f]{64}$")
-            self.assertEqual(len(report["diffs"]["source"]["global"]["added"]), 11)
-            self.assertTrue(report["quantity_gate_errors"])
-
-            policy = json.loads((root / "policy.json").read_text(encoding="utf-8"))
-            policy["quantity_approvals"].append({
-                "candidate_id": report["candidate_id"],
-                "reason": "Reviewed fixture source change.",
-                "approved_on": "2026-09-02",
-            })
-            (root / "policy.json").write_text(json.dumps(policy, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-            with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(changed_sources, META_SHA_B)):
-                accepted = build.run_update(root, "2026-09-02T01:00:00Z")
-            self.assertEqual(accepted["status"], "released")
-            self.assertEqual(accepted["candidate_id"], report["candidate_id"])
-
-            policy["quantity_approvals"] = []
-            (root / "policy.json").write_text(json.dumps(policy, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            self.assertEqual(len(report["diffs"]["source"]["global"]["added"]), 1_101)
             replay = build.run_offline_validation(root)
             self.assertEqual(replay["offline_replay"], "passed")
 
@@ -934,6 +962,8 @@ class FetchAndUpdateTests(unittest.TestCase):
                 build.SURGE_PROCESS_RULES_PATH,
                 build.US_RULES_PATH,
                 build.SURGE_US_RULES_PATH,
+                build.DIRECT_RULES_PATH,
+                build.SURGE_DIRECT_RULES_PATH,
                 "upstream/provenance.json",
                 "manifest.json",
             ]
@@ -1022,6 +1052,8 @@ class SurgeProcessRuleTests(unittest.TestCase):
         "rules/surge/network-test.set",
         build.US_RULES_PATH,
         build.SURGE_US_RULES_PATH,
+        build.DIRECT_RULES_PATH,
+        build.SURGE_DIRECT_RULES_PATH,
     )
 
     def _policy_with(self, **over):
@@ -1081,8 +1113,13 @@ class SurgeProcessRuleTests(unittest.TestCase):
             build.validate_surge_process_rules(self._policy_with(value="okname", enabled="yes"))
 
     def test_domain_artifacts_never_contain_process_rules_and_vice_versa(self) -> None:
+        generated = candidate()
         for relative in self.DOMAIN_ARTIFACTS:
-            content = (ROOT / relative).read_text(encoding="utf-8")
+            content = (
+                generated.manual_files[relative].decode("utf-8")
+                if relative in generated.manual_files
+                else (ROOT / relative).read_text(encoding="utf-8")
+            )
             for line in content.splitlines():
                 self.assertFalse(line.startswith("PROCESS-NAME,"), relative)
         process = candidate().manual_files[build.SURGE_PROCESS_RULES_PATH].decode("utf-8")
@@ -1200,6 +1237,187 @@ class USRuleTests(unittest.TestCase):
             target.write_bytes(target.read_bytes() + b"tampered.example\n")
             with self.assertRaisesRegex(build.BuildError, "rules/surge/us.set differs from offline replay"):
                 build.run_offline_validation(root)
+
+
+class DirectRuleTests(unittest.TestCase):
+    def test_direct_rules_are_canonical_manual_artifacts_bound_to_release_identity(self) -> None:
+        policy = policy_value()
+        keys = [(item["type"], item["value"]) for item in policy["direct_rules"]]
+        self.assertEqual(keys, sorted(set(keys)))
+        result = candidate(policy=policy)
+
+        direct_text = result.manual_files[build.DIRECT_RULES_PATH].decode("utf-8")
+        direct_lines = [line for line in direct_text.splitlines() if line and not line.startswith("#")]
+        self.assertEqual(direct_lines, [f"{item['type']},{item['value']}" for item in policy["direct_rules"]])
+        surge_text = result.manual_files[build.SURGE_DIRECT_RULES_PATH].decode("utf-8")
+        expected_surge = [
+            ("." + item["value"] if item["type"] == "DOMAIN-SUFFIX" else item["value"])
+            for item in policy["direct_rules"]
+        ]
+        self.assertEqual(surge_text.splitlines(), expected_surge)
+        self.assertEqual(len(direct_lines), 25)
+        self.assertEqual(sum(item["type"] == "DOMAIN" for item in policy["direct_rules"]), 10)
+        self.assertEqual(sum(item["type"] == "DOMAIN-SUFFIX" for item in policy["direct_rules"]), 15)
+
+        for path in (build.DIRECT_RULES_PATH, build.SURGE_DIRECT_RULES_PATH):
+            artifact = result.manifest["manual_artifacts"][path]
+            self.assertEqual(artifact["source"], build.DIRECT_RULE_SOURCE)
+            self.assertEqual(artifact["rules"], 25)
+            self.assertEqual(artifact["review_date"], "2026-10-21")
+            self.assertEqual(artifact["sha256"], build.sha256(result.manual_files[path]))
+
+        changed_policy = copy.deepcopy(policy)
+        changed_policy["direct_rules"][0]["reason"] += " Policy annotation changed."
+        changed = candidate(policy=changed_policy)
+        self.assertNotEqual(result.manifest["semantic_policy_sha256"], changed.manifest["semantic_policy_sha256"])
+        self.assertNotEqual(result.release_id, changed.release_id)
+        self.assertEqual(
+            result.manual_files[build.DIRECT_RULES_PATH],
+            changed.manual_files[build.DIRECT_RULES_PATH],
+        )
+
+        changed_policy = copy.deepcopy(policy)
+        changed_policy["direct_rules"].append({
+            "type": "DOMAIN",
+            "value": "new-direct.example.test",
+            "reason": "Reviewed direct host.",
+            "reference": "https://example.test/direct",
+            "review_date": "2026-10-21",
+        })
+        changed_scope = candidate(policy=changed_policy)
+        self.assertNotEqual(result.release_id, changed_scope.release_id)
+        self.assertNotEqual(
+            result.manifest["manual_artifacts"][build.DIRECT_RULES_PATH]["sha256"],
+            changed_scope.manifest["manual_artifacts"][build.DIRECT_RULES_PATH]["sha256"],
+        )
+
+    def test_invalid_direct_policy_entries_are_rejected(self) -> None:
+        mutations = (
+            lambda p: p["direct_rules"].append(copy.deepcopy(p["direct_rules"][0])),
+            lambda p: p["direct_rules"][0].update(type="DOMAIN-KEYWORD"),
+            lambda p: p["direct_rules"][0].update(type="DOMAIN-WILDCARD"),
+            lambda p: p["direct_rules"][0].update(value="Upper.example"),
+            lambda p: p["direct_rules"][0].pop("reference"),
+            lambda p: p["direct_rules"][0].update(review_date="2026-13-40"),
+            lambda p: p.update(direct_rules=[]),
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                policy = policy_value()
+                mutation(policy)
+                with self.assertRaises(build.BuildError):
+                    build.validate_direct_rules(policy)
+
+    def test_direct_suffixes_reject_single_labels_and_public_suffixes_before_baseline_coverage(self) -> None:
+        covered_baseline = build.Baseline(
+            release_id="1" * 64,
+            source_rules={category: [] for category in build.SOURCE_CATEGORIES},
+            output_rules={
+                "global": [],
+                "cn": [("DOMAIN-SUFFIX", "cn")],
+                "network-test": [],
+            },
+        )
+        for value in ("cn", "com.cn"):
+            policy = policy_value()
+            policy["direct_rules"][0].update(type="DOMAIN-SUFFIX", value=value)
+            for label, baseline in (("bootstrap", None), ("already-covered", covered_baseline)):
+                with self.subTest(value=value, baseline=label):
+                    with self.assertRaisesRegex(build.BuildError, "single-label|public-suffix"):
+                        candidate(policy=policy, baseline=baseline)
+
+    def test_network_test_rules_overlapping_direct_are_removed_without_expanding_direct_scope(self) -> None:
+        policy = policy_value()
+        policy["direct_rules"] = [
+            {
+                "type": "DOMAIN",
+                "value": "api.exact-direct.example.test",
+                "reason": "Exact fixture selector.",
+                "reference": "https://example.test/exact",
+                "review_date": "2026-10-21",
+            },
+            {
+                "type": "DOMAIN-SUFFIX",
+                "value": "checks.example.test",
+                "reason": "Suffix fixture selector.",
+                "reference": "https://example.test/checks",
+                "review_date": "2026-10-21",
+            },
+        ]
+        sources = fixture_sources()
+        sources["network-test"] = append_rules(
+            sources["network-test"],
+            "DOMAIN,api.exact-direct.example.test",
+            "DOMAIN,sub.api.exact-direct.example.test",
+            "DOMAIN,checks.example.test",
+            "DOMAIN,host.checks.example.test",
+            "DOMAIN-SUFFIX,checks.example.test",
+            "DOMAIN-SUFFIX,example.test",
+            "DOMAIN,host.unrelated.example.test",
+            "DOMAIN-SUFFIX,unrelated.example.test",
+        )
+        result = candidate(sources, policy=policy)
+        network_rules = {
+            (item["type"], item["value"])
+            for item in result.manifest["outputs"]["network-test"]["rules"]
+        }
+        for removed in (
+            ("DOMAIN", "api.exact-direct.example.test"),
+            ("DOMAIN", "checks.example.test"),
+            ("DOMAIN", "host.checks.example.test"),
+            ("DOMAIN-SUFFIX", "checks.example.test"),
+            ("DOMAIN-SUFFIX", "example.test"),
+        ):
+            self.assertNotIn(removed, network_rules)
+        for retained in (
+            ("DOMAIN", "sub.api.exact-direct.example.test"),
+            ("DOMAIN", "host.unrelated.example.test"),
+            ("DOMAIN-SUFFIX", "unrelated.example.test"),
+        ):
+            self.assertIn(retained, network_rules)
+
+        exclusions = result.manifest["direct_rule_exclusions"]
+        parent = next(item for item in exclusions if item["value"] == "example.test")
+        self.assertEqual(parent["decision"], "partial_overlap_parent_omitted")
+        self.assertEqual(parent["selectors"], [
+            {"type": "DOMAIN", "value": "api.exact-direct.example.test"},
+            {"type": "DOMAIN-SUFFIX", "value": "checks.example.test"},
+        ])
+        self.assertTrue(any(
+            origin.get("kind") == "meta"
+            and origin.get("raw") == "DOMAIN-SUFFIX,example.test"
+            and origin.get("path") == build._source_path_list("network-test")[0]
+            for origin in parent["origins"]
+        ))
+        self.assertIn(
+            {"type": "DOMAIN-SUFFIX", "value": "example.test"},
+            result.manifest["normalized_source"]["network-test"],
+        )
+        direct_lines = [
+            line for line in result.manual_files[build.DIRECT_RULES_PATH].decode().splitlines()
+            if line and not line.startswith("#")
+        ]
+        self.assertEqual(direct_lines, [
+            "DOMAIN,api.exact-direct.example.test",
+            "DOMAIN-SUFFIX,checks.example.test",
+        ])
+
+    def test_offline_replay_detects_corrupt_direct_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prepare_temp_root(root)
+            with mock.patch.object(build, "fetch_upstream", side_effect=source_runner(fixture_sources(), META_SHA_A)):
+                build.run_update(root, "2026-10-21T00:00:00Z")
+
+            for relative in (build.DIRECT_RULES_PATH, build.SURGE_DIRECT_RULES_PATH):
+                target = root / relative
+                original = target.read_bytes()
+                target.write_bytes(original + b"tampered.example\n")
+                with self.subTest(path=relative), self.assertRaisesRegex(build.BuildError, relative):
+                    build.run_offline_validation(root)
+                target.write_bytes(original)
+
+            self.assertEqual(build.run_offline_validation(root)["offline_replay"], "passed")
 
 
 if __name__ == "__main__":

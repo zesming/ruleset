@@ -7,14 +7,6 @@ rule-providers:
     path: ./ruleset/personal-lan-direct.mrs
     interval: 43200
     proxy: 🇺🇸 US
-  test:
-    type: http
-    behavior: domain
-    format: mrs
-    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/test.mrs"
-    path: ./ruleset/personal-test.mrs
-    interval: 43200
-    proxy: 🇺🇸 US
   reject-drop:
     type: http
     behavior: classical
@@ -53,6 +45,14 @@ rule-providers:
     format: text
     url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/reject-extra-rules.list"
     path: ./ruleset/personal-reject-extra-rules.text
+    interval: 43200
+    proxy: 🇺🇸 US
+  test:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/test.mrs"
+    path: ./ruleset/personal-test.mrs
     interval: 43200
     proxy: 🇺🇸 US
   jp-proxy:
@@ -145,12 +145,12 @@ rule-providers:
     proxy: 🇺🇸 US
 rules:
   - RULE-SET,lan-direct,🚀 Direct
-  - RULE-SET,test,⚒️ Test
   - RULE-SET,reject-drop,⛔️ Reject-Drop
   - RULE-SET,reject,⛔️ Reject
   - RULE-SET,reject-rules,⛔️ Reject
   - RULE-SET,reject-no-drop,⛔️ Reject
   - RULE-SET,reject-extra-rules,⛔️ Reject
+  - RULE-SET,test,⚒️ Test
   - RULE-SET,jp-proxy,🇯🇵 JP
   - RULE-SET,us-proxy,🇺🇸 US
   - RULE-SET,cn-direct,🚀 Direct
@@ -192,11 +192,11 @@ dns:
   nameserver-policy:
     "rule-set:lan-direct":
       - "system"
-    "rule-set:test":
-      - "https://8.8.4.4/dns-query#⚒️ Test"
     "rule-set:reject-drop,reject,reject-rules,reject-no-drop,reject-extra-rules":
       - "https://8.8.8.8/dns-query#🇺🇸 US"
       - "https://1.1.1.1/dns-query#🇺🇸 US"
+    "rule-set:test":
+      - "https://8.8.4.4/dns-query#⚒️ Test"
     "rule-set:jp-proxy":
       - "https://1.0.0.1/dns-query#🇯🇵 JP"
     "rule-set:us-proxy":

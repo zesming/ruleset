@@ -30,6 +30,48 @@ def fixture_sources() -> dict[str, bytes]:
     return {key: (FIXTURES / name).read_bytes() for key, name in SOURCE_FIXTURE.items()}
 
 
+class CnDirectHTTPResponseTests(unittest.TestCase):
+    url = "https://raw.githubusercontent.com/example/repo/main/china-max-domain.txt"
+
+    def response(self, *, chunks: list[bytes], headers: dict[str, str] | None = None):
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.status = 200
+        response.headers = headers or {}
+        response.geturl.return_value = self.url
+        response.read.side_effect = chunks
+        return response
+
+    def test_http_bytes_rejects_truncated_declared_body(self) -> None:
+        response = self.response(chunks=[b"DOMAIN", b""], headers={"Content-Length": "10"})
+        with mock.patch.object(cn_direct.urllib.request, "urlopen", return_value=response):
+            with self.assertRaisesRegex(cn_direct.CnDirectError, "does not match Content-Length 10"):
+                cn_direct._http_bytes(self.url, 100)
+
+    def test_http_bytes_collects_short_reads_until_eof_without_length(self) -> None:
+        chunks = [b"DOM", b"AIN,valid.", b"example\n", b""]
+        response = self.response(chunks=chunks)
+        with mock.patch.object(cn_direct.urllib.request, "urlopen", return_value=response):
+            self.assertEqual(cn_direct._http_bytes(self.url, 100), b"".join(chunks[:-1]))
+        self.assertEqual(response.read.call_count, len(chunks))
+
+    def test_http_bytes_rejects_unknown_length_overflow(self) -> None:
+        response = self.response(chunks=[b"abc", b"def"], headers={})
+        with mock.patch.object(cn_direct.urllib.request, "urlopen", return_value=response):
+            with self.assertRaisesRegex(cn_direct.CnDirectError, "exceeds 5 bytes"):
+                cn_direct._http_bytes(self.url, 5)
+
+    def test_http_bytes_rejects_invalid_or_over_limit_length_headers(self) -> None:
+        for header in ("-1", "abc", "6"):
+            response = self.response(chunks=[b""], headers={"Content-Length": header})
+            with self.subTest(content_length=header), mock.patch.object(
+                cn_direct.urllib.request, "urlopen", return_value=response
+            ):
+                with self.assertRaises(cn_direct.CnDirectError):
+                    cn_direct._http_bytes(self.url, 5)
+            response.read.assert_not_called()
+
+
 class CnDirectTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -49,8 +91,6 @@ class CnDirectTests(unittest.TestCase):
         policy["china_max_initial_wide_suffixes"] = cn_direct.china_max_initial_wide_suffixes(
             china_rules, cn_direct.load_public_suffix_list()
         )
-        policy["limits"]["minimum_output_rules"] = 1
-        policy["limits"]["maximum_output_rules"] = 1000
         policy["first_match_assertions"] = []
         return policy
 
@@ -97,6 +137,24 @@ class CnDirectTests(unittest.TestCase):
         diff = cn_direct._check_client_source_semantics(parsed)
         self.assertEqual(diff["sukka_direct"]["surge_only_types"], ["USER-AGENT"])
         self.assertEqual(diff["sukka_direct"]["surge_user_agents"], ["Direct Agent/*"])
+
+    def test_every_cn_source_must_parse_at_least_one_rule(self) -> None:
+        original = fixture_sources()
+        policy = self.small_policy(original)
+        empty_payloads = (b"\n", b"# comment only\n")
+        for source in cn_direct.SOURCE_ORDER:
+            for payload in empty_payloads:
+                changed = dict(original)
+                changed[source] = payload
+                with self.subTest(source=source, payload=payload):
+                    with self.assertRaisesRegex(cn_direct.CnDirectError, f"{source} source contains no rules"):
+                        cn_direct.parse_sources(changed, policy)
+
+            changed = dict(original)
+            changed[source] = b" \n"
+            with self.subTest(source=source, payload="whitespace"):
+                with self.assertRaises(cn_direct.CnDirectError):
+                    cn_direct.parse_sources(changed, policy)
 
     def test_rejects_unknown_rule_types_and_clash_user_agent(self) -> None:
         raw = fixture_sources()
@@ -208,7 +266,7 @@ class CnDirectTests(unittest.TestCase):
                 mock.patch.object(cn_direct, "_convert_mrs", return_value=converter):
             with self.assertRaisesRegex(build.BuildError, "CN-direct candidate requires review"):
                 build._build_cn_candidate(
-                    {"cn_direct": policy},
+                    {"cn_direct": policy, "direct_rules": build.validate_policy(ROOT)["direct_rules"]},
                     build_baseline,
                     raw,
                     self.source_metadata(raw),
@@ -432,8 +490,6 @@ class CnDirectTests(unittest.TestCase):
         baseline_domains, _ = cn_direct.compress_domain_rules(base_domains)
         baseline = {"source_rules": baseline_sources, "domain_rules": baseline_domains}
         policy = copy.deepcopy(self.policy)
-        policy["limits"]["minimum_output_rules"] = 1
-        policy["limits"]["maximum_output_rules"] = 1000
         policy["first_match_assertions"] = []
 
         converter_registry = {
@@ -455,8 +511,155 @@ class CnDirectTests(unittest.TestCase):
         self.assertEqual(candidate.manifest["first_match_evidence_validation"], "references_only")
         self.assertEqual(candidate.manifest["wide_scope_baseline"]["public_suffix_list"]["sha256"], cn_direct.PSL_SHA256)
         self.assertEqual(candidate.manifest["acl_review"]["excluded_type_counts"]["DOMAIN-KEYWORD"], 1)
-        self.assertEqual(candidate.manifest["quantity_errors"], [])
+        self.assertNotIn("quantity_errors", candidate.manifest)
+        self.assertEqual(candidate.manifest["semantic_review_errors"], [])
         self.assertEqual(candidate.unreviewed_candidates, [])
+
+    def test_explicit_direct_rules_join_the_cn_merge_before_compression(self) -> None:
+        raw = fixture_sources()
+        policy = self.small_policy(raw)
+        direct_rules = [
+            {
+                "type": "DOMAIN",
+                "value": "host.direct-api.example.org",
+                "reason": "Reviewed exact host.",
+                "reference": "https://example.test/api",
+                "review_date": "2026-10-21",
+            },
+            {
+                "type": "DOMAIN-SUFFIX",
+                "value": "direct-scope.example.org",
+                "reason": "Reviewed suffix scope.",
+                "reference": "https://example.test/scope",
+                "review_date": "2026-10-21",
+            },
+        ]
+        baseline = self.fixture_baseline(raw, policy)
+        converter = self.converter_result(
+            policy,
+            b"fixture-mrs",
+            {"platform": "test", "binary_sha256": "b" * 64},
+        )
+        with mock.patch.object(cn_direct, "_convert_mrs", return_value=converter):
+            result = cn_direct.build_candidate(
+                raw,
+                policy,
+                baseline=baseline,
+                converter_path="unused",
+                explicit_direct_rules=direct_rules,
+            )
+
+        scopes = {(item["type"], item["value"]) for item in result.domain_rules}
+        self.assertIn(("DOMAIN", "host.direct-api.example.org"), scopes)
+        self.assertIn(("DOMAIN-SUFFIX", "direct-scope.example.org"), scopes)
+        accepted = [item for item in result.accepted_domain_rules if item["source"] == "policy.direct_rules"]
+        self.assertEqual({(item["type"], item["value"]) for item in accepted}, {
+            ("DOMAIN", "host.direct-api.example.org"),
+            ("DOMAIN-SUFFIX", "direct-scope.example.org"),
+        })
+        self.assertTrue(all(item["review_date"] == "2026-10-21" for item in accepted))
+        origins = {item["value"]: item for item in result.manifest["rule_origins"]}
+        self.assertEqual(
+            origins["direct-scope.example.org"]["source_rule_counts"]["policy.direct_rules"],
+            1,
+        )
+
+        invalid = copy.deepcopy(direct_rules)
+        invalid[0]["type"] = "DOMAIN-KEYWORD"
+        with self.assertRaisesRegex(cn_direct.CnDirectError, "must be DOMAIN or DOMAIN-SUFFIX"):
+            cn_direct.build_candidate(raw, policy, baseline=baseline, converter_path="unused", explicit_direct_rules=invalid)
+
+        covered_baseline = {
+            "source_rules": {},
+            "domain_rules": [{"type": "DOMAIN-SUFFIX", "value": "cn"}],
+        }
+        for value, message in (
+            ("cn", "single-label"),
+            ("com.cn", "public-suffix"),
+        ):
+            invalid_scope = [{
+                "type": "DOMAIN-SUFFIX",
+                "value": value,
+                "reason": "Deliberately broad test selector.",
+                "reference": "https://example.test/broad",
+                "review_date": "2026-10-21",
+            }]
+            for label, direct_baseline in (("bootstrap", None), ("already-covered", covered_baseline)):
+                with self.subTest(value=value, baseline=label):
+                    with self.assertRaisesRegex(cn_direct.CnDirectError, message):
+                        cn_direct.build_candidate(
+                            raw,
+                            policy,
+                            baseline=direct_baseline,
+                            converter_path="unused",
+                            explicit_direct_rules=invalid_scope,
+                        )
+
+    def test_large_source_and_delta_are_unbounded_by_removed_rule_percentages(self) -> None:
+        original = fixture_sources()
+        policy = self.small_policy(original)
+        baseline = self.fixture_baseline(original, policy)
+        additions = "".join(
+            f"DOMAIN-SUFFIX,large-{index}.example.org\n"
+            for index in range(10_001)
+        ).encode("ascii")
+        changed = dict(original)
+        changed["sukka_direct_clash"] += additions
+        changed["sukka_direct_surge"] += additions
+        converter = self.converter_result(
+            policy,
+            b"fixture-mrs",
+            {"platform": "test", "binary_sha256": "b" * 64},
+        )
+        with mock.patch.object(cn_direct, "_convert_mrs", return_value=converter):
+            result = cn_direct.build_candidate(changed, policy, baseline=baseline, converter_path="unused")
+
+        self.assertEqual(result.manifest["diffs"]["sources"]["sukka_direct_clash"]["added"], 10_001)
+        self.assertEqual(result.manifest["diffs"]["domain_output"]["added"], 10_001)
+        self.assertGreater(len(result.domain_rules), 10_000)
+        self.assertEqual(result.manifest["semantic_review_errors"], [])
+        self.assertNotIn("quantity_errors", result.manifest)
+
+    def test_cn_direct_byte_and_format_guards_remain(self) -> None:
+        raw = fixture_sources()
+        policy = self.small_policy(raw)
+        policy["sources"]["china_max"]["max_bytes"] = len(raw["china_max"]) - 1
+        with self.assertRaisesRegex(cn_direct.CnDirectError, "exceeds its policy byte limit"):
+            cn_direct.parse_sources(raw, policy)
+        with self.assertRaisesRegex(cn_direct.CnDirectError, "unknown Sukka source type"):
+            cn_direct._parse_sukka(b"UNKNOWN,value\n", "fixture", 1024)
+
+    def test_new_broad_scopes_remain_semantic_review_errors(self) -> None:
+        raw = fixture_sources()
+        original = dict(raw)
+        original["china_max"] += b".a.example.org\n"
+        policy = self.small_policy(original)
+        baseline = self.fixture_baseline(original, policy)
+        changed = dict(original)
+        changed["china_max"] += b".example.org\n.com\n"
+        converter = self.converter_result(
+            policy,
+            b"fixture-mrs",
+            {"platform": "test", "binary_sha256": "b" * 64},
+        )
+        with mock.patch.object(cn_direct, "_convert_mrs", return_value=converter):
+            result = cn_direct.build_candidate(
+                changed,
+                policy,
+                baseline=baseline,
+                converter_path="unused",
+            )
+        self.assertEqual(
+            result.manifest["semantic_review_errors"],
+            [
+                "new broad cn-direct merged suffix requires review: com",
+                "new broad cn-direct merged suffix requires review: example.org",
+            ],
+        )
+        self.assertEqual(result.manifest["wide_scope_review_candidates"], [
+            {"type": "DOMAIN-SUFFIX", "value": "com"},
+            {"type": "DOMAIN-SUFFIX", "value": "example.org"},
+        ])
 
 
 if __name__ == "__main__":

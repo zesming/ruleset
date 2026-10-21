@@ -81,6 +81,11 @@ VALID_DNS = {"system", "domestic", "foreign", "jp", "test", "none"}
 VALID_PLATFORMS = {"mihomo", "surge"}
 DOMAIN_RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD"}
 IP_RULE_TYPES = {"IP-CIDR", "IP-CIDR6", "IP-ASN", "GEOIP"}
+# Special-use DNS namespaces should continue to use their local resolution path,
+# even if a broad managed Test selector happens to include them.
+LOCAL_DNS_SUFFIXES = frozenset({
+    "localhost", "local", "home.arpa", "internal", "lan", "test", "invalid", "example", "onion",
+})
 
 
 class ProfileClientsError(Exception):
@@ -1111,6 +1116,10 @@ def _set_mihomo_providers(
             if retained_names:
                 retained_policy["rule-set:" + ",".join(retained_names)] = normalized_target
         else:
+            if _dns_inline_selector_superseded_by_test(
+                selector_text, normalized_target, candidate, "mihomo", api, aliases,
+            ):
+                continue
             # Keep inline local domain selectors such as company LAN/system mappings.
             retained_policy[selector_text] = normalized_target
 
@@ -1372,7 +1381,7 @@ def _surge_dns(
         if not stripped or stripped.startswith(("#", ";")) or "=" not in stripped:
             explicit.append(line)
             continue
-        selector = stripped.split("=", 1)[0].strip()
+        selector, target = (part.strip() for part in stripped.split("=", 1))
         if selector.startswith(("RULE-SET:", "DOMAIN-SET:")):
             reference = selector.split(":", 1)[1]
             try:
@@ -1391,6 +1400,10 @@ def _surge_dns(
             )
             if migrated_sources & profile_dns_sources or reserved_empty_jp:
                 continue
+        elif target.startswith("server:") and _dns_inline_selector_superseded_by_test(
+            selector, _surge_server_values(target), candidate, "surge", api, aliases,
+        ):
+            continue
         explicit.append(line)
     host_section.lines = [*explicit, *lines]
     return lines
@@ -1549,8 +1562,8 @@ def private_migrate(
     aliases = _source_aliases(candidate, api, baseline_manifest)
     migration_unsupported: list[dict[str, Any]] = []
     local_stages = {
-        "mihomo": _private_inline_stages(api, "mihomo", clash, aliases, migration_unsupported),
-        "surge": _private_inline_stages(api, "surge", surge_text, aliases, migration_unsupported),
+        "mihomo": _private_inline_stages(api, "mihomo", clash, candidate, aliases, migration_unsupported),
+        "surge": _private_inline_stages(api, "surge", surge_text, candidate, aliases, migration_unsupported),
     }
     clash_candidate = _migrate_mihomo(
         candidate, clash, _surge_sections(surge_text)[1], base_url, root=root,
@@ -1655,6 +1668,38 @@ def _known_policy_targets(platform: str, baseline: Any) -> set[str]:
 def _is_direct_policy_alias(value: str) -> bool:
     clean = "".join(character for character in value.casefold() if character.isalnum())
     return clean == "direct" or "直连" in value
+
+
+def _is_builtin_direct_route_target(platform: str, baseline: Any, target: str) -> bool:
+    """Return true only for DIRECT itself or an alias defined as DIRECT alone."""
+    if target.strip().strip('"').casefold() == "direct":
+        return True
+    target_key = target.strip().strip('"').casefold()
+    if platform == "mihomo":
+        groups = baseline.get("proxy-groups", [])
+        if not isinstance(groups, list):
+            return False
+        return any(
+            isinstance(group, Mapping)
+            and isinstance(group.get("name"), str)
+            and group["name"].casefold() == target_key
+            and isinstance(group.get("proxies"), list)
+            and len(group["proxies"]) == 1
+            and isinstance(group["proxies"][0], str)
+            and group["proxies"][0].strip().strip('"').casefold() == "direct"
+            and not group.get("use")
+            and not any(group.get(key) for key in ("include-all", "include-all-proxies", "include-all-providers"))
+            for group in groups
+        )
+    if platform == "surge":
+        _, sections = _surge_sections(str(baseline))
+        for line in _section(sections, "Proxy").lines:
+            if line.lstrip().startswith(("#", ";")) or "=" not in line:
+                continue
+            name, value = line.split("=", 1)
+            if name.strip().strip('"').casefold() == target_key and value.strip().strip('"').casefold() == "direct":
+                return True
+    return False
 
 
 def _looks_like_reject_policy_name(value: str) -> bool:
@@ -1955,11 +2000,9 @@ def _source_rules(candidate: Any, source_id: str, platform: str, aliases: Mappin
             raise ProfileClientsError("baseline group source belongs to another platform")
         if group.get("compact") is True:
             physical = _compact_source_stage(candidate, platform, group)
-            if physical is not None:
-                rules = [rule for rule in physical.get("rules", []) if rule.platform == platform]
-                if group.get("rule_count") != len(rules):
-                    raise ProfileClientsError("baseline compact group rule count does not match its physical candidate group")
-                return rules
+            if physical is None:
+                raise ProfileClientsError("baseline compact group does not map to one semantically matching current archived group")
+            return [rule for rule in physical.get("rules", []) if rule.platform == platform]
         stages_by_id = {stage.get("id"): stage for stage in candidate.stages if isinstance(stage, Mapping)}
         result = []
         for stage_id in dict.fromkeys(group.get("stages", [])):
@@ -2002,8 +2045,17 @@ def _compact_source_stage(candidate: Any, platform: str, group: Mapping[str, Any
     """Find a compact group by its current physical ID, then its stable slot."""
     stages = _candidate_stages(candidate, platform)
     physical = next((stage for stage in stages if stage.get("id") == group.get("id")), None)
+
+    identity_keys = ("action", "dns", "reject_mode", "extended_matching", "no_resolve")
+
+    def matches_semantic_identity(stage: Mapping[str, Any]) -> bool:
+        return (
+            ("slot" not in group or stage.get("slot") == group.get("slot"))
+            and all(stage.get(key) == group[key] for key in identity_keys if key in group)
+        )
+
     if physical is not None:
-        return physical
+        return physical if matches_semantic_identity(physical) else None
 
     slot = group.get("slot")
     if not isinstance(slot, str):
@@ -2017,9 +2069,7 @@ def _compact_source_stage(candidate: Any, platform: str, group: Mapping[str, Any
         item for item in groups
         if isinstance(item, Mapping)
         and item.get("slot") == slot
-        and all(item.get(key) == group[key] for key in (
-            "rule_count", "action", "dns", "reject_mode", "extended_matching", "no_resolve",
-        ) if key in group)
+        and all(item.get(key) == group[key] for key in identity_keys if key in group)
     ]
     if len(matching) != 1:
         return None
@@ -2097,7 +2147,10 @@ def _stage(action: str, reject_mode: str | None, rules: Sequence[Any], *, stage_
     }
 
 
-def _private_inline_stages(api: Any, platform: str, baseline: Any, aliases: Mapping[str, set[str]], unsupported: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _private_inline_stages(
+    api: Any, platform: str, baseline: Any, candidate: Any,
+    aliases: Mapping[str, set[str]], unsupported: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Retain baseline inline route exceptions ahead of the profile stages."""
     if platform == "mihomo":
         raw_rules = baseline.get("rules", [])
@@ -2148,6 +2201,12 @@ def _private_inline_stages(api: Any, platform: str, baseline: Any, aliases: Mapp
             raise ProfileClientsError(f"baseline inline route rule {line_no} cannot be retained safely")
         rule = stage["rules"][0]
         if rule.type in {"GEOIP", "MATCH"}:
+            continue
+        if (
+            len(fields) >= 3 and _is_builtin_direct_route_target(platform, baseline, fields[2])
+            and stage.get("action") == "DIRECT" and stage.get("reject_mode") is None
+            and _inline_domain_rule_covered_by_test(api, rule, candidate, platform)
+        ):
             continue
         stage["id"] = f"local-inline-{platform}-{line_no}"
         result.append(stage)
@@ -2429,6 +2488,140 @@ def _selector_rules(api: Any, platform: str, selector: str, candidate: Any, alia
     return [rule], False
 
 
+def _is_local_dns_scope(rule: Any) -> bool:
+    if rule.type in {"DOMAIN", "DOMAIN-SUFFIX"}:
+        domain = rule.value
+    elif rule.type == "DOMAIN-WILDCARD" and rule.value.startswith("*.") and rule.value.count("*") == 1 and "?" not in rule.value:
+        domain = rule.value[2:]
+    else:
+        return False
+    try:
+        ipaddress.ip_address(domain)
+    except ValueError:
+        pass
+    else:
+        return True
+    return any(domain == suffix or domain.endswith("." + suffix) for suffix in LOCAL_DNS_SUFFIXES)
+
+
+def _has_private_dns_endpoint(values: Any) -> bool:
+    endpoints = [values] if isinstance(values, str) else values if isinstance(values, (list, tuple)) else []
+    for value in endpoints:
+        if not isinstance(value, str):
+            continue
+        raw = value.strip().removeprefix("server:")
+        try:
+            parsed = urllib.parse.urlsplit(raw)
+            host = parsed.hostname
+            if host is None and "://" not in raw:
+                # Bare address:port and bracketed IPv6 address:port endpoints
+                # have no URL scheme, so parse them as an authority.
+                host = urllib.parse.urlsplit("//" + raw.split("#", 1)[0]).hostname
+        except ValueError:
+            # Keep malformed endpoint forms conservatively; they are not a
+            # reason to discard an existing private resolver override.
+            return True
+        host = (host or raw.split("#", 1)[0]).casefold().rstrip(".")
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            if not host or "." not in host or any(
+                host == suffix or host.endswith("." + suffix) for suffix in LOCAL_DNS_SUFFIXES
+            ):
+                return True
+        else:
+            if not address.is_global:
+                return True
+    return False
+
+
+def _domain_rule_scope_covered(api: Any, selection: Any, cover: Any) -> bool:
+    """Return true only when one managed selector covers the complete old scope."""
+    if selection.type == "DOMAIN":
+        if not isinstance(cover, api.Rule):
+            cover = api.Rule(
+                cover.type, cover.value, tuple(getattr(cover, "flags", ())),
+                getattr(cover, "source", ""), getattr(cover, "line", 0), getattr(cover, "platform", ""),
+            )
+        return api.rule_matches(cover, domain=selection.value)
+    if selection.type == "DOMAIN-SUFFIX":
+        return (
+            cover.type == "DOMAIN-SUFFIX"
+            and (selection.value == cover.value or selection.value.endswith("." + cover.value))
+        )
+    if selection.type == "DOMAIN-WILDCARD":
+        if cover.type == "DOMAIN-WILDCARD" and selection.value == cover.value:
+            return True
+        # A simple *.tail wildcard has no matches outside tail, so a managed
+        # suffix selector for tail (or one of its parents) covers its full scope.
+        if (
+            cover.type == "DOMAIN-SUFFIX"
+            and selection.value.startswith("*.")
+            and selection.value.count("*") == 1
+            and "?" not in selection.value
+        ):
+            tail = selection.value[2:]
+            return tail == cover.value or tail.endswith("." + cover.value)
+    return False
+
+
+def _managed_test_domain_rules(candidate: Any, platform: str) -> list[Any]:
+    return [
+        rule
+        for stage in _make_dns_stages(candidate, platform)
+        if stage.get("action") == "TEST"
+        for rule in stage.get("rules", [])
+        if rule.platform == platform and rule.type in DOMAIN_RULE_TYPES
+    ]
+
+
+def _inline_domain_rule_covered_by_test(api: Any, rule: Any, candidate: Any, platform: str) -> bool:
+    if rule.type not in {"DOMAIN", "DOMAIN-SUFFIX"} or _is_local_dns_scope(rule):
+        return False
+    return any(
+        _domain_rule_scope_covered(api, rule, test_rule)
+        for test_rule in _managed_test_domain_rules(candidate, platform)
+    )
+
+
+def _dns_inline_selector_superseded_by_test(
+    selector: str, target: Any, candidate: Any, platform: str, api: Any,
+    aliases: Mapping[str, set[str]],
+) -> bool:
+    """Drop a known public inline DNS override only when Test owns all its scope."""
+    if platform == "mihomo" and _mihomo_rule_set_names(selector) is not None:
+        return False
+    if platform == "surge" and selector.startswith(("RULE-SET:", "DOMAIN-SET:")):
+        return False
+
+    if platform == "surge" and isinstance(target, str) and target.startswith("server:"):
+        try:
+            target = _surge_server_values(target)
+        except ProfileClientsError:
+            return False
+
+    unsupported: list[dict[str, Any]] = []
+    intent, _ = _resolver_policy(target, unsupported, selector)
+    if intent not in {"US", "JP", "DIRECT", "TEST"}:
+        return False
+    if _has_private_dns_endpoint(target):
+        return False
+
+    selector_rules, extended = _selector_rules(api, platform, selector, candidate, aliases, unsupported)
+    if extended or not selector_rules:
+        return False
+    if any(rule.type not in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-WILDCARD"} for rule in selector_rules):
+        return False
+    if any(_is_local_dns_scope(rule) for rule in selector_rules):
+        return False
+
+    test_rules = _managed_test_domain_rules(candidate, platform)
+    return bool(test_rules) and all(
+        any(_domain_rule_scope_covered(api, selection, cover) for cover in test_rules)
+        for selection in selector_rules
+    )
+
+
 def _parse_old_dns(api: Any, platform: str, candidate: Any, baseline: Any, aliases: Mapping[str, set[str]], unsupported: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
     selectors: list[dict[str, Any]] = []
     if platform == "mihomo":
@@ -2655,6 +2848,7 @@ def _make_dns_stages(candidate: Any, platform: str) -> list[dict[str, Any]]:
 
 def _retained_dns_stages(old_stages: Sequence[Mapping[str, Any]], candidate: Any, platform: str) -> list[dict[str, Any]]:
     """Keep baseline local/unrelated DNS selectors while replacing migrated sources."""
+    api = _load_api(ROOT)
     profile_sources = {
         rule.source
         for stage in _candidate_stages(candidate, platform) if stage.get("dns") != "none"
@@ -2663,6 +2857,11 @@ def _retained_dns_stages(old_stages: Sequence[Mapping[str, Any]], candidate: Any
     }
     retained: list[dict[str, Any]] = []
     for stage in old_stages:
+        selector = stage.get("selector")
+        if isinstance(selector, str) and _dns_inline_selector_superseded_by_test(
+            selector, stage.get("servers", []), candidate, platform, api, {},
+        ):
+            continue
         retained_rules = [rule for rule in stage.get("rules", []) if rule.source not in profile_sources]
         if retained_rules:
             retained.append({**stage, "rules": retained_rules})
@@ -2856,8 +3055,8 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
     if local_stages is None:
         local_unsupported: list[dict[str, Any]] = []
         local_stages = {
-            "mihomo": _private_inline_stages(api, "mihomo", clash, aliases, local_unsupported),
-            "surge": _private_inline_stages(api, "surge", surge, aliases, local_unsupported),
+            "mihomo": _private_inline_stages(api, "mihomo", clash, candidate, aliases, local_unsupported),
+            "surge": _private_inline_stages(api, "surge", surge, candidate, aliases, local_unsupported),
         }
         unsupported.extend(local_unsupported)
     old_stages: dict[str, list[dict[str, Any]]] = {}
@@ -2877,6 +3076,10 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
             "domain_intersections": "indexed suffix, exact, keyword and wildcard queries; no all-hosts pairwise scan",
             "source_evidence": "per-platform raw evidence strings and archive/derived/metadata/unsupported classes are counted separately",
         },
+        "source_membership": {
+            "basis": "current_archived_inputs",
+            "historic_baseline_membership_reconstructed": False,
+        },
         "platforms": {},
         "expected_changes": list(cases.get("expected_changes", [])),
         "unsupported_cases": unsupported,
@@ -2884,6 +3087,7 @@ def compare_private(root: Path, candidate: Any, baseline_dir: Path, cases: Mappi
         "dns_endpoint_routes": endpoint_routes,
         "limitations": [
             "Route and DNS results use archived rule bytes and explicit matcher metadata; no live DNS, GeoIP or ASN database is queried.",
+            "Source membership basis is current_archived_inputs: baseline source references resolve to current archived inputs for both old and new configuration order; historical baseline source bytes and membership are not reconstructed.",
             "Representative rule coverage describes source entries with generated probes, not all possible user traffic.",
             "Resolver ownership comparisons do not establish fake-IP allocation or packet handling; those require actual-client runtime checks.",
             "DNS comparison is an ordered selector/resolver ownership model only; it does not verify live Mihomo policy priority or Surge remote proxy-side DNS resolution.",

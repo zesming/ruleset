@@ -91,6 +91,14 @@ class SourceParsingTests(unittest.TestCase):
             with self.subTest(source=source), self.assertRaises(personal_profile.ProfileError):
                 personal_profile.parse_source(source, "mihomo.lan")
 
+    def test_source_parser_accepts_more_than_the_old_rule_count_cap_within_byte_limit(self) -> None:
+        source_id = "mihomo.reject_domains"
+        spec = personal_profile.SOURCE_SPECS[source_id]
+        payload = b"a\n" * 500_001
+        self.assertLessEqual(len(payload), spec["max_bytes"])
+        self.assertNotIn("max_rules", spec)
+        self.assertEqual(len(personal_profile.parse_source(payload, source_id)), 500_001)
+
     def test_scalar_flags_nested_conditions_and_opaque_url_regex_are_parsed_strictly(self) -> None:
         parsed = personal_profile.parse_source(
             b"DOMAIN-KEYWORD,google,extended-matching\n", "surge.reject"
@@ -265,7 +273,147 @@ class SourceParsingTests(unittest.TestCase):
                 personal_profile.validate_profile(profile)
 
 
+class NetworkFetchTests(unittest.TestCase):
+    def response(self, source_id: str, chunks: list[bytes], content_length: str | None = None):
+        response = mock.MagicMock()
+        response.status = 200
+        response.geturl.return_value = personal_profile.SOURCE_SPECS[source_id]["url"]
+        response.headers = {}
+        if content_length is not None:
+            response.headers["Content-Length"] = content_length
+        response.read.side_effect = [*chunks, b""]
+        response.__enter__.return_value = response
+        response.__exit__.return_value = False
+        return response
+
+    def test_fetch_rejects_declared_length_larger_than_received_body(self) -> None:
+        source_id = "mihomo.lan"
+        response = self.response(source_id, [b"ab", b"cd", b"ef"], "10")
+        with mock.patch.object(personal_profile.urllib.request, "urlopen", return_value=response):
+            with self.assertRaisesRegex(personal_profile.ProfileError, "Content-Length mismatch"):
+                personal_profile._fetch_one(source_id)
+
+    def test_fetch_collects_short_chunks_until_declared_body_is_complete(self) -> None:
+        source_id = "mihomo.lan"
+        content = b"DOMAIN,short.example\n"
+        response = self.response(source_id, [content[:2], content[2:7], content[7:]], str(len(content)))
+        with mock.patch.object(personal_profile.urllib.request, "urlopen", return_value=response):
+            self.assertEqual(personal_profile._fetch_one(source_id), (source_id, content))
+        self.assertEqual(response.read.call_count, 4)
+
+    def test_fetch_rejects_oversize_body_without_content_length_after_bounded_reads(self) -> None:
+        source_id = "mihomo.lan"
+        spec = personal_profile.SOURCE_SPECS[source_id]
+        response = self.response(source_id, [b"12345", b"6"])
+        with mock.patch.dict(personal_profile.SOURCE_SPECS, {source_id: {**spec, "max_bytes": 5}}):
+            with mock.patch.object(personal_profile.urllib.request, "urlopen", return_value=response):
+                with self.assertRaisesRegex(personal_profile.ProfileError, "byte limit"):
+                    personal_profile._fetch_one(source_id)
+        self.assertEqual([call.args[0] for call in response.read.call_args_list], [6, 1])
+
+    def test_fetch_sources_retries_only_failed_source_and_keeps_completed_sources(self) -> None:
+        failed_source = "surge.download_domains"
+        calls: dict[str, int] = {}
+
+        def fetch(source_id: str) -> tuple[str, bytes]:
+            calls[source_id] = calls.get(source_id, 0) + 1
+            if source_id == failed_source and calls[source_id] == 1:
+                raise personal_profile.ProfileError("intermittent truncated response")
+            return source_id, b"complete source"
+
+        with mock.patch.object(personal_profile, "_fetch_one", side_effect=fetch):
+            with mock.patch.object(personal_profile.time, "sleep") as sleep:
+                result = personal_profile.fetch_sources()
+
+        self.assertEqual(set(result), set(personal_profile.SOURCE_SPECS))
+        self.assertEqual(set(result.values()), {b"complete source"})
+        self.assertEqual(calls[failed_source], 2)
+        self.assertTrue(all(
+            count == (2 if source_id == failed_source else 1)
+            for source_id, count in calls.items()
+        ))
+        self.assertEqual(sleep.call_args_list, [mock.call(0.5)])
+
+    def test_fetch_sources_raises_after_three_attempts_for_persistent_failure(self) -> None:
+        failed_source = "surge.reject_domains"
+        calls: dict[str, int] = {}
+
+        def fetch(source_id: str) -> tuple[str, bytes]:
+            calls[source_id] = calls.get(source_id, 0) + 1
+            if source_id == failed_source:
+                raise personal_profile.ProfileError("persistent incomplete response")
+            return source_id, b"complete source"
+
+        result = None
+        with mock.patch.object(personal_profile, "_fetch_one", side_effect=fetch):
+            with mock.patch.object(personal_profile.time, "sleep") as sleep:
+                with self.assertRaises(personal_profile.ProfileError) as raised:
+                    result = personal_profile.fetch_sources()
+
+        self.assertIsNone(result)
+        self.assertIn(failed_source, str(raised.exception))
+        self.assertIn("after 3 attempts", str(raised.exception))
+        self.assertEqual(calls[failed_source], 3)
+        self.assertTrue(all(
+            count == (3 if source_id == failed_source else 1)
+            for source_id, count in calls.items()
+        ))
+        self.assertEqual(sleep.call_args_list, [mock.call(0.5), mock.call(1.0)])
+
+
 class CompilationAndMatchingTests(unittest.TestCase):
+    def test_domain_reject_precedes_network_test_in_fine_compact_and_dns_order(self):
+        profile = profile_value()
+        fine_ids = [stage["id"] for stage in profile["stages"]]
+        self.assertEqual(fine_ids[0], "infra-lan")
+        test_position = fine_ids.index("network-test")
+        reject_ids = [
+            "reject-drop", "reject-domains", "reject-extra", "reject-rules",
+            "reject-no-drop", "sogouinput",
+        ]
+        self.assertLess(max(fine_ids.index(stage_id) for stage_id in reject_ids), test_position)
+
+        slots = profile["compact"]["slots"]
+        slot_ids = [slot["id"] for slot in slots]
+        self.assertEqual(slot_ids[:3], ["lan", "reject", "test"])
+        self.assertEqual(slot_ids[3:6], ["jp", "us", "cn-direct"])
+        self.assertTrue(all(slot.get("tier") == "ip" for slot in slots[6:]))
+
+        snapshot = snapshots()
+        for platform in ("mihomo", "surge"):
+            snapshot[f"{platform}.reject"] = b"DOMAIN,test.example\n"
+        candidate = compile_candidate(snapshot, profile)
+
+        def stage_position(stages, source_stage_id):
+            return next(
+                index for index, stage in enumerate(stages)
+                if stage.get("id") == source_stage_id or source_stage_id in stage.get("sources", [])
+            )
+
+        import profile_clients
+
+        for platform in ("mihomo", "surge"):
+            expanded_match = personal_profile.RuleIndex(candidate.stages, platform).first_match(
+                domain="test.example"
+            )
+            compact_stages = candidate.compact_stages[platform]
+            compact_match = personal_profile.RuleIndex(compact_stages, platform).first_match(
+                domain="test.example"
+            )
+            for match in (expanded_match, compact_match):
+                self.assertIsNotNone(match)
+                self.assertEqual((match.action, match.dns), ("REJECT", "foreign"))
+
+            compact_reject_position = stage_position(compact_stages, "reject-rules")
+            compact_test_position = stage_position(compact_stages, "network-test")
+            self.assertLess(compact_reject_position, compact_test_position)
+
+            dns_stages = profile_clients._make_dns_stages(candidate, platform)
+            dns_reject_position = stage_position(dns_stages, "reject-rules")
+            dns_test_position = stage_position(dns_stages, "network-test")
+            self.assertLess(dns_reject_position, dns_test_position)
+            self.assertEqual(dns_stages[dns_test_position]["dns"], "test")
+
     def test_surge_preserves_dns_lookup_boundary_between_process_and_lan_ip_sets(self):
         source = snapshots()
         for platform in ("mihomo", "surge"):
