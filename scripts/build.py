@@ -777,6 +777,20 @@ def _response_bytes(url: str, maximum: int) -> bytes:
         url,
         headers={"User-Agent": "zesming-ruleset-builder/1", "Accept": "application/vnd.github+json"},
     )
+    token = os.environ.get("GITHUB_TOKEN")
+    if (
+        token
+        and parsed.scheme == "https"
+        and parsed.hostname == "api.github.com"
+        and parsed.username is None
+        and parsed.password is None
+    ):
+        try:
+            api_port = parsed.port
+        except ValueError:
+            api_port = -1
+        if api_port in (None, 443):
+            request.add_unredirected_header("Authorization", f"Bearer {token}")
     last_error: Exception | None = None
     for attempt in range(HTTP_RETRIES):
         try:

@@ -17,6 +17,8 @@
 
 AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 的 `meta` 分支，每轮固定到一个提交。
 
+publish 工作流的构建步骤会用 Actions 内建 `GITHUB_TOKEN` 认证 `api.github.com` 请求；本地可设置同名环境变量启用认证，未设置时仍以匿名方式抓取。令牌只附加到 HTTPS `api.github.com` 默认端口或 443 的请求，不用于 raw 文件、Sukka 镜像或重定向后的请求。
+
 `direct` 与 `us` 是单独的人工维护入口。`direct_rules` 生成 `rules/direct.list` 和 `rules/surge/direct.set`，同一份域名范围合入 `cn-direct`，并从 Test 输出排除。Test 后缀覆盖某个精确直连子域时，保守移除该 Test 父域并记录影响范围，不扩大直连范围。客户端继续引用现有聚合。
 
 `us` 是单独的人工维护入口，不属于 Meta 来源类别，也不参与 AI 的 `cn-direct` 自动分类。编辑 `policy.json` 的 `us_rules` 后，构建会生成 `rules/us.list`（Mihomo / classical）和 `rules/surge/us.set`（Surge domain-set），并把二者的哈希、数量、来源和复核日期写入 `manifest.json`。精确 `DOMAIN` 在 Surge `.set` 中不带前导点；若经复核以后加入 `DOMAIN-SUFFIX`，则使用前导点表达后缀范围。

@@ -669,7 +669,24 @@ def _http_bytes(url: str, maximum: int) -> bytes:
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme != "https" or parsed.hostname not in {"api.github.com", "raw.githubusercontent.com", "ruleset-mirror.skk.moe"}:
         raise CnDirectError(f"refusing unapproved source URL: {url}")
-    request = urllib.request.Request(url, headers={"User-Agent": "zesming-ruleset-builder/1", "Accept": "application/vnd.github+json"})
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "zesming-ruleset-builder/1", "Accept": "application/vnd.github+json"},
+    )
+    token = os.environ.get("GITHUB_TOKEN")
+    if (
+        token
+        and parsed.scheme == "https"
+        and parsed.hostname == "api.github.com"
+        and parsed.username is None
+        and parsed.password is None
+    ):
+        try:
+            api_port = parsed.port
+        except ValueError:
+            api_port = -1
+        if api_port in (None, 443):
+            request.add_unredirected_header("Authorization", f"Bearer {token}")
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             final = urllib.parse.urlparse(response.geturl())
