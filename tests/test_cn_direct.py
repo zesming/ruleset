@@ -33,14 +33,63 @@ def fixture_sources() -> dict[str, bytes]:
 class CnDirectHTTPResponseTests(unittest.TestCase):
     url = "https://raw.githubusercontent.com/example/repo/main/china-max-domain.txt"
 
-    def response(self, *, chunks: list[bytes], headers: dict[str, str] | None = None):
+    def response(
+        self,
+        *,
+        chunks: list[bytes],
+        headers: dict[str, str] | None = None,
+        url: str | None = None,
+    ):
         response = mock.MagicMock()
         response.__enter__.return_value = response
         response.status = 200
         response.headers = headers or {}
-        response.geturl.return_value = self.url
+        response.geturl.return_value = url or self.url
         response.read.side_effect = chunks
         return response
+
+    def test_http_bytes_authenticates_only_canonical_github_api_urls(self) -> None:
+        cases = (
+            ("https://api.github.com/repos/example/repo", "Bearer test-token"),
+            ("https://api.github.com:443/repos/example/repo", "Bearer test-token"),
+            (self.url, None),
+            ("https://ruleset-mirror.skk.moe/sukka/direct.txt", None),
+            ("https://user@api.github.com/repos/example/repo", None),
+            ("https://api.github.com:444/repos/example/repo", None),
+        )
+        with mock.patch.dict(cn_direct.os.environ, {"GITHUB_TOKEN": "test-token"}):
+            for url, expected_authorization in cases:
+                response = self.response(chunks=[b"ok", b""], url=url)
+                with self.subTest(url=url), mock.patch.object(
+                    cn_direct.urllib.request, "urlopen", return_value=response
+                ) as urlopen:
+                    self.assertEqual(cn_direct._http_bytes(url, 100), b"ok")
+                request = urlopen.call_args.args[0]
+                self.assertEqual(request.get_header("Authorization"), expected_authorization)
+
+    def test_http_bytes_leaves_github_api_anonymous_without_token(self) -> None:
+        url = "https://api.github.com/repos/example/repo"
+        response = self.response(chunks=[b"ok", b""], url=url)
+        with mock.patch.dict(cn_direct.os.environ, {"GITHUB_TOKEN": ""}), mock.patch.object(
+            cn_direct.urllib.request, "urlopen", return_value=response
+        ) as urlopen:
+            self.assertEqual(cn_direct._http_bytes(url, 100), b"ok")
+        request = urlopen.call_args.args[0]
+        self.assertIsNone(request.get_header("Authorization"))
+
+    def test_http_bytes_redirect_does_not_forward_unredirected_authorization(self) -> None:
+        url = "https://api.github.com/repos/example/repo"
+        response = self.response(chunks=[b"ok", b""], url=url)
+        with mock.patch.dict(cn_direct.os.environ, {"GITHUB_TOKEN": "test-token"}), mock.patch.object(
+            cn_direct.urllib.request, "urlopen", return_value=response
+        ) as urlopen:
+            cn_direct._http_bytes(url, 100)
+        request = urlopen.call_args.args[0]
+        redirected = cn_direct.urllib.request.HTTPRedirectHandler().redirect_request(
+            request, None, 302, "Found", {}, "https://api.github.com/repos/redirected/repo"
+        )
+        self.assertIsNotNone(redirected)
+        self.assertIsNone(redirected.get_header("Authorization"))
 
     def test_http_bytes_rejects_truncated_declared_body(self) -> None:
         response = self.response(chunks=[b"DOMAIN", b""], headers={"Content-Length": "10"})
