@@ -1,8 +1,8 @@
 {
   "cn_direct": {
     "converter_execution": {
-      "binary_sha256": "ddc3fae7940188c617850be2a875cb8b3d4c900aaa519e696a301d8029c51157",
-      "platform": "darwin-arm64"
+      "binary_sha256": "bb38a93a781f87d4c1fe270c169ab2dceb50abacd59c738a1d2fd91e68feff7d",
+      "platform": "linux-amd64"
     },
     "fetch_metadata": {
       "schema": 1,
@@ -10,7 +10,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "575637df38884575bfa523e95c17d0ee3be1676c",
-          "fetched_at": "2026-10-21T04:33:28Z",
+          "fetched_at": "2026-10-22T03:15:13Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -19,7 +19,7 @@
         "china_max": {
           "branch": "master",
           "commit": "f9e403a75bbc4bee939c6d8dd766cf78f1b512f3",
-          "fetched_at": "2026-10-21T04:33:28Z",
+          "fetched_at": "2026-10-22T03:15:13Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "9a183c3eb474445af35f04c6d49ee517cbd295a1cc7fc27362892f8cf85aeece",
@@ -27,7 +27,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-10-21T04:33:28Z",
+          "fetched_at": "2026-10-22T03:15:13Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -39,7 +39,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-10-21T04:33:28Z",
+          "fetched_at": "2026-10-22T03:15:13Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -51,7 +51,7 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-10-21T04:33:28Z",
+          "fetched_at": "2026-10-22T03:15:13Z",
           "header": {
             "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
             "declared_size": "870",
@@ -63,7 +63,7 @@
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-10-21T04:33:28Z",
+          "fetched_at": "2026-10-22T03:15:13Z",
           "header": {
             "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
             "declared_size": "873",
@@ -80,7 +80,7 @@
       "acl_china_domain": {
         "branch": "master",
         "commit": "575637df38884575bfa523e95c17d0ee3be1676c",
-        "fetched_at": "2026-10-21T04:33:28Z",
+        "fetched_at": "2026-10-22T03:15:13Z",
         "path": "Clash/ChinaDomain.list",
         "repository": "ACL4SSR/ACL4SSR",
         "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -89,7 +89,7 @@
       "china_max": {
         "branch": "master",
         "commit": "f9e403a75bbc4bee939c6d8dd766cf78f1b512f3",
-        "fetched_at": "2026-10-21T04:33:28Z",
+        "fetched_at": "2026-10-22T03:15:13Z",
         "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
         "repository": "blackmatrix7/ios_rule_script",
         "sha256": "9a183c3eb474445af35f04c6d49ee517cbd295a1cc7fc27362892f8cf85aeece",
@@ -97,7 +97,7 @@
       },
       "sukka_direct_clash": {
         "artifact": "sukka_direct_clash",
-        "fetched_at": "2026-10-21T04:33:28Z",
+        "fetched_at": "2026-10-22T03:15:13Z",
         "header": {
           "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
           "declared_size": "219",
@@ -109,7 +109,7 @@
       },
       "sukka_direct_surge": {
         "artifact": "sukka_direct_surge",
-        "fetched_at": "2026-10-21T04:33:28Z",
+        "fetched_at": "2026-10-22T03:15:13Z",
         "header": {
           "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
           "declared_size": "224",
@@ -121,7 +121,7 @@
       },
       "sukka_domestic_clash": {
         "artifact": "sukka_domestic_clash",
-        "fetched_at": "2026-10-21T04:33:28Z",
+        "fetched_at": "2026-10-22T03:15:13Z",
         "header": {
           "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
           "declared_size": "870",
@@ -133,7 +133,7 @@
       },
       "sukka_domestic_surge": {
         "artifact": "sukka_domestic_surge",
-        "fetched_at": "2026-10-21T04:33:28Z",
+        "fetched_at": "2026-10-22T03:15:13Z",
         "header": {
           "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
           "declared_size": "873",
@@ -194,40 +194,40 @@
   "sources": {
     "cn": {
       "branch": "meta",
-      "meta_sha": "ca85be6b1ebf086ec2f6d6885e8b4eba959bede1",
+      "meta_sha": "5b62abd872efea28a44ee1ec0dc3869cff27c739",
       "paths": [
         "geo/geosite/classical/category-ai-cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
       "sha256": "eb1f7f09eb8482e6f349adce8014ea7f8b5b500368f3124f6a66758a1d405e6d",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/ca85be6b1ebf086ec2f6d6885e8b4eba959bede1/geo/geosite/classical/category-ai-cn.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/5b62abd872efea28a44ee1ec0dc3869cff27c739/geo/geosite/classical/category-ai-cn.list"
       ]
     },
     "global": {
       "branch": "meta",
-      "meta_sha": "ca85be6b1ebf086ec2f6d6885e8b4eba959bede1",
+      "meta_sha": "5b62abd872efea28a44ee1ec0dc3869cff27c739",
       "paths": [
         "geo/geosite/classical/category-ai-!cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "6de0cb262ff1039bb8e291f77a218b611745b08481a30f246a1c593a3c90c5d3",
+      "sha256": "baae38d24b2f73f9a9cdeceec1748eccacc1d06184d268149f3cbdd41749e866",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/ca85be6b1ebf086ec2f6d6885e8b4eba959bede1/geo/geosite/classical/category-ai-!cn.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/5b62abd872efea28a44ee1ec0dc3869cff27c739/geo/geosite/classical/category-ai-!cn.list"
       ]
     },
     "network-test": {
       "branch": "meta",
-      "meta_sha": "ca85be6b1ebf086ec2f6d6885e8b4eba959bede1",
+      "meta_sha": "5b62abd872efea28a44ee1ec0dc3869cff27c739",
       "paths": [
         "geo/geosite/classical/category-ip-geo-detect.list",
         "geo/geosite/classical/category-speedtest.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "0c6ae8b8299dbba9879b54b773f4c3f5676361ed7306f927bdaa2dd555ac3acd",
+      "sha256": "15c0fb34d8c697065f0055ee994bfb6d180ba3b8cba9dc34a33bf009e426bb12",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/ca85be6b1ebf086ec2f6d6885e8b4eba959bede1/geo/geosite/classical/category-ip-geo-detect.list",
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/ca85be6b1ebf086ec2f6d6885e8b4eba959bede1/geo/geosite/classical/category-speedtest.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/5b62abd872efea28a44ee1ec0dc3869cff27c739/geo/geosite/classical/category-ip-geo-detect.list",
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/5b62abd872efea28a44ee1ec0dc3869cff27c739/geo/geosite/classical/category-speedtest.list"
       ]
     }
   }

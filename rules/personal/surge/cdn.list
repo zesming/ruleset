@@ -1389,6 +1389,7 @@ DOMAIN,tile.ourmap.us
 DOMAIN,time.apple.com
 DOMAIN,tn.upornia.com
 DOMAIN-SUFFIX,torproject.org
+DOMAIN-SUFFIX,trvl-media.com
 DOMAIN-SUFFIX,typography.com
 DOMAIN-SUFFIX,ungrounded.net
 DOMAIN,us-js.zonka.co
@@ -2458,6 +2459,7 @@ DOMAIN,tiles3.planet.com
 DOMAIN,todoist.b-cdn.net
 DOMAIN,tools.refokus.com
 DOMAIN-SUFFIX,transcend-cdn.com
+DOMAIN-SUFFIX,travel-assets.com
 DOMAIN,uhf.microsoft.com
 DOMAIN,v2.listenloop.com
 DOMAIN-SUFFIX,videodelivery.net
