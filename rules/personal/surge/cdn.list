@@ -320,6 +320,7 @@ DOMAIN,p.sda1.dev
 DOMAIN-SUFFIX,pagecdn.io
 DOMAIN-SUFFIX,pgimgs.com
 DOMAIN-SUFFIX,phncdn.com
+DOMAIN,pic2.99.co
 DOMAIN-SUFFIX,pinimg.com
 DOMAIN-SUFFIX,pixhost.to
 DOMAIN,pixoraa.cc
@@ -1420,6 +1421,7 @@ DOMAIN,api.bintray.com
 DOMAIN,api.weather.com
 DOMAIN-SUFFIX,app.gitbook.com
 DOMAIN,asset.chase.com
+DOMAIN,assets-v2.99.co
 DOMAIN,assets.about.me
 DOMAIN,assets.bbhub.io
 DOMAIN,assets.canny.io
@@ -1427,6 +1429,7 @@ DOMAIN,assets.cello.so
 DOMAIN,assets.clibo.tw
 DOMAIN,assets.game8.co
 DOMAIN,assets.goat.com
+DOMAIN,assets.grab.com
 DOMAIN,assets.habr.com
 DOMAIN,assets.jable.tv
 DOMAIN,assets.kagi.com
@@ -2810,6 +2813,7 @@ DOMAIN,archive.mozilla.org
 DOMAIN,assets-cdn.jable.tv
 DOMAIN,assets-cdn.porn.com
 DOMAIN,assets-docs.dify.ai
+DOMAIN,assets-static.99.co
 DOMAIN,assets-www.xbox.com
 DOMAIN,assets.adobedtm.com
 DOMAIN,assets.airbuddy.app
@@ -3979,6 +3983,7 @@ DOMAIN,s3media.squarespace.com
 DOMAIN,safebrowsing.google.com
 DOMAIN-SUFFIX,sciencedirectassets.com
 DOMAIN,screenshots.webflow.com
+DOMAIN,scribe-web-sdk.grab.com
 DOMAIN,scripts.dailymail.co.uk
 DOMAIN,server.arcgisonline.com
 DOMAIN,static-assets.juksy.com
@@ -4415,6 +4420,7 @@ DOMAIN,static-production.npmjs.com
 DOMAIN,static-webfonts.myfonts.com
 DOMAIN,static.acm.account.sony.com
 DOMAIN,static.captcha-delivery.com
+DOMAIN,static1.straitstimes.com.sg
 DOMAIN,sts.online.visualstudio.com
 DOMAIN,tvdownloaddw-a.akamaihd.net
 DOMAIN,typescript.visualstudio.com
@@ -4680,6 +4686,7 @@ DOMAIN,edge-cloud-resource-static.azureedge.net
 DOMAIN,edgecdn-embza6g8cacagcbn.z01.azurefd.net
 DOMAIN,cdn.mcauto-images-production.sendgrid.net
 DOMAIN,cf-images.ap-northeast-1.prod.boltdns.net
+DOMAIN,cf-images.ap-southeast-1.prod.boltdns.net
 DOMAIN,marfeelexperimentsexperienceengine.mrf.io
 DOMAIN,prod-streaming-video-msn-com.akamaized.net
 DOMAIN,talon-website-prod.ecosec.on.epicgames.com
@@ -4782,3 +4789,4 @@ DOMAIN-WILDCARD,cdn*.porn87.com
 DOMAIN-WILDCARD,cdn*.pornhost.com
 DOMAIN-WILDCARD,cdn*.boysfood.com
 DOMAIN-WILDCARD,rum-ingest.*.signalfx.com
+DOMAIN-WILDCARD,cf-images.*.prod.boltdns.net
