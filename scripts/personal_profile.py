@@ -26,13 +26,14 @@ import urllib.request
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 
 SCHEMA = 1
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_PATH = "profiles/us-primary.json"
 MANIFEST_PATH = "upstream/personal/manifest.json"
+INTERFACE_DIFF_REPORT = ".build-report/personal-interface-diff.json"
 MIHOMO_CONVERTER_ENV = "MIHOMO_CONVERTER"
 MAX_RESPONSE_BYTES = 12 * 1024 * 1024
 HTTP_TIMEOUT_SECONDS = 25
@@ -1084,8 +1085,37 @@ def _compact_client_interface(manifest: Mapping[str, Any]) -> dict[str, list[dic
     return result
 
 
+def _interface_entry_key(entry: Mapping[str, Any]) -> str:
+    return f"group:{entry['id']}" if entry.get("entry") == "group" else f"terminal:{entry.get('stage_id')}"
+
+
+def _interface_differences(
+    before: Sequence[Mapping[str, Any]], after: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Summarize an interface change by entry so reviewers see which resource moved."""
+    old = {_interface_entry_key(entry): entry for entry in before}
+    new = {_interface_entry_key(entry): entry for entry in after}
+    changed = []
+    for key in sorted(old.keys() & new.keys()):
+        fields = {
+            field: {"before": old[key].get(field), "after": new[key].get(field)}
+            for field in sorted(old[key].keys() | new[key].keys())
+            if old[key].get(field) != new[key].get(field)
+        }
+        if fields:
+            changed.append({"entry": key, "fields": fields})
+    shared_order = [key for key in old if key in new]
+    return {
+        "removed": [{"entry": key, "path": old[key].get("path")} for key in old if key not in new],
+        "added": [{"entry": key, "path": new[key].get("path")} for key in new if key not in old],
+        "changed": changed,
+        "reordered": shared_order != [key for key in new if key in old],
+    }
+
+
 def _require_stable_client_interface(
     previous: Mapping[str, Any] | None, current: Mapping[str, Any], *, accept_change: bool = False,
+    report_root: Path | None = None,
 ) -> None:
     if previous is None:
         return
@@ -1093,16 +1123,27 @@ def _require_stable_client_interface(
     after = _client_interface(current)
     before_compact = _compact_client_interface(previous)
     after_compact = _compact_client_interface(current)
-    changed = [platform for platform in before if before[platform] != after[platform]]
-    changed.extend(
-        f"{platform} compact" for platform in ("mihomo", "surge")
-        if before_compact is None or after_compact is None
-        or before_compact[platform] != after_compact[platform]
-    )
-    if changed and not accept_change:
+    differences: dict[str, Any] = {
+        platform: _interface_differences(before[platform], after[platform])
+        for platform in before if before[platform] != after[platform]
+    }
+    for platform in ("mihomo", "surge"):
+        if before_compact is None or after_compact is None:
+            differences[f"{platform} compact"] = {"compact_manifest_present": {
+                "before": before_compact is not None, "after": after_compact is not None,
+            }}
+        elif before_compact[platform] != after_compact[platform]:
+            differences[f"{platform} compact"] = _interface_differences(before_compact[platform], after_compact[platform])
+    if differences and not accept_change:
+        detail = ""
+        if report_root is not None:
+            report = report_root / INTERFACE_DIFF_REPORT
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text(json.dumps(differences, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+            detail = f"; details are in {INTERFACE_DIFF_REPORT}"
         raise ProfileError(
-            "client resource interface changed for " + ", ".join(changed)
-            + "; review and migrate clients, then rerun once with --accept-interface-change"
+            "client resource interface changed for " + ", ".join(differences)
+            + detail + "; review and migrate clients, then rerun once with --accept-interface-change"
         )
 
 
@@ -2123,7 +2164,9 @@ def update(
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ProfileError(f"cannot read prior personal manifest: {exc}") from exc
     candidate = compile(snapshot, legacy, profile, root=root_path, converter_path=converter_path)
-    _require_stable_client_interface(previous, candidate.manifest, accept_change=accept_interface_change)
+    _require_stable_client_interface(
+        previous, candidate.manifest, accept_change=accept_interface_change, report_root=root_path,
+    )
     stale = _stale_legacy_compact_paths(previous, candidate.files)
     write_bundle_transactionally(root_path, candidate.files, delete_paths=stale)
     return candidate
