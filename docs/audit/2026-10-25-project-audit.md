@@ -91,7 +91,7 @@
 - 质证：基线复现：macOS 上 `build.py validate --offline` 报 “requires the published converter platform”（baseline/validate-offline.txt）。范围修正：PR CI 只在改动影响 personal 的 legacy 输入（personal_profile.py:545-567）时失败。修复推荐：把第一组命令换成 99-105 行的完整序列并加参数说明；check 脚本为可选项。
 
 #### [PD-02] 已被 compact 取代的 v1 个人细分文件仍在生成、发布，并被锁成接口；没有示例引用，内容与旧接口重复
-- 维度：产品 | 严重度：S3 | 工作量：M | 置信度：中 | 状态：已确认
+- 维度：产品 | 严重度：S3 | 工作量：M | 置信度：中 | 状态：已修复（942c125，README 已标注）
 - 位置：rules/personal/mihomo/*.{mrs,list}（28 个 group）、rules/personal/surge/*（约 37 个文件，含 dns-*）；scripts/personal_profile.py:913-916、963-1020（`_client_interface` 把 `groups` 和 stage 顺序一起列为接口）、1772-1795（validate 要求文件集合完全相等）；docs/maintenance.md:89、111（"原 groups 保留细分类接口"）
 - 现象：`git show f3d9c54:examples/personal-mihomo.yaml`（#5，10-20）引用了 32 个 `rules/personal/mihomo/<stage>` 文件，同一天 #6 就改为只引用 `route/`。现在两个 personal 示例只引用 `route/` 下的 16 个（Mihomo）和 18 个（Surge）文件。非 route 文件合计 9.3MB，仍随每日快照更新。其中 `rules/personal/mihomo/cn-direct-domain.mrs` 与 `rules/mihomo/cn-direct-domain.mrs`、`rules/personal/surge/ai-cn.set` 与 `rules/surge/ai-cn.set`、`personal/surge/network-test.set` 与 `rules/surge/network-test.set`、`personal/{mihomo,surge}/ai-global.list` 与 `rules/ai-global.list` 的 sha1 完全相同。
 - 依据：实际存在三套接口：旧细分类 `rules/*`、v1 个人细分 `rules/personal/<p>/*`、compact `rules/personal/<p>/route/*`。文档把 `rules/` 和 personal 的 `groups` 都叫"细分类"，同一个词指两样东西。按 code.md 的标准，"没有调用方"的判断要排除外部订阅者：这些是公开 URL，可能仍有 v1 客户端在用，所以置信度只给中。
@@ -180,7 +180,7 @@
 ### 4.3 代码实现
 
 #### [CD-01] 安全类，详情见私下渠道
-- 维度：代码、产品 | 严重度：S1 | 状态：已确认（合并 PD-01）
+- 维度：代码、产品 | 严重度：S1 | 状态：已修复（64ddd05 删除写入点，73f8b14 补 .gitignore）
 - 说明：仓库公开，本条细节不写入报告和 PR 描述，已私下交给维护者；修复时在提交信息中只引用编号。
 
 #### [CD-03] 未登记 DOMAIN-REGEX 的过滤作用于所有类别，Azure 正则变更后会被静默丢弃，parse_source 的漂移守卫在生产路径上走不到
@@ -193,7 +193,7 @@
 - 质证：复核用只读探针复现：`_combine_source_chunks` 对 global 丢掉变更后的正则，parse_source 只得到 1 条规则且不报错；test_build.py:939-941 mock 了整个 fetch_upstream，绕过了过滤。推荐 global 保留原样交给 parse_source 校验，并断言 global 恰好产出 1 条登记的 wildcard。
 
 #### [CD-06] 个人聚合的"接口稳定性"取决于上游内容，一次上游类型变化会挡住整份每日发布（包括旧接口），而且没有诊断产物
-- 维度：代码、产品 | 严重度：S2 | 工作量：M | 置信度：中 | 状态：已确认（合并 PD-04）
+- 维度：代码、产品 | 严重度：S2 | 工作量：M | 置信度：中 | 状态：已确认（合并 PD-04）；诊断部分已修复（c07e2f5），其余待定
 - 位置：scripts/personal_profile.py:895-901（_capability 由规则类型推导）、:1597-1600（细分类 group 的 capability 和"无规则即跳过"）、:1087-1106（_require_stable_client_interface）、:2094-2131（update）；profiles/us-primary.json 中 lan、reject、test、cn-direct 这几个 slot 没有固定 format；.github/workflows/update.yml:89-94
 - 现象：group 的 capability（domain / domain-special / classical）决定扩展名（.mrs/.set/.list）和 path，path 属于接口字段。上游 Sukka 文件里一旦新增 DOMAIN-KEYWORD、某平台某个阶段变空、或者出现 IP 规则，接口比对就不一致，update 抛出 "client resource interface changed for …" 后停止。工作流里这一步失败会让整个 publish job 失败，build.py 已经通过的旧接口规则、cn-direct 规则也一起不发布，之后每天都失败，直到有人手动用 `--accept-interface-change` 提 PR。报错只列出平台名，不写是哪个 group 的哪个字段变了；personal 只在解析失败时向 .build-report 写东西。
 - 依据：上面列出的代码位置；工作流里 personal update 与 build update 在同一步骤，失败即退出。
@@ -242,7 +242,7 @@
 - 质证：复核确认：`http.client.IncompleteRead` 的继承链是 HTTPException→Exception，不在 build.py 的重试捕获范围内，最终落到 :2235 “Unexpected build failure”；cn_direct._http_bytes 只请求 1 次，不重试。测试同样是三套几乎一样的（TS-12）。
 
 #### [CD-13] profile_clients.py 的 3444 行函数体里，大约 2850 行是私有 migrate/compare，不在 CI、发布和文档路径上
-- 维度：代码、产品 | 严重度：S2 | 工作量：M | 置信度：中 | 状态：已确认（合并 PD-07）
+- 维度：代码、产品 | 严重度：S2 | 工作量：M | 置信度：中 | 状态：已修复（64ddd05）
 - 位置：scripts/profile_clients.py:622-3735（SurgeSection、_migrate_*、private_migrate、compare_private 及其辅助函数）、:3778-3814（main 的 migrate/compare 分支）；render 路径在 :110-620、:3736-3747
 - 现象：用 AST 统计可达性：从 render_mihomo_snippet、render_surge_snippet、_replay、_validate_base_url 出发能走到 31 个函数、599 行；从 private_migrate 出发 124 个、3245 行；compare_private 77 个、1988 行。CI 和 docs/maintenance.md 只用到 `render`，README 和 docs 都没提 `migrate`/`compare`，它们依赖的私有基线目录在仓库里也不存在。render 路径里还留着非 compact 的分支（`_groups` 的 else、`_candidate_stages`、`_surge_route_lines`/`_mihomo_route_lines` 的 `compact=False`），但 personal_profile.compile 始终会写 manifest["compact"]（:1729），这些分支在生产上走不到。
 - 依据：上述统计，并逐个看过这些入口（它们是 CLI 子命令，不是公开库 API）。
@@ -309,7 +309,7 @@
 ### 4.4 测试
 
 #### [TS-01] personal_profile.update() 成功路径从未被测试执行，接口变更闸门的调用点、陈旧文件删除、整包写入都没有保护
-- 维度：测试 | 严重度：S1 | 工作量：S | 置信度：高 | 状态：已确认
+- 维度：测试 | 严重度：S1 | 工作量：S | 置信度：高 | 状态：已修复（c07e2f5）
 - 位置：scripts/personal_profile.py:2094-2131（尤其 2126-2128），scripts/personal_profile.py:2518-2550（CLI `--accept-interface-change`）；tests/test_personal_profile.py:703-734，tests/test_priority_profile.py:176-203、519-531
 - 现象：测试只在两处调用 `personal_profile.update`（test_personal_profile.py:711、734），而且都走失败分支：publish_hold 开启时拒绝，或旧 manifest 不是对象。闸门 `_require_stable_client_interface` 有 9 处直接单元调用，但没有任何测试经过 `update()` 让闸门在真实流程里触发或放行。`_stale_legacy_compact_paths` 只做了纯函数测试，删除动作和 `write_bundle_transactionally(..., delete_paths=stale)` 都没测。CLI 参数 `--accept-interface-change` 是否真的传到 `update(accept_interface_change=...)`，也没有测试覆盖。
 - 依据：`grep -n "update(" tests/*.py` 显示 personal_profile.update 只出现在 711 和 734 两行。update.yml 的 publish job 每天无人值守执行 `personal_profile.py update`（不带 accept 参数），能阻止日常更新静默改掉客户端接口的只有 2126 行这一次调用。docs/maintenance.md 约定"接口变化必须显式接受，不得让日常更新静默删除旧客户端订阅的资源"。
