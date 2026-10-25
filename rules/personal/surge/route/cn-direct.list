@@ -490,7 +490,6 @@ DOMAIN-SUFFIX,fuwamofu.com
 DOMAIN,gotest.tools
 DOMAIN,lib.ugent.be
 DOMAIN,mir.linux.kg
-DOMAIN,mirror.0x.sg
 DOMAIN,mirror.5i.fi
 DOMAIN,mirror.a1.mk
 DOMAIN-SUFFIX,mirror.ac.ke
@@ -1179,7 +1178,6 @@ DOMAIN,mirror.isoc.org.il
 DOMAIN,mirror.karneval.cz
 DOMAIN,mirror.katapult.io
 DOMAIN,mirror.liquidrp.de
-DOMAIN,mirror.marcusn.net
 DOMAIN,mirror.papua.go.id
 DOMAIN,mirror.previder.nl
 DOMAIN,mirror.reverse.net
@@ -1613,7 +1611,6 @@ DOMAIN,downloads.majestic.com
 DOMAIN,downloads.portainer.io
 DOMAIN,enterprise.proxmox.com
 DOMAIN,fdroid.tetaneutral.net
-DOMAIN,ftp.tsukuba.wide.ad.jp
 DOMAIN,ftpmirror1.infania.net
 DOMAIN,i18n.prismlauncher.org
 DOMAIN,install.virtfusion.net
@@ -1681,7 +1678,6 @@ DOMAIN,updates.vibeisland.app
 DOMAIN,vfat.classicreload.com
 DOMAIN,vn-mirrors.techhost.vn
 DOMAIN,www.gutscheinrausch.de
-DOMAIN,www2.aomeisoftware.com
 DOMAIN,apache.ip-connect.vn.ua
 DOMAIN,apache.miloslavbrada.cz
 DOMAIN,archive.raspberrypi.com

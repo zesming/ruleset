@@ -863,7 +863,6 @@ DOMAIN-SUFFIX,chasecdn.com
 DOMAIN-SUFFIX,cloudlin.vip
 DOMAIN-SUFFIX,corsproxy.io
 DOMAIN-SUFFIX,crossbell.io
-DOMAIN,css.4jpg.top
 DOMAIN,data.peer.as
 DOMAIN,david-dm.org
 DOMAIN-SUFFIX,dditsadn.com
@@ -1235,7 +1234,6 @@ DOMAIN,pics.vpdmm.cc
 DOMAIN-SUFFIX,picsum.photos
 DOMAIN-SUFFIX,place-hold.it
 DOMAIN,pomf2.lain.la
-DOMAIN,proxy.cors.sh
 DOMAIN,r2.dejavu.moe
 DOMAIN,r2cdn.c7d.dev
 DOMAIN-SUFFIX,randomuser.me
@@ -1294,7 +1292,6 @@ DOMAIN-SUFFIX,webinfcdn.net
 DOMAIN-SUFFIX,wixstatic.com
 DOMAIN-SUFFIX,workoscdn.com
 DOMAIN-SUFFIX,wowmodels.com
-DOMAIN,www.10086.win
 DOMAIN,www.acgpix.de
 DOMAIN-SUFFIX,xdaimages.com
 DOMAIN-SUFFIX,xhpingcdn.com
@@ -1329,7 +1326,6 @@ DOMAIN-SUFFIX,bytebucket.org
 DOMAIN,c.animaapp.com
 DOMAIN,c.marsflag.com
 DOMAIN,c.navattic.com
-DOMAIN,c1.patreon.com
 DOMAIN,c4.patreon.com
 DOMAIN,c5.patreon.com
 DOMAIN,c6.patreon.com
@@ -1510,7 +1506,6 @@ DOMAIN-SUFFIX,liangzipic.com
 DOMAIN-SUFFIX,live-video.net
 DOMAIN-SUFFIX,media-imdb.com
 DOMAIN-SUFFIX,media.ci-en.jp
-DOMAIN,media.evolv.ai
 DOMAIN,media.masto.nu
 DOMAIN,media.mstdn.io
 DOMAIN,media.trakt.tv
@@ -1652,7 +1647,6 @@ DOMAIN,assets.time.com
 DOMAIN,assets.yande.re
 DOMAIN,assets.zpic.biz
 DOMAIN,attach.setn.com
-DOMAIN,avts.wmlabs.net
 DOMAIN-SUFFIX,bestfreecdn.com
 DOMAIN-SUFFIX,bleepstatic.com
 DOMAIN-SUFFIX,bp.blogspot.com
@@ -2009,7 +2003,6 @@ DOMAIN-SUFFIX,bootstrapcdn.com
 DOMAIN-SUFFIX,bugly.qcloud.com
 DOMAIN,bundlephobia.com
 DOMAIN,cache.ip-api.com
-DOMAIN,cache.sgvafs.com
 DOMAIN-SUFFIX,capcutstatic.com
 DOMAIN,cdn-1.porn87.com
 DOMAIN,cdn-1.strava.com
@@ -2059,7 +2052,6 @@ DOMAIN,cdn.playwire.com
 DOMAIN,cdn.roboflow.com
 DOMAIN,cdn.roseperl.com
 DOMAIN,cdn.scaleflex.it
-DOMAIN,cdn.seedance2.ai
 DOMAIN-SUFFIX,cdn.signalfx.com
 DOMAIN,cdn.simplesat.io
 DOMAIN,cdn.skymavis.com
@@ -2627,6 +2619,7 @@ DOMAIN,static.anysex.com
 DOMAIN,static.bbci.co.uk
 DOMAIN,static.beebom.com
 DOMAIN,static.buffer.com
+DOMAIN,static.capcom.com
 DOMAIN,static.carfax.com
 DOMAIN,static.chaika.moe
 DOMAIN,static.change.org
@@ -2678,7 +2671,6 @@ DOMAIN-SUFFIX,travel-assets.com
 DOMAIN,uhf.microsoft.com
 DOMAIN,v2.listenloop.com
 DOMAIN-SUFFIX,videodelivery.net
-DOMAIN,w2.influxdata.com
 DOMAIN,wa.arounddeal.com
 DOMAIN,wa1.aninoapps.com
 DOMAIN-SUFFIX,walmartimages.com
@@ -2844,7 +2836,6 @@ DOMAIN,img.fastcybers.com
 DOMAIN,img.hellofresh.com
 DOMAIN,img.sparknotes.com
 DOMAIN,imgproxy.windy.com
-DOMAIN,imgrs.apkcombo.com
 DOMAIN,imgs3.hcaptcha.com
 DOMAIN-SUFFIX,intercomassets.com
 DOMAIN-SUFFIX,ipfs-gateway.cloud
@@ -2995,7 +2986,6 @@ DOMAIN,videos.elephas.app
 DOMAIN,videos.ohentai.org
 DOMAIN,videos2.edclub.com
 DOMAIN,vids.imagepost.com
-DOMAIN,walter-r2.trakt.tv
 DOMAIN-SUFFIX,warnermediacdn.com
 DOMAIN,web-cdn.bitrise.io
 DOMAIN,webp.frostming.com
@@ -3303,7 +3293,6 @@ DOMAIN,static.zerochan.net
 DOMAIN,storageapi.fleek.co
 DOMAIN,sync.getpublica.com
 DOMAIN,tag.unifyintent.com
-DOMAIN,tags.nationwide.com
 DOMAIN,thumb.wikimedia.org
 DOMAIN,thumbnails.padre.gg
 DOMAIN,thumbs.onlyfans.com
@@ -3383,9 +3372,9 @@ DOMAIN,cdn.boostcommerce.io
 DOMAIN,cdn.botframework.com
 DOMAIN,cdn.buymeacoffee.com
 DOMAIN,cdn.c1.amplience.net
+DOMAIN,cdn.capcom-unity.com
 DOMAIN,cdn.clever-cloud.com
 DOMAIN,cdn.cnx-software.com
-DOMAIN,cdn.downdetector.com
 DOMAIN,cdn.dynamicyield.com
 DOMAIN,cdn.fastcomments.com
 DOMAIN,cdn.forms.office.net
@@ -3580,8 +3569,6 @@ DOMAIN,statics.simpshub.com
 DOMAIN,stats.codesandbox.io
 DOMAIN,status.canarymail.io
 DOMAIN-SUFFIX,steamusercontent.com
-DOMAIN,storage.synctrack.io
-DOMAIN,storageapi.fleek.one
 DOMAIN,storageapi2.fleek.co
 DOMAIN-SUFFIX,superfiliate-cdn.com
 DOMAIN-SUFFIX,superhumanstatic.com
@@ -3682,7 +3669,9 @@ DOMAIN,cdn11.bigcommerce.com
 DOMAIN,cdn2-imgix.macpaw.com
 DOMAIN,cdn2.downdetector.com
 DOMAIN,cdn2.unrealengine.com
+DOMAIN,cdn3.downdetector.com
 DOMAIN,cdn3.unrealengine.com
+DOMAIN,cdn4.downdetector.com
 DOMAIN,cdn77.boyfriendtv.com
 DOMAIN,cdna.pcpartpicker.com
 DOMAIN,cdne-pics.youjizz.com
@@ -3773,7 +3762,6 @@ DOMAIN,oneocsp.microsoft.com
 DOMAIN,opensignal.cdnbye.com
 DOMAIN,organizer.bizzabo.com
 DOMAIN-SUFFIX,parsecusercontent.com
-DOMAIN,participants.evolv.ai
 DOMAIN,pictures-cdn.porn.com
 DOMAIN,pixel-cdn.default.com
 DOMAIN,platform.theverge.com
@@ -4119,6 +4107,7 @@ DOMAIN,cdn-static-1.medium.com
 DOMAIN,cdn-uicons.flaticon.com
 DOMAIN,cdn.northropgrumman.com
 DOMAIN,cdn.prod.www.spiegel.de
+DOMAIN,cdn.promo.capcomusa.com
 DOMAIN,cdn.ready-market.com.tw
 DOMAIN-SUFFIX,cdn.survey.medallia.com
 DOMAIN,cdn.worldvectorlogo.com
@@ -4424,6 +4413,7 @@ DOMAIN,lastfm.freetls.fastly.net
 DOMAIN,lift-ai-js.marketlinc.com
 DOMAIN,logos.speedtestcustom.com
 DOMAIN,lzd-img-global.slatic.net
+DOMAIN,manifest.prod.boltdns.net
 DOMAIN,marketing.thingiverse.com
 DOMAIN,mir-s3-cdn-cf.behance.net
 DOMAIN,mixin-images.zeromesh.net
@@ -4469,9 +4459,6 @@ DOMAIN,trekcdnprod.azureedge.net
 DOMAIN,tuf-repo-cdn.sigstore.dev
 DOMAIN,ubistatic2-a.akamaihd.net
 DOMAIN,unlimited-cdn.waifu2x.net
-DOMAIN,v-tiles1.downdetector.com
-DOMAIN,v-tiles2.downdetector.com
-DOMAIN,v-tiles3.downdetector.com
 DOMAIN,vz-2222604c-50b.b-cdn.net
 DOMAIN,vz-c0fe498e-5ab.b-cdn.net
 DOMAIN,web-assets.esetstatic.com
