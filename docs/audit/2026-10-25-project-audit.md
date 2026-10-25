@@ -2,7 +2,7 @@
 
 - 日期：2026-10-25
 - 审查版本：main@8c7172c
-- PR/MR：（提交后补）
+- PR/MR：https://github.com/zesming/ruleset/pull/12
 - 审查维度与范围：产品逻辑（含 CLI / 配置 / 接入文档的易用性；本项目无图形界面，UI 维度并入产品）/ 代码实现 / 测试；全量（`upstream/`、`rules/`、`tests/fixtures/` 等生成或归档数据只抽查）
 - 审查手段：静态阅读；运行全部单元测试（196 个）；安装项目固定的 Mihomo v1.19.17 转换器后跑 `build.py validate --offline`（带与不带 `--allow-cross-platform-replay`）、`personal_profile.py validate --offline`、`profile_clients.py render` 与 examples 比对；只读探针；11 个变异验证；查阅 Mihomo / Surge / GitHub Actions 官方文档
 - 内部评审：1 轮质证，驳回 0 条，经用户答复定案 9 条，仍需决策 0 条（其中未充分质证 0 条）
