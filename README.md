@@ -6,7 +6,8 @@
 
 | 目录 / 文件 | 内容 |
 |---|---|
-| `rules/personal/` | `mihomo/route/` 与 `surge/route/` 下的客户端聚合规则，如 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test` |
+| `rules/personal/{mihomo,surge}/route/` | 客户端聚合规则，如 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test`；接入片段只引用这里，新接入请使用 |
+| `rules/personal/{mihomo,surge}/` 下其余文件 | 按来源阶段平铺的个人细分文件，作为兼容接口保留并随每日更新，不是推荐入口 |
 | `rules/` | 细分类规则 |
 | `profiles/us-primary.json` | 个人分流顺序与聚合定义 |
 | `policy.json` | 人工规则与复核决定；`direct_rules` 合入直连并从 Test 排除 |
