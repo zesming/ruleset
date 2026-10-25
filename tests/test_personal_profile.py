@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import json
 import sys
 import tempfile
@@ -62,6 +64,23 @@ def snapshots() -> dict[str, bytes]:
     result["mihomo.telegram_asn"] = b"IP-ASN,AS64500\n" + canary
     result["surge.telegram_asn"] = b"IP-ASN,AS64500\n" + canary
     return result
+
+
+def seed_update_root(root: Path) -> None:
+    (root / "policy.json").write_text(json.dumps({
+        "publish_hold": {"enabled": False, "reason": ""}
+    }), encoding="utf-8")
+    profile_path = root / personal_profile.PROFILE_PATH
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    profile_path.write_text(json.dumps(profile_value()), encoding="utf-8")
+    for source_id, spec in personal_profile.SOURCE_SPECS.items():
+        target = root / spec["archive_path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(snapshots()[source_id])
+    for relative, content in legacy_inputs().items():
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
 
 
 def compile_candidate(snapshot: dict[str, bytes] | None = None, profile: dict | None = None):
@@ -713,25 +732,54 @@ class CompilationAndMatchingTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="personal-profile-bad-manifest-") as directory:
             root = Path(directory)
-            (root / "policy.json").write_text(json.dumps({
-                "publish_hold": {"enabled": False, "reason": ""}
-            }), encoding="utf-8")
-            profile_path = root / personal_profile.PROFILE_PATH
-            profile_path.parent.mkdir(parents=True, exist_ok=True)
-            profile_path.write_text(json.dumps(profile_value()), encoding="utf-8")
-            for source_id, spec in personal_profile.SOURCE_SPECS.items():
-                target = root / spec["archive_path"]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(snapshots()[source_id])
-            for relative, content in legacy_inputs().items():
-                target = root / relative
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(content)
+            seed_update_root(root)
             manifest_path = root / personal_profile.MANIFEST_PATH
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             manifest_path.write_text("[]", encoding="utf-8")
             with self.assertRaisesRegex(personal_profile.ProfileError, "JSON object"):
                 personal_profile.update(root, offline=True)
+
+    def test_update_gates_upstream_interface_changes_until_explicitly_accepted(self) -> None:
+        def bundle_bytes(root: Path) -> dict[str, bytes]:
+            return {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for base in ("rules/personal", "upstream/personal") for path in (root / base).rglob("*")
+                if path.is_file()
+            }
+
+        fake_mrs = lambda data, root, converter_path=None: b"MRS-fixture\n" + data  # noqa: E731
+        with tempfile.TemporaryDirectory(prefix="personal-profile-update-") as directory, \
+                mock.patch.object(personal_profile, "_convert_mrs", side_effect=fake_mrs):
+            root = Path(directory)
+            seed_update_root(root)
+            first = personal_profile.update(root, offline=True)
+            self.assertEqual(bundle_bytes(root), {
+                path: data for path, data in first.files.items()
+                if path.startswith(("rules/personal/", "upstream/personal/"))
+            })
+
+            # A daily upstream edit that turns a pure-domain source into a special rule
+            # changes the published resource type, so the unattended update must stop.
+            lan = root / personal_profile.SOURCE_SPECS["mihomo.lan"]["archive_path"]
+            lan.write_bytes(b"DOMAIN-WILDCARD,*.lan.example\n")
+            before = bundle_bytes(root)
+            with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed for mihomo.*personal-interface-diff"):
+                personal_profile.update(root, offline=True)
+            self.assertEqual(bundle_bytes(root), before)
+            report = json.loads((root / personal_profile.INTERFACE_DIFF_REPORT).read_text(encoding="utf-8"))
+            changed = {item["entry"]: item["fields"] for item in report["mihomo"]["changed"]}
+            self.assertEqual(changed["group:infra-lan"]["format"], {"before": "mrs", "after": "text"})
+            self.assertIn("mihomo compact", report)
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                exit_code = personal_profile.main([
+                    "update", "--root", str(root), "--offline", "--accept-interface-change",
+                ])
+            self.assertEqual(exit_code, 0)
+            accepted = bundle_bytes(root)
+            self.assertNotIn("rules/personal/mihomo/infra-lan.mrs", accepted)
+            self.assertIn("rules/personal/mihomo/infra-lan.list", accepted)
+            personal_profile.validate_bundle(root, converter_path=None)
 
 
 if __name__ == "__main__":
