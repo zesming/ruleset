@@ -7,7 +7,9 @@ DOMAIN-SUFFIX,undefined
 DOMAIN-SUFFIX,gepush.com
 DOMAIN-SUFFIX,slackb.com
 DOMAIN-SUFFIX,trace.qq.com
+DOMAIN-SUFFIX,amplitude.com
 DOMAIN-SUFFIX,beacon.qq.com
+DOMAIN,api.segment.io
 DOMAIN-SUFFIX,geo2.adobe.com
 DOMAIN,data.bilibili.com
 DOMAIN-SUFFIX,easytomessage.com
