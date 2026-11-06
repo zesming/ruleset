@@ -10,7 +10,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "6e075448a60bbc13071977b5fd409f568c3b3eae",
-          "fetched_at": "2026-11-05T04:31:15Z",
+          "fetched_at": "2026-11-06T04:29:58Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -19,7 +19,7 @@
         "china_max": {
           "branch": "master",
           "commit": "0b6897dc17e0c513d25449c935a9694818e32f0c",
-          "fetched_at": "2026-11-05T04:31:15Z",
+          "fetched_at": "2026-11-06T04:29:58Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "14aa8915ad636bc378f23adb0490e1b9f6dbff9196bb8404e9376b2e10343774",
@@ -27,7 +27,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-11-05T04:31:15Z",
+          "fetched_at": "2026-11-06T04:29:58Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -39,7 +39,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-11-05T04:31:15Z",
+          "fetched_at": "2026-11-06T04:29:58Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -51,26 +51,26 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-11-05T04:31:15Z",
+          "fetched_at": "2026-11-06T04:29:58Z",
           "header": {
-            "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
-            "declared_size": "870",
-            "last_updated": "2026-10-20T10:56:36.477Z",
+            "content_hash": "WPb0ypsIhGM5h8i7-PheKH75CnIVABbioBcSs0MVscA",
+            "declared_size": "871",
+            "last_updated": "2026-11-05T06:05:13.811Z",
             "license": "AGPL 3.0"
           },
-          "sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
+          "sha256": "712abc0123ddf5153fcbddbe923df4aa6518ce0fc2fa2df584c003680e2bed05",
           "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-11-05T04:31:15Z",
+          "fetched_at": "2026-11-06T04:29:58Z",
           "header": {
-            "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
-            "declared_size": "873",
-            "last_updated": "2026-10-20T10:56:36.477Z",
+            "content_hash": "gNEtFZTFRC9JO1efrlNeTZOOhOdo0qMAoECNQxaCxcc",
+            "declared_size": "874",
+            "last_updated": "2026-11-05T06:05:13.811Z",
             "license": "AGPL 3.0"
           },
-          "sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
+          "sha256": "0af51e348f438c4e66dce60f132e20aa7bac476664591f8ba383ed62e28819ed",
           "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
         }
       }
@@ -80,7 +80,7 @@
       "acl_china_domain": {
         "branch": "master",
         "commit": "6e075448a60bbc13071977b5fd409f568c3b3eae",
-        "fetched_at": "2026-11-05T04:31:15Z",
+        "fetched_at": "2026-11-06T04:29:58Z",
         "path": "Clash/ChinaDomain.list",
         "repository": "ACL4SSR/ACL4SSR",
         "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -89,7 +89,7 @@
       "china_max": {
         "branch": "master",
         "commit": "0b6897dc17e0c513d25449c935a9694818e32f0c",
-        "fetched_at": "2026-11-05T04:31:15Z",
+        "fetched_at": "2026-11-06T04:29:58Z",
         "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
         "repository": "blackmatrix7/ios_rule_script",
         "sha256": "14aa8915ad636bc378f23adb0490e1b9f6dbff9196bb8404e9376b2e10343774",
@@ -97,7 +97,7 @@
       },
       "sukka_direct_clash": {
         "artifact": "sukka_direct_clash",
-        "fetched_at": "2026-11-05T04:31:15Z",
+        "fetched_at": "2026-11-06T04:29:58Z",
         "header": {
           "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
           "declared_size": "219",
@@ -109,7 +109,7 @@
       },
       "sukka_direct_surge": {
         "artifact": "sukka_direct_surge",
-        "fetched_at": "2026-11-05T04:31:15Z",
+        "fetched_at": "2026-11-06T04:29:58Z",
         "header": {
           "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
           "declared_size": "224",
@@ -121,26 +121,26 @@
       },
       "sukka_domestic_clash": {
         "artifact": "sukka_domestic_clash",
-        "fetched_at": "2026-11-05T04:31:15Z",
+        "fetched_at": "2026-11-06T04:29:58Z",
         "header": {
-          "content_hash": "scIM_LKarNXpNb8hHiGf_V_XnRv9U2LjGOcF4DcKS7A",
-          "declared_size": "870",
-          "last_updated": "2026-10-20T10:56:36.477Z",
+          "content_hash": "WPb0ypsIhGM5h8i7-PheKH75CnIVABbioBcSs0MVscA",
+          "declared_size": "871",
+          "last_updated": "2026-11-05T06:05:13.811Z",
           "license": "AGPL 3.0"
         },
-        "sha256": "86077d8348204a990dc087749f30b8ba9149c09678aaaee876eadbc54802aaa8",
+        "sha256": "712abc0123ddf5153fcbddbe923df4aa6518ce0fc2fa2df584c003680e2bed05",
         "url": "https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt"
       },
       "sukka_domestic_surge": {
         "artifact": "sukka_domestic_surge",
-        "fetched_at": "2026-11-05T04:31:15Z",
+        "fetched_at": "2026-11-06T04:29:58Z",
         "header": {
-          "content_hash": "y7L2wtlvCeD6OPUOWtzQfz3XV7Sjbdp7NF6R58_pKuc",
-          "declared_size": "873",
-          "last_updated": "2026-10-20T10:56:36.477Z",
+          "content_hash": "gNEtFZTFRC9JO1efrlNeTZOOhOdo0qMAoECNQxaCxcc",
+          "declared_size": "874",
+          "last_updated": "2026-11-05T06:05:13.811Z",
           "license": "AGPL 3.0"
         },
-        "sha256": "33346c9173e9af4230d654eec45c37154c17e8d0240977eb853f535abce3858e",
+        "sha256": "0af51e348f438c4e66dce60f132e20aa7bac476664591f8ba383ed62e28819ed",
         "url": "https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf"
       }
     }
@@ -194,40 +194,40 @@
   "sources": {
     "cn": {
       "branch": "meta",
-      "meta_sha": "461790d18a151728e834979aad03cb29e256d181",
+      "meta_sha": "1fc5de325d54d3b77d6b86a1db900c5e48ae1003",
       "paths": [
         "geo/geosite/classical/category-ai-cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "9004d444eec2a687ea2d61421f85bf4b470f7dbb86c01779d165494376bb8f8c",
+      "sha256": "c8e432533991f51db52ccb435d8359fbd5226e679969298bc5fa806f1a2e682a",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/461790d18a151728e834979aad03cb29e256d181/geo/geosite/classical/category-ai-cn.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/1fc5de325d54d3b77d6b86a1db900c5e48ae1003/geo/geosite/classical/category-ai-cn.list"
       ]
     },
     "global": {
       "branch": "meta",
-      "meta_sha": "461790d18a151728e834979aad03cb29e256d181",
+      "meta_sha": "1fc5de325d54d3b77d6b86a1db900c5e48ae1003",
       "paths": [
         "geo/geosite/classical/category-ai-!cn.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "26507293ffc3c521f24764b7aedccc064b0836cc721762c667ad813ce62f1113",
+      "sha256": "6c046a7f48d63d5bd000943a151dd53eebff0d221cb3a2cb45a6cd268bc49ba7",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/461790d18a151728e834979aad03cb29e256d181/geo/geosite/classical/category-ai-!cn.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/1fc5de325d54d3b77d6b86a1db900c5e48ae1003/geo/geosite/classical/category-ai-!cn.list"
       ]
     },
     "network-test": {
       "branch": "meta",
-      "meta_sha": "461790d18a151728e834979aad03cb29e256d181",
+      "meta_sha": "1fc5de325d54d3b77d6b86a1db900c5e48ae1003",
       "paths": [
         "geo/geosite/classical/category-ip-geo-detect.list",
         "geo/geosite/classical/category-speedtest.list"
       ],
       "repository": "MetaCubeX/meta-rules-dat",
-      "sha256": "0630bbc6094b9d45c4be94951bb64cb2aad17dd9b88e0d9825a2ab08b5373932",
+      "sha256": "05667256a026938d5080d1a3a0c5778cd50feacf3c9be01aae42111c5d7a5e1a",
       "urls": [
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/461790d18a151728e834979aad03cb29e256d181/geo/geosite/classical/category-ip-geo-detect.list",
-        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/461790d18a151728e834979aad03cb29e256d181/geo/geosite/classical/category-speedtest.list"
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/1fc5de325d54d3b77d6b86a1db900c5e48ae1003/geo/geosite/classical/category-ip-geo-detect.list",
+        "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/1fc5de325d54d3b77d6b86a1db900c5e48ae1003/geo/geosite/classical/category-speedtest.list"
       ]
     }
   }
