@@ -53,7 +53,7 @@
         {
           "action": "REJECT",
           "behavior": "domain-set",
-          "bytes": 2188178,
+          "bytes": 2165343,
           "capability": "domain",
           "dns": "foreign",
           "dns_behavior": "domain-set",
@@ -67,8 +67,8 @@
           "no_resolve": false,
           "path": "rules/personal/mihomo/route/reject.mrs",
           "reject_mode": "plain",
-          "rule_count": 233404,
-          "sha256": "2345faf6050b9bc68c4e4aaea68491f7ae9415970716e1e65272e124d89a722a",
+          "rule_count": 230735,
+          "sha256": "a9cef1dfddadfed7fa343892b284fc49bb9cab1cb7aef1e5096b26337709c962",
           "slot": "reject",
           "stages": [
             "reject-domains",
@@ -107,7 +107,7 @@
         {
           "action": "TEST",
           "behavior": "domain-set",
-          "bytes": 15972,
+          "bytes": 15973,
           "capability": "domain",
           "dns": "test",
           "dns_behavior": "domain-set",
@@ -121,8 +121,8 @@
           "no_resolve": false,
           "path": "rules/personal/mihomo/route/test.mrs",
           "reject_mode": null,
-          "rule_count": 1984,
-          "sha256": "5c922e8f3a26533be4c3af972b06bef9ff2fb3a77ef8041cf86e217f378f380c",
+          "rule_count": 1985,
+          "sha256": "72d3083e8c2f82f3c0082fe24514076ce83fa8c41fad2b53fb816a23be905ad5",
           "slot": "test",
           "stages": [
             "network-test"
@@ -181,7 +181,7 @@
         {
           "action": "DIRECT",
           "behavior": "domain-set",
-          "bytes": 554977,
+          "bytes": 554975,
           "capability": "domain",
           "dns": "domestic",
           "dns_behavior": "domain-set",
@@ -195,8 +195,8 @@
           "no_resolve": false,
           "path": "rules/personal/mihomo/route/cn-direct.mrs",
           "reject_mode": null,
-          "rule_count": 112980,
-          "sha256": "92f27394a6595e8d49824c622db1b71f92a8284d9175078589a8102a922bc01a",
+          "rule_count": 112981,
+          "sha256": "eb5483001999960e4e8476e7ad7c2f15f17e94d693f01ebc118da39cc3124e85",
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -456,7 +456,7 @@
         {
           "action": "REJECT",
           "behavior": "classical",
-          "bytes": 5304943,
+          "bytes": 5229961,
           "capability": "classical",
           "dns": "foreign",
           "dns_behavior": "classical",
@@ -470,8 +470,8 @@
           "no_resolve": false,
           "path": "rules/personal/surge/route/reject.list",
           "reject_mode": "plain",
-          "rule_count": 150030,
-          "sha256": "d3c18037d6f66914339ead6ef0afb0caa818f28362f3da4f70822a6d5a0ee811",
+          "rule_count": 147937,
+          "sha256": "74b753e53e6095f4c8d98efc6f89f1e4e7579f6e12b1bb0ed7f0a69e5d2bb7ab",
           "slot": "reject",
           "stages": [
             "reject-domains",
@@ -481,7 +481,7 @@
         {
           "action": "REJECT",
           "behavior": "domain-set",
-          "bytes": 1624732,
+          "bytes": 1613247,
           "capability": "domain",
           "dns": "foreign",
           "dns_behavior": "domain-set",
@@ -495,8 +495,8 @@
           "no_resolve": false,
           "path": "rules/personal/surge/route/reject-extra.set",
           "reject_mode": "plain",
-          "rule_count": 83549,
-          "sha256": "fe2c6d1d56ece5c5c52e318dc63b469c051e4e9e859e6d565796e236f9abd21a",
+          "rule_count": 82973,
+          "sha256": "a244789c4d81efa68bb7d3279a7bc7e30b9e308b7c9a0685f18059b3f1a9b6fc",
           "slot": "reject",
           "stages": [
             "reject-extra"
@@ -553,7 +553,7 @@
         {
           "action": "TEST",
           "behavior": "domain-set",
-          "bytes": 28429,
+          "bytes": 28444,
           "capability": "domain",
           "dns": "test",
           "dns_behavior": "domain-set",
@@ -567,8 +567,8 @@
           "no_resolve": false,
           "path": "rules/personal/surge/route/test.set",
           "reject_mode": null,
-          "rule_count": 1984,
-          "sha256": "186fbe8934d71b58a8f49847cfb14b69f3326b6c3450bee4e0de025bdb644c57",
+          "rule_count": 1985,
+          "sha256": "8924bbb4a347d60fb8597ca162bc25cada7467ceb90906c485703d9fda99d79a",
           "slot": "test",
           "stages": [
             "network-test"
@@ -651,7 +651,7 @@
         {
           "action": "DIRECT",
           "behavior": "classical",
-          "bytes": 3024970,
+          "bytes": 3024998,
           "capability": "classical",
           "dns": "domestic",
           "dns_behavior": "classical",
@@ -665,8 +665,8 @@
           "no_resolve": false,
           "path": "rules/personal/surge/route/cn-direct.list",
           "reject_mode": null,
-          "rule_count": 113056,
-          "sha256": "08a94402dbe65699a4b10c5e6b697983aac7750e2257b93180942ffc18ed014c",
+          "rule_count": 113057,
+          "sha256": "4966afee38aaf49f84b64cb258878bc6b00bc5879544cae7b5c46fdd869e2e2b",
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -912,7 +912,7 @@
           "id": "reject",
           "no_resolve": false,
           "reject_mode": "plain",
-          "rule_count": 233404,
+          "rule_count": 230735,
           "slot": "reject",
           "stages": [
             "reject-domains",
@@ -962,7 +962,7 @@
           "id": "test",
           "no_resolve": false,
           "reject_mode": null,
-          "rule_count": 1984,
+          "rule_count": 1985,
           "slot": "test",
           "stages": [
             "network-test"
@@ -1030,7 +1030,7 @@
           "id": "cn-direct",
           "no_resolve": false,
           "reject_mode": null,
-          "rule_count": 112980,
+          "rule_count": 112981,
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -1339,7 +1339,7 @@
           "id": "reject",
           "no_resolve": false,
           "reject_mode": "plain",
-          "rule_count": 150030,
+          "rule_count": 147937,
           "slot": "reject",
           "stages": [
             "reject-domains",
@@ -1362,7 +1362,7 @@
           "id": "reject-extra",
           "no_resolve": false,
           "reject_mode": "plain",
-          "rule_count": 83549,
+          "rule_count": 82973,
           "slot": "reject",
           "stages": [
             "reject-extra"
@@ -1428,7 +1428,7 @@
           "id": "test",
           "no_resolve": false,
           "reject_mode": null,
-          "rule_count": 1984,
+          "rule_count": 1985,
           "slot": "test",
           "stages": [
             "network-test"
@@ -1518,7 +1518,7 @@
           "id": "cn-direct",
           "no_resolve": false,
           "reject_mode": null,
-          "rule_count": 113056,
+          "rule_count": 113057,
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -1820,7 +1820,7 @@
       {
         "action": "REJECT",
         "behavior": "domain-set",
-        "bytes": 1509634,
+        "bytes": 1489623,
         "capability": "domain",
         "dns": "foreign",
         "dns_behavior": "domain-set",
@@ -1834,8 +1834,8 @@
         "no_resolve": false,
         "path": "rules/personal/mihomo/reject-domains.mrs",
         "reject_mode": "plain",
-        "rule_count": 149798,
-        "sha256": "6e75d7c372438e3330031bc0c87df1addf9cdc0835da6ff950fe1ad347b2226c",
+        "rule_count": 147705,
+        "sha256": "5bbcf66f988eb96eda5bfad55ed08287beee1b76fc78e4981afc0643d8077fb5",
         "stages": [
           "reject-domains"
         ]
@@ -1843,7 +1843,7 @@
       {
         "action": "REJECT",
         "behavior": "domain-set",
-        "bytes": 716904,
+        "bytes": 713093,
         "capability": "domain",
         "dns": "foreign",
         "dns_behavior": "domain-set",
@@ -1857,8 +1857,8 @@
         "no_resolve": false,
         "path": "rules/personal/mihomo/reject-extra.mrs",
         "reject_mode": "plain",
-        "rule_count": 83550,
-        "sha256": "8f641a3c29a5f27fed7806e439f541a953d0a569064c116e80375851cde2c10b",
+        "rule_count": 82974,
+        "sha256": "4e99090b39e91bbb97aabc5f9145be4a1b1a4d3c8e5ec87ce82d6fbdc8a4b72b",
         "stages": [
           "reject-extra"
         ]
@@ -1939,7 +1939,7 @@
       {
         "action": "TEST",
         "behavior": "domain-set",
-        "bytes": 15972,
+        "bytes": 15973,
         "capability": "domain",
         "dns": "foreign",
         "dns_behavior": "domain-set",
@@ -1953,8 +1953,8 @@
         "no_resolve": false,
         "path": "rules/personal/mihomo/network-test.mrs",
         "reject_mode": null,
-        "rule_count": 1984,
-        "sha256": "5c922e8f3a26533be4c3af972b06bef9ff2fb3a77ef8041cf86e217f378f380c",
+        "rule_count": 1985,
+        "sha256": "72d3083e8c2f82f3c0082fe24514076ce83fa8c41fad2b53fb816a23be905ad5",
         "stages": [
           "network-test"
         ]
@@ -1962,7 +1962,7 @@
       {
         "action": "DIRECT",
         "behavior": "domain-set",
-        "bytes": 1266,
+        "bytes": 1285,
         "capability": "domain",
         "dns": "domestic",
         "dns_behavior": "domain-set",
@@ -1976,8 +1976,8 @@
         "no_resolve": false,
         "path": "rules/personal/mihomo/ai-cn.mrs",
         "reject_mode": null,
-        "rule_count": 132,
-        "sha256": "9a1b2f63e1d46b4d2d4e593a0fd4aa9718cc2326e4a9e04215027dfbc4b0c17b",
+        "rule_count": 133,
+        "sha256": "6c481c8c4c623a49020aebfcb910228a3e375985facda76969c1e567b0a19f10",
         "stages": [
           "ai-cn"
         ]
@@ -2477,7 +2477,7 @@
       {
         "action": "REJECT",
         "behavior": "domain-set",
-        "bytes": 3357133,
+        "bytes": 3309360,
         "capability": "domain",
         "dns": "foreign",
         "dns_behavior": "domain-set",
@@ -2491,8 +2491,8 @@
         "no_resolve": false,
         "path": "rules/personal/surge/reject-domains.set",
         "reject_mode": "plain",
-        "rule_count": 149798,
-        "sha256": "47654660430587178f2f74055f5a61cdb5fb01cb2fd6ab4b7ba378330482fffa",
+        "rule_count": 147705,
+        "sha256": "0d5d21135a49a588b950fc5688488fca2b4689c5e82420c6a2f4d4605c11ad3d",
         "stages": [
           "reject-domains"
         ]
@@ -2500,7 +2500,7 @@
       {
         "action": "REJECT",
         "behavior": "domain-set",
-        "bytes": 1624771,
+        "bytes": 1613286,
         "capability": "domain",
         "dns": "foreign",
         "dns_behavior": "domain-set",
@@ -2514,8 +2514,8 @@
         "no_resolve": false,
         "path": "rules/personal/surge/reject-extra.set",
         "reject_mode": "plain",
-        "rule_count": 83550,
-        "sha256": "2e11edcd7aae9d955fb40abb3d68eff97f16bab0c605b31a0ae6b0a310579d64",
+        "rule_count": 82974,
+        "sha256": "f34ac0a2f97051594e4b8b82e7033c3b118c82055a2d4ea763eeaf0e557b0f4a",
         "stages": [
           "reject-extra"
         ]
@@ -2598,7 +2598,7 @@
       {
         "action": "TEST",
         "behavior": "domain-set",
-        "bytes": 28429,
+        "bytes": 28444,
         "capability": "domain",
         "dns": "foreign",
         "dns_behavior": "domain-set",
@@ -2612,8 +2612,8 @@
         "no_resolve": false,
         "path": "rules/personal/surge/network-test.set",
         "reject_mode": null,
-        "rule_count": 1984,
-        "sha256": "186fbe8934d71b58a8f49847cfb14b69f3326b6c3450bee4e0de025bdb644c57",
+        "rule_count": 1985,
+        "sha256": "8924bbb4a347d60fb8597ca162bc25cada7467ceb90906c485703d9fda99d79a",
         "stages": [
           "network-test"
         ]
@@ -2621,7 +2621,7 @@
       {
         "action": "DIRECT",
         "behavior": "domain-set",
-        "bytes": 1847,
+        "bytes": 1862,
         "capability": "domain",
         "dns": "domestic",
         "dns_behavior": "domain-set",
@@ -2635,8 +2635,8 @@
         "no_resolve": false,
         "path": "rules/personal/surge/ai-cn.set",
         "reject_mode": null,
-        "rule_count": 132,
-        "sha256": "b89a61047be36b506ba11f3c45d94b110dca9ff259180c8a4f6269cebc059d16",
+        "rule_count": 133,
+        "sha256": "eaaa5aede62dd2299d71aecaa4ff037a2ab5fb6f36e1d935165589bc3cd2c240",
         "stages": [
           "ai-cn"
         ]
@@ -3093,8 +3093,8 @@
   },
   "legacy_inputs": {
     "rules/ai-cn.list": {
-      "bytes": 3551,
-      "sha256": "6098e64d044e5eba91d1e8cbca33275240f64812b89bc9a04cce273a027e7a97"
+      "bytes": 3579,
+      "sha256": "2af606ac469c6f833bd24ef8d3d3fd0ce2a38d97b8545c56cfac17a3d84b6e2b"
     },
     "rules/ai-global.list": {
       "bytes": 6821,
@@ -3117,12 +3117,12 @@
       "sha256": "1ea346626c99c4ca7c6beff0b563cad3cc7340a53fb3476d9254f591be7fa71b"
     },
     "rules/network-test.list": {
-      "bytes": 53639,
-      "sha256": "89fe9998b027773fdef908f794f11103fa31e417d0b2fa4470a073359cfee335"
+      "bytes": 53667,
+      "sha256": "0207138b57c009a891303dffa38e97e8a32c3448707fa13adbfd78899772b5c7"
     },
     "rules/surge/ai-cn.set": {
-      "bytes": 1847,
-      "sha256": "b89a61047be36b506ba11f3c45d94b110dca9ff259180c8a4f6269cebc059d16"
+      "bytes": 1862,
+      "sha256": "eaaa5aede62dd2299d71aecaa4ff037a2ab5fb6f36e1d935165589bc3cd2c240"
     },
     "rules/surge/ai-process.list": {
       "bytes": 327,
@@ -3141,8 +3141,8 @@
       "sha256": "24c77c9dbf271126ff207437086bba68af3a1a5ca6622a7fb3da200a2c36b9a8"
     },
     "rules/surge/network-test.set": {
-      "bytes": 28429,
-      "sha256": "186fbe8934d71b58a8f49847cfb14b69f3326b6c3450bee4e0de025bdb644c57"
+      "bytes": 28444,
+      "sha256": "8924bbb4a347d60fb8597ca162bc25cada7467ceb90906c485703d9fda99d79a"
     },
     "rules/surge/us.set": {
       "bytes": 68,
@@ -3155,8 +3155,8 @@
   },
   "outputs": {
     "rules/personal/mihomo/ai-cn.mrs": {
-      "bytes": 1266,
-      "sha256": "9a1b2f63e1d46b4d2d4e593a0fd4aa9718cc2326e4a9e04215027dfbc4b0c17b"
+      "bytes": 1285,
+      "sha256": "6c481c8c4c623a49020aebfcb910228a3e375985facda76969c1e567b0a19f10"
     },
     "rules/personal/mihomo/ai-global.list": {
       "bytes": 6821,
@@ -3247,20 +3247,20 @@
       "sha256": "e2489016dc16dbfc97308cf5d2a7b90bf0bc5c2eaebf8c3490759e9066793e6c"
     },
     "rules/personal/mihomo/network-test.mrs": {
-      "bytes": 15972,
-      "sha256": "5c922e8f3a26533be4c3af972b06bef9ff2fb3a77ef8041cf86e217f378f380c"
+      "bytes": 15973,
+      "sha256": "72d3083e8c2f82f3c0082fe24514076ce83fa8c41fad2b53fb816a23be905ad5"
     },
     "rules/personal/mihomo/reject-domains.mrs": {
-      "bytes": 1509634,
-      "sha256": "6e75d7c372438e3330031bc0c87df1addf9cdc0835da6ff950fe1ad347b2226c"
+      "bytes": 1489623,
+      "sha256": "5bbcf66f988eb96eda5bfad55ed08287beee1b76fc78e4981afc0643d8077fb5"
     },
     "rules/personal/mihomo/reject-drop.list": {
       "bytes": 974,
       "sha256": "da891c610b18ab2a248461fc7a2593877a9f0afbd6aee21695c2180ff88828e0"
     },
     "rules/personal/mihomo/reject-extra.mrs": {
-      "bytes": 716904,
-      "sha256": "8f641a3c29a5f27fed7806e439f541a953d0a569064c116e80375851cde2c10b"
+      "bytes": 713093,
+      "sha256": "4e99090b39e91bbb97aabc5f9145be4a1b1a4d3c8e5ec87ce82d6fbdc8a4b72b"
     },
     "rules/personal/mihomo/reject-ip.list": {
       "bytes": 20134,
@@ -3283,8 +3283,8 @@
       "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8"
     },
     "rules/personal/mihomo/route/cn-direct.mrs": {
-      "bytes": 554977,
-      "sha256": "92f27394a6595e8d49824c622db1b71f92a8284d9175078589a8102a922bc01a"
+      "bytes": 554975,
+      "sha256": "eb5483001999960e4e8476e7ad7c2f15f17e94d693f01ebc118da39cc3124e85"
     },
     "rules/personal/mihomo/route/direct-ip.list": {
       "bytes": 733,
@@ -3319,12 +3319,12 @@
       "sha256": "ddc3d17fa29fdd3020f0867419473f0340fa2200858660ae2784b13dffac83a8"
     },
     "rules/personal/mihomo/route/reject.mrs": {
-      "bytes": 2188178,
-      "sha256": "2345faf6050b9bc68c4e4aaea68491f7ae9415970716e1e65272e124d89a722a"
+      "bytes": 2165343,
+      "sha256": "a9cef1dfddadfed7fa343892b284fc49bb9cab1cb7aef1e5096b26337709c962"
     },
     "rules/personal/mihomo/route/test.mrs": {
-      "bytes": 15972,
-      "sha256": "5c922e8f3a26533be4c3af972b06bef9ff2fb3a77ef8041cf86e217f378f380c"
+      "bytes": 15973,
+      "sha256": "72d3083e8c2f82f3c0082fe24514076ce83fa8c41fad2b53fb816a23be905ad5"
     },
     "rules/personal/mihomo/route/us-proxy-ip-late.list": {
       "bytes": 77,
@@ -3347,8 +3347,8 @@
       "sha256": "a94ec888282e1b63e72d4aaa6f8961294fa487061bffa50fa029f0cdeab7aada"
     },
     "rules/personal/surge/ai-cn.set": {
-      "bytes": 1847,
-      "sha256": "b89a61047be36b506ba11f3c45d94b110dca9ff259180c8a4f6269cebc059d16"
+      "bytes": 1862,
+      "sha256": "eaaa5aede62dd2299d71aecaa4ff037a2ab5fb6f36e1d935165589bc3cd2c240"
     },
     "rules/personal/surge/ai-global.list": {
       "bytes": 6821,
@@ -3455,20 +3455,20 @@
       "sha256": "ba1cb7daf5f3338695fb40b03132eaf43d1dda79b52636e02349679824173b43"
     },
     "rules/personal/surge/network-test.set": {
-      "bytes": 28429,
-      "sha256": "186fbe8934d71b58a8f49847cfb14b69f3326b6c3450bee4e0de025bdb644c57"
+      "bytes": 28444,
+      "sha256": "8924bbb4a347d60fb8597ca162bc25cada7467ceb90906c485703d9fda99d79a"
     },
     "rules/personal/surge/reject-domains.set": {
-      "bytes": 3357133,
-      "sha256": "47654660430587178f2f74055f5a61cdb5fb01cb2fd6ab4b7ba378330482fffa"
+      "bytes": 3309360,
+      "sha256": "0d5d21135a49a588b950fc5688488fca2b4689c5e82420c6a2f4d4605c11ad3d"
     },
     "rules/personal/surge/reject-drop.list": {
       "bytes": 974,
       "sha256": "da891c610b18ab2a248461fc7a2593877a9f0afbd6aee21695c2180ff88828e0"
     },
     "rules/personal/surge/reject-extra.set": {
-      "bytes": 1624771,
-      "sha256": "2e11edcd7aae9d955fb40abb3d68eff97f16bab0c605b31a0ae6b0a310579d64"
+      "bytes": 1613286,
+      "sha256": "f34ac0a2f97051594e4b8b82e7033c3b118c82055a2d4ea763eeaf0e557b0f4a"
     },
     "rules/personal/surge/reject-ip.list": {
       "bytes": 20134,
@@ -3487,8 +3487,8 @@
       "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8"
     },
     "rules/personal/surge/route/cn-direct.list": {
-      "bytes": 3024970,
-      "sha256": "08a94402dbe65699a4b10c5e6b697983aac7750e2257b93180942ffc18ed014c"
+      "bytes": 3024998,
+      "sha256": "4966afee38aaf49f84b64cb258878bc6b00bc5879544cae7b5c46fdd869e2e2b"
     },
     "rules/personal/surge/route/direct-ip.list": {
       "bytes": 733,
@@ -3519,8 +3519,8 @@
       "sha256": "6c872a86b962a11efd0c8071bb5111fd73dff5b1c0d86129f9f08e4ad7eac806"
     },
     "rules/personal/surge/route/reject-extra.set": {
-      "bytes": 1624732,
-      "sha256": "fe2c6d1d56ece5c5c52e318dc63b469c051e4e9e859e6d565796e236f9abd21a"
+      "bytes": 1613247,
+      "sha256": "a244789c4d81efa68bb7d3279a7bc7e30b9e308b7c9a0685f18059b3f1a9b6fc"
     },
     "rules/personal/surge/route/reject-ip.list": {
       "bytes": 20088,
@@ -3531,12 +3531,12 @@
       "sha256": "961b3b0aef3b72ce1efb4efe694d97930f69796343fc4fd259017ec3335ed754"
     },
     "rules/personal/surge/route/reject.list": {
-      "bytes": 5304943,
-      "sha256": "d3c18037d6f66914339ead6ef0afb0caa818f28362f3da4f70822a6d5a0ee811"
+      "bytes": 5229961,
+      "sha256": "74b753e53e6095f4c8d98efc6f89f1e4e7579f6e12b1bb0ed7f0a69e5d2bb7ab"
     },
     "rules/personal/surge/route/test.set": {
-      "bytes": 28429,
-      "sha256": "186fbe8934d71b58a8f49847cfb14b69f3326b6c3450bee4e0de025bdb644c57"
+      "bytes": 28444,
+      "sha256": "8924bbb4a347d60fb8597ca162bc25cada7467ceb90906c485703d9fda99d79a"
     },
     "rules/personal/surge/route/us-proxy-ext.list": {
       "bytes": 154,
@@ -3752,11 +3752,11 @@
     },
     "mihomo.reject_domains": {
       "archive_path": "upstream/personal/mihomo/reject_domains.txt",
-      "bytes": 3506897,
+      "bytes": 3457031,
       "kind": "domainset",
       "platform": "mihomo",
-      "rules": 149798,
-      "sha256": "9c7487db59d989aff919b52b387849a248de68bf77088ffd40acc7123eb77ea7",
+      "rules": 147705,
+      "sha256": "d01190e62bd1dff27043cd18a3dd5032840d788ecd9a15311e3bd07640ed93eb",
       "url": "https://ruleset-mirror.skk.moe/Clash/domainset/reject.txt"
     },
     "mihomo.reject_drop": {
@@ -3770,11 +3770,11 @@
     },
     "mihomo.reject_extra": {
       "archive_path": "upstream/personal/mihomo/reject_extra.txt",
-      "bytes": 1710628,
+      "bytes": 1698567,
       "kind": "domainset",
       "platform": "mihomo",
-      "rules": 83550,
-      "sha256": "aa69838e76bc5e611e982898438374c96ef9b517c0257f58c022522812b92f65",
+      "rules": 82974,
+      "sha256": "79a123cdb2dc38f316cb43200c120e4203dda22b3d3fc2799dbe6b67cc0e00b6",
       "url": "https://ruleset-mirror.skk.moe/Clash/domainset/reject_extra.txt"
     },
     "mihomo.reject_ip": {
@@ -4013,11 +4013,11 @@
     },
     "surge.reject_domains": {
       "archive_path": "upstream/personal/surge/reject_domains.conf",
-      "bytes": 3358255,
+      "bytes": 3310482,
       "kind": "domainset",
       "platform": "surge",
-      "rules": 149798,
-      "sha256": "92459425591a15971c253a8b17e365f0f2850bb4fc1434bbbf7041a02661dab1",
+      "rules": 147705,
+      "sha256": "a4d745e3794e6572e3a83b2aa883951b3516d69d2a7d38255078efec1ae3590c",
       "url": "https://ruleset-mirror.skk.moe/List/domainset/reject.conf"
     },
     "surge.reject_drop": {
@@ -4031,11 +4031,11 @@
     },
     "surge.reject_extra": {
       "archive_path": "upstream/personal/surge/reject_extra.conf",
-      "bytes": 1627094,
+      "bytes": 1615609,
       "kind": "domainset",
       "platform": "surge",
-      "rules": 83550,
-      "sha256": "0a1f8a157473dbb7b981804d0d3b7a2a4cb0d475cd9227aa7d9a32c6ca33f570",
+      "rules": 82974,
+      "sha256": "61a1efdd15eae852cb9dcc1ff032e3fbfbe7f76e7dc75bd49830be9d8d39b0c8",
       "url": "https://ruleset-mirror.skk.moe/List/domainset/reject_extra.conf"
     },
     "surge.reject_ip": {
@@ -4186,10 +4186,10 @@
       "id": "reject-domains",
       "no_resolve": false,
       "reject_mode": "plain",
-      "rule_count": 299596,
+      "rule_count": 295410,
       "rule_count_by_platform": {
-        "mihomo": 149798,
-        "surge": 149798
+        "mihomo": 147705,
+        "surge": 147705
       },
       "sources": [
         "mihomo.reject_domains",
@@ -4212,10 +4212,10 @@
       "id": "reject-extra",
       "no_resolve": false,
       "reject_mode": "plain",
-      "rule_count": 167100,
+      "rule_count": 165948,
       "rule_count_by_platform": {
-        "mihomo": 83550,
-        "surge": 83550
+        "mihomo": 82974,
+        "surge": 82974
       },
       "sources": [
         "mihomo.reject_extra",
@@ -4316,10 +4316,10 @@
       "id": "network-test",
       "no_resolve": false,
       "reject_mode": null,
-      "rule_count": 3968,
+      "rule_count": 3970,
       "rule_count_by_platform": {
-        "mihomo": 1984,
-        "surge": 1984
+        "mihomo": 1985,
+        "surge": 1985
       },
       "sources": [
         "legacy:network-test"
@@ -4341,10 +4341,10 @@
       "id": "ai-cn",
       "no_resolve": false,
       "reject_mode": null,
-      "rule_count": 264,
+      "rule_count": 266,
       "rule_count_by_platform": {
-        "mihomo": 132,
-        "surge": 132
+        "mihomo": 133,
+        "surge": 133
       },
       "sources": [
         "legacy:ai-cn"
