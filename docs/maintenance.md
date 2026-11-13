@@ -17,7 +17,7 @@
 
 AI 和网络测试来自 [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) 的 `meta` 分支，每轮固定到一个提交。
 
-publish 工作流的构建步骤会用 Actions 内建 `GITHUB_TOKEN` 认证 `api.github.com` 请求；本地可设置同名环境变量启用认证，未设置时仍以匿名方式抓取。令牌只附加到 HTTPS `api.github.com` 默认端口或 443 的请求，不用于 raw 文件、Sukka 镜像或重定向后的请求。
+publish 工作流的构建步骤会用 Actions 内建 `GITHUB_TOKEN` 认证 `api.github.com` 请求；本地可设置同名环境变量启用认证，未设置时仍以匿名方式抓取。令牌只附加到 HTTPS `api.github.com` 默认端口或 443 的请求，不用于 raw 文件、Sukka 主站或重定向后的请求。
 
 `direct` 与 `us` 是单独的人工维护入口。`direct_rules` 生成 `rules/direct.list` 和 `rules/surge/direct.set`，同一份域名范围合入 `cn-direct`，并从 Test 输出排除。Test 后缀覆盖某个精确直连子域时，保守移除该 Test 父域并记录影响范围，不扩大直连范围。客户端继续引用现有聚合。
 
@@ -25,7 +25,7 @@ publish 工作流的构建步骤会用 Actions 内建 `GITHUB_TOKEN` 认证 `api
 
 目前只有三个逐主机规则：`sentitlement2.mobile.att.net`、`epdg.epc.att.net`、`epdg.epc.att-idns.net`。后一个主机来自本机抓包中的 CNAME 观察。AT&T 文档 [KM1114459](https://www.att.com/support/article/wireless/KM1114459/) 作一般背景参考，主机范围来自本机验证；规则选择出口，不保证通话成功。客户端需单独维护所需的真实 DNS，个人聚合中将它们归入 `US`，位于基础设施直连、拦截和 TEST 之后、普通直连之前；绑定到具备所需 UDP 能力的美国节点。单独接入此细分类的消费者自行确定顺序。
 
-国内直连聚合 3 个上游项目、4 个逻辑集合、6 个实际输入：ChinaMax Domain、ACL4SSR ChinaDomain，以及 Sukka direct/domestic 的 Clash、Surge 版本。ChinaMax 和 ACL 各固定一个 Git 提交；Sukka 的四份官方发布文件分别记录哈希和头部信息。原文保存在 `upstream/cn-direct/`，域名跨平台合并，平台表达式分别输出；ACL 待审增量不进入直连规则。
+国内直连聚合 3 个上游项目、4 个逻辑集合、6 个实际输入：ChinaMax Domain、ACL4SSR ChinaDomain，以及 Sukka direct/domestic 的 Clash、Surge 版本。ChinaMax 和 ACL 各固定一个 Git 提交；Sukka 的四份官方发布文件从 `https://ruleset.skk.moe` 主站获取，分别记录哈希和头部信息。个人聚合也使用同一官方主站及原资源路径；官方镜像 `ruleset-mirror.skk.moe` 返回 404 时不再依赖镜像。来源异常仍停止发布，不降级为旧数据或跳过校验。原文保存在 `upstream/cn-direct/`，域名跨平台合并，平台表达式分别输出；ACL 待审增量不进入直连规则。
 
 固定的 Public Suffix List 仅用于检测公共/托管后缀和父域扩张，不是分流来源。初版宽范围名单与六份来源哈希一起审核；后续新增范围仍须复核。格式选择不代表固定提速：Surge 会索引 `DOMAIN-SET` 和 `RULE-SET` 中的纯域名。
 

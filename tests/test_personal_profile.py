@@ -305,6 +305,18 @@ class NetworkFetchTests(unittest.TestCase):
         response.__exit__.return_value = False
         return response
 
+    def test_all_sources_use_official_origin_without_github_credentials(self) -> None:
+        for source_id, spec in personal_profile.SOURCE_SPECS.items():
+            self.assertTrue(spec["url"].startswith("https://ruleset.skk.moe/"), source_id)
+            self.assertNotIn("mirror", spec["url"])
+        source_id = "mihomo.lan"
+        response = self.response(source_id, [b"ok"])
+        with mock.patch.dict("os.environ", {"GITHUB_TOKEN": "test-token"}), mock.patch.object(
+            personal_profile.urllib.request, "urlopen", return_value=response
+        ) as urlopen:
+            self.assertEqual(personal_profile._fetch_one(source_id), (source_id, b"ok"))
+        self.assertIsNone(urlopen.call_args.args[0].get_header("Authorization"))
+
     def test_fetch_rejects_declared_length_larger_than_received_body(self) -> None:
         source_id = "mihomo.lan"
         response = self.response(source_id, [b"ab", b"cd", b"ef"], "10")

@@ -53,7 +53,7 @@ class CnDirectHTTPResponseTests(unittest.TestCase):
             ("https://api.github.com/repos/example/repo", "Bearer test-token"),
             ("https://api.github.com:443/repos/example/repo", "Bearer test-token"),
             (self.url, None),
-            ("https://ruleset-mirror.skk.moe/sukka/direct.txt", None),
+            ("https://ruleset.skk.moe/sukka/direct.txt", None),
             ("https://user@api.github.com/repos/example/repo", None),
             ("https://api.github.com:444/repos/example/repo", None),
         )
@@ -66,6 +66,25 @@ class CnDirectHTTPResponseTests(unittest.TestCase):
                     self.assertEqual(cn_direct._http_bytes(url, 100), b"ok")
                 request = urlopen.call_args.args[0]
                 self.assertEqual(request.get_header("Authorization"), expected_authorization)
+
+    def test_sukka_sources_use_official_origin_and_original_resource_paths(self) -> None:
+        expected = {
+            "sukka_direct_clash": "/Clash/non_ip/direct.txt",
+            "sukka_domestic_clash": "/Clash/non_ip/domestic.txt",
+            "sukka_direct_surge": "/List/non_ip/direct.conf",
+            "sukka_domestic_surge": "/List/non_ip/domestic.conf",
+        }
+        for source, path in expected.items():
+            self.assertEqual(cn_direct._source_url(source), "https://ruleset.skk.moe" + path)
+
+    def test_http_bytes_still_rejects_unregistered_hosts_and_cross_host_redirects(self) -> None:
+        for url in ("https://ruleset.skk.moe.example/direct.txt", "http://ruleset.skk.moe/direct.txt"):
+            with self.subTest(url=url), self.assertRaises(cn_direct.CnDirectError):
+                cn_direct._http_bytes(url, 100)
+        response = self.response(chunks=[b"ok", b""], url="https://other.example/direct.txt")
+        with mock.patch.object(cn_direct.urllib.request, "urlopen", return_value=response):
+            with self.assertRaisesRegex(cn_direct.CnDirectError, "redirect validation"):
+                cn_direct._http_bytes("https://ruleset.skk.moe/Clash/non_ip/direct.txt", 100)
 
     def test_http_bytes_leaves_github_api_anonymous_without_token(self) -> None:
         url = "https://api.github.com/repos/example/repo"

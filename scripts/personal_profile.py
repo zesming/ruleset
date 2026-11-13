@@ -104,7 +104,7 @@ def _source_specs() -> dict[str, dict[str, Any]]:
     for platform, tree, extension in (("mihomo", "Clash", "txt"), ("surge", "List", "conf")):
         for rule_id, kind, upstream_name in non_ip:
             source_id = f"{platform}.{rule_id}"
-            url = f"https://ruleset-mirror.skk.moe/{tree}/{kind}/{upstream_name}.{extension}"
+            url = f"https://ruleset.skk.moe/{tree}/{kind}/{upstream_name}.{extension}"
             archive = f"upstream/personal/{platform}/{rule_id}.{extension}"
             max_bytes = 8 * 1024 * 1024 if kind == "domainset" else 4 * 1024 * 1024
             result[source_id] = {
@@ -113,7 +113,7 @@ def _source_specs() -> dict[str, dict[str, Any]]:
             }
         for rule_id, upstream_name in ip_sources:
             source_id = f"{platform}.{rule_id}"
-            url = f"https://ruleset-mirror.skk.moe/{tree}/ip/{upstream_name}.{extension}"
+            url = f"https://ruleset.skk.moe/{tree}/ip/{upstream_name}.{extension}"
             archive = f"upstream/personal/{platform}/{rule_id}.{extension}"
             result[source_id] = {
                 "id": source_id, "platform": platform, "kind": "ip", "url": url,
@@ -1839,7 +1839,7 @@ def validate_bundle(root: str | Path = ROOT, *, converter_path: str | Path | Non
 def _fetch_one(source_id: str) -> tuple[str, bytes]:
     spec = SOURCE_SPECS[source_id]
     url = urllib.parse.urlparse(spec["url"])
-    if url.scheme != "https" or url.hostname != "ruleset-mirror.skk.moe":
+    if url.scheme != "https" or url.hostname != "ruleset.skk.moe":
         raise ProfileError(f"refusing unapproved source URL for {source_id}")
     request = urllib.request.Request(spec["url"], headers={"User-Agent": "zesming-personal-profile/1", "Accept": "text/plain"})
     try:
