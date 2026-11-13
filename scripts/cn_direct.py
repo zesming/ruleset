@@ -93,22 +93,22 @@ SOURCE_SPECS: dict[str, dict[str, Any]] = {
     "sukka_direct_clash": _source_spec(
         "upstream/cn-direct/sukka-direct.txt",
         max_bytes=512 * 1024,
-        url="https://ruleset-mirror.skk.moe/Clash/non_ip/direct.txt",
+        url="https://ruleset.skk.moe/Clash/non_ip/direct.txt",
     ),
     "sukka_domestic_clash": _source_spec(
         "upstream/cn-direct/sukka-domestic.txt",
         max_bytes=512 * 1024,
-        url="https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt",
+        url="https://ruleset.skk.moe/Clash/non_ip/domestic.txt",
     ),
     "sukka_direct_surge": _source_spec(
         "upstream/cn-direct/sukka-direct.conf",
         max_bytes=512 * 1024,
-        url="https://ruleset-mirror.skk.moe/List/non_ip/direct.conf",
+        url="https://ruleset.skk.moe/List/non_ip/direct.conf",
     ),
     "sukka_domestic_surge": _source_spec(
         "upstream/cn-direct/sukka-domestic.conf",
         max_bytes=512 * 1024,
-        url="https://ruleset-mirror.skk.moe/List/non_ip/domestic.conf",
+        url="https://ruleset.skk.moe/List/non_ip/domestic.conf",
     ),
 }
 
@@ -667,7 +667,7 @@ def _http_bytes(url: str, maximum: int) -> bytes:
     if not isinstance(maximum, int) or isinstance(maximum, bool) or maximum < 0:
         raise CnDirectError("source byte limit must be a non-negative integer")
     parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != "https" or parsed.hostname not in {"api.github.com", "raw.githubusercontent.com", "ruleset-mirror.skk.moe"}:
+    if parsed.scheme != "https" or parsed.hostname not in {"api.github.com", "raw.githubusercontent.com", "ruleset.skk.moe"}:
         raise CnDirectError(f"refusing unapproved source URL: {url}")
     request = urllib.request.Request(
         url,
