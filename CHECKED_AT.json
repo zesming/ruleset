@@ -1,7 +1,7 @@
 {
-  "candidate_id": "6811dfd80b4e6822a0a9b7837b307ceaee2f4c9175cc43513fb3a477d28e7881",
-  "checked_at": "2026-11-17T05:55:02Z",
-  "live_release_id": "b0355136a961ddca9c80f79f3bbda81b8c9840342268fd6999cd966ca09d0590",
+  "candidate_id": "b18b3bebc6f7acc600bc03f7c054b7b8ffefa95adacb2332537db19ed9ba7cd1",
+  "checked_at": "2026-11-18T05:23:31Z",
+  "live_release_id": "ccffdda081302307570b1993ad3ccdb45c8a1844c3fcdc4268f465095b3dbca4",
   "result": "released",
-  "source_sha": "1916b151c3661fc74f709ac69c271ff9ae912027"
+  "source_sha": "39ef714731b5523b471d6868f8e3e6e83d915611"
 }
