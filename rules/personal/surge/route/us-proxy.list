@@ -4598,6 +4598,7 @@ DOMAIN,encrypted-vtbn0.gstatic.com
 DOMAIN,encrypted-vtbn1.gstatic.com
 DOMAIN,encrypted-vtbn2.gstatic.com
 DOMAIN,encrypted-vtbn3.gstatic.com
+DOMAIN-SUFFIX,frame.claudeusercontent.com
 DOMAIN,images-eds-ssl.xboxlive.com
 DOMAIN,images-ext-1.discordapp.net
 DOMAIN,images-ext-2.discordapp.net
@@ -4651,6 +4652,7 @@ DOMAIN-SUFFIX,agechecker-northern-apps.com
 DOMAIN-SUFFIX,agechecker.northern-apps.com
 DOMAIN-SUFFIX,applicationinsights.azure.cn
 DOMAIN,assets-cdn.watchdisneyfe.com
+DOMAIN,assets.claudeusercontent.com
 DOMAIN,assets.positional-bucket.com
 DOMAIN,assets4.mist-train-girls.com
 DOMAIN,cdn-dynmedia-1.microsoft.com
@@ -4697,6 +4699,7 @@ DOMAIN,static-oforms.onlyoffice.com
 DOMAIN-SUFFIX,static-prod-web.miniclip.com
 DOMAIN,static-r.kamihimeproject.net
 DOMAIN,static-secure-uploads.ui.com
+DOMAIN,static.claudeusercontent.com
 DOMAIN,static.community.workday.com
 DOMAIN,static.edge.microsoftapp.net
 DOMAIN,static2.sharepointonline.com
@@ -4705,6 +4708,7 @@ DOMAIN,store-images.s-microsoft.com
 DOMAIN-SUFFIX,tunnels.api.visualstudio.com
 DOMAIN,ui-statics-cf.streamable.com
 DOMAIN,uos-support-files.svc.ui.com
+DOMAIN,upload.claudeusercontent.com
 DOMAIN,vsmarketplacebadge.apphb.com
 DOMAIN,wctour-images.worldchess.com
 DOMAIN,akamai-assets.squarespace.com
