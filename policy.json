@@ -439,7 +439,15 @@
       "review_date": "2026-10-02",
       "source_sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08"
     },
-    "adds": [],
+    "adds": [
+      {
+        "evidence": "Personal domain migrated to Cloudflare DNS (zesming.fun / garage.zesming.fun -> GCP Taiwan origin via Cloudflare proxy; jp/us hosts DNS only).",
+        "reason": "Route zesming.fun and its subdomains directly to observe domestic direct-access latency and keep personal hosts off the default US proxy.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN-SUFFIX",
+        "value": "zesming.fun"
+      }
+    ],
     "china_max_initial_wide_suffixes": [
       "1kapp.com",
       "alibaba",

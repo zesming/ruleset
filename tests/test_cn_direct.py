@@ -159,6 +159,8 @@ class CnDirectTests(unittest.TestCase):
         policy["china_max_initial_wide_suffixes"] = cn_direct.china_max_initial_wide_suffixes(
             china_rules, cn_direct.load_public_suffix_list()
         )
+        policy["adds"] = []
+        policy["removes"] = []
         policy["first_match_assertions"] = []
         return policy
 
