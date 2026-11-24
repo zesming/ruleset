@@ -202,8 +202,9 @@ class PriorityProfileTests(unittest.TestCase):
             legacy, candidate.manifest, accept_change=True,
         )
 
-    def test_early_direct_test_and_canary_handling_preserve_fine_interface(self) -> None:
+    def test_early_direct_test_and_canary_handling_emit_only_compact_route_outputs(self) -> None:
         candidate = compile_candidate()
+        self.assertNotIn("groups", candidate.manifest)
 
         for platform in ("mihomo", "surge"):
             lan = slot_groups(candidate, platform, "lan")
@@ -221,11 +222,15 @@ class PriorityProfileTests(unittest.TestCase):
             )
             self.assertNotIn(CANARY, compact_text)
 
-            fine_ip = next(
-                group for group in candidate.manifest["groups"][platform]
-                if "telegram-ip" in group["stages"]
-            )
-            self.assertIn(CANARY, candidate.files[fine_ip["path"]])
+            emitted_personal = [
+                path for path in candidate.files
+                if path.startswith(f"rules/personal/{platform}/")
+            ]
+            self.assertTrue(emitted_personal)
+            self.assertTrue(all(
+                path.startswith(f"rules/personal/{platform}/route/")
+                for path in emitted_personal
+            ))
 
         self.assertEqual(len(personal_profile.LEGACY_INPUT_PATHS), 15)
 

@@ -4,18 +4,6 @@ on:
     - cron: '0 0 * * *' # 08:00 Asia/Shanghai
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'scripts/**'
-      - 'tests/**'
-      - 'policy.json'
-      - 'profiles/**'
-      - 'rules/**'
-      - 'upstream/**'
-      - 'manifest.json'
-      - 'CHECKED_AT.json'
-      - 'examples/**'
-      - 'licenses/**'
-      - '.github/workflows/**'
   push:
     branches: [main]
     paths:
@@ -28,7 +16,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ruleset-publish
+  group: ${{ github.event_name == 'pull_request' && format('ruleset-pr-{0}', github.event.pull_request.number) || 'ruleset-publish' }}
   cancel-in-progress: false
 jobs:
   check:
@@ -37,7 +25,7 @@ jobs:
     outputs:
       base: ${{ steps.base.outputs.sha }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           persist-credentials: false
@@ -58,7 +46,7 @@ jobs:
           diff -u examples/personal-surge.conf "$RUNNER_TEMP/personal-examples/personal-surge.conf"
       - name: Retain proposed replay diagnostics
         if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: proposed-replay-${{ github.run_id }}-${{ github.run_attempt }}
           path: .build-report/
@@ -73,7 +61,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.check.outputs.base }}
           fetch-depth: 0
@@ -141,7 +129,7 @@ jobs:
           git push origin HEAD:main
       - name: Retain update diagnostics
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: update-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: .build-report/

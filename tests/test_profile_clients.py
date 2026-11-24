@@ -98,6 +98,7 @@ def _compact_candidate():
             compact_stages[platform].append({
                 **fine, "rules": rules, "group_by_platform": {platform: None},
             })
+    candidate.manifest.pop("groups", None)
     candidate.manifest["compact"] = {
         "schema": 1, "groups": compact_groups, "stages": compact_stages,
     }
