@@ -1,6 +1,6 @@
 {
-  "baseline_release_id": "d24863ebb92a394414d272ca4c9682fb76a2916a9f9c3103acc63493ef614038",
-  "candidate_id": "3dc8086ebd4d47638d6411a7e3baa5e103d267ce2bdc318cd858da7555cc9c8a",
+  "baseline_release_id": "58218c515100730fc31802e1a0cdbbeac8be429b992217272c06e156861c0ea9",
+  "candidate_id": "157e63bac72aac7277d820e26a82807339d13449a703472aa500ec429a0e5054",
   "cn_direct": {
     "acl_review": {
       "accepted": [
@@ -239,15 +239,10 @@
     },
     "diffs": {
       "domain_output": {
-        "added": 1,
-        "added_rules": [
-          [
-            "DOMAIN-SUFFIX",
-            "zesming.fun"
-          ]
-        ],
+        "added": 0,
+        "added_rules": [],
         "after": 110690,
-        "before": 110689,
+        "before": 110690,
         "removed": 0,
         "removed_rules": []
       },
@@ -443070,7 +443065,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "a7bdd9c97c3c4a1d01a7259bba7c23c275794cc7",
-          "fetched_at": "2026-11-24T14:33:13Z",
+          "fetched_at": "2026-11-24T15:05:03Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -443079,7 +443074,7 @@
         "china_max": {
           "branch": "master",
           "commit": "0b6897dc17e0c513d25449c935a9694818e32f0c",
-          "fetched_at": "2026-11-24T14:33:13Z",
+          "fetched_at": "2026-11-24T15:05:03Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "14aa8915ad636bc378f23adb0490e1b9f6dbff9196bb8404e9376b2e10343774",
@@ -443087,7 +443082,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-11-24T14:33:13Z",
+          "fetched_at": "2026-11-24T15:05:03Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -443099,7 +443094,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-11-24T14:33:13Z",
+          "fetched_at": "2026-11-24T15:05:03Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -443111,7 +443106,7 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-11-24T14:33:13Z",
+          "fetched_at": "2026-11-24T15:05:03Z",
           "header": {
             "content_hash": "Ky5E4oRxdTAa_kO7mGfL1dbvAf5Fvjjhg56-03OzGQg",
             "declared_size": "873",
@@ -443123,7 +443118,7 @@
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-11-24T14:33:13Z",
+          "fetched_at": "2026-11-24T15:05:03Z",
           "header": {
             "content_hash": "N_pdVXp8iyfQrUnc5h51pGhpsRxOaznwpIfGTXJ5iAY",
             "declared_size": "876",
@@ -1803722,7 +1803717,7 @@
       "sha256": "0207138b57c009a891303dffa38e97e8a32c3448707fa13adbfd78899772b5c7"
     }
   },
-  "release_id": "58218c515100730fc31802e1a0cdbbeac8be429b992217272c06e156861c0ea9",
+  "release_id": "d8c0d63338267066b74be2e22f4d05a01c44a81c646c839638523799bd3694a5",
   "routing_ownership": {
     "automatic_moves": [
       {
@@ -1841593,5 +1841588,5 @@
       "sha256": "49fbd79df795c7f77156637c2687893152120df313129363d25a76f7695e0839"
     }
   },
-  "tool_sha256": "7f89aab0b421aa85dd82abab89af8ff88d85041976417a0dfa2f4d7f7305cb35"
+  "tool_sha256": "8d0ffc3200d1678736082f1054661288b82bcc03304e9aa7843134d4d9c5cb84"
 }

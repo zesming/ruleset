@@ -893,15 +893,6 @@ def _platform_key() -> str:
     return f"{os_name}-{machine}"
 
 
-def _capability(rules: Iterable[Rule]) -> str:
-    rule_types = {rule.type for rule in rules}
-    if rule_types and rule_types <= DOMAIN_TYPES:
-        return "domain"
-    if rule_types and rule_types <= DOMAIN_MATCH_TYPES:
-        return "domain-special"
-    return "classical"
-
-
 def _source_metadata(source_id: str, data: bytes, rules: list[Rule]) -> dict[str, Any]:
     spec = SOURCE_SPECS[source_id]
     return {
@@ -961,10 +952,12 @@ def _compact_group_name(slot: str, action: str, capability: str, ordinal: int) -
     return base_id, False
 
 
-def _client_interface(manifest: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
+def _client_interface(manifest: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]] | None:
     groups = manifest.get("groups")
+    if groups is None:
+        return None
     if not isinstance(groups, Mapping):
-        raise ProfileError("previous manifest has no client group interface")
+        raise ProfileError("previous manifest has an invalid client group interface")
     stages = manifest.get("stages")
     if not isinstance(stages, list):
         raise ProfileError("manifest has no ordered stage interface")
@@ -1123,10 +1116,15 @@ def _require_stable_client_interface(
     after = _client_interface(current)
     before_compact = _compact_client_interface(previous)
     after_compact = _compact_client_interface(current)
-    differences: dict[str, Any] = {
-        platform: _interface_differences(before[platform], after[platform])
-        for platform in before if before[platform] != after[platform]
-    }
+    differences: dict[str, Any] = {}
+    if before is not None or after is not None:
+        for platform in ("mihomo", "surge"):
+            if before is None or after is None:
+                differences[platform] = {"fine_manifest_present": {
+                    "before": before is not None, "after": after is not None,
+                }}
+            elif before[platform] != after[platform]:
+                differences[platform] = _interface_differences(before[platform], after[platform])
     for platform in ("mihomo", "surge"):
         if before_compact is None or after_compact is None:
             differences[f"{platform} compact"] = {"compact_manifest_present": {
@@ -1145,10 +1143,6 @@ def _require_stable_client_interface(
             "client resource interface changed for " + ", ".join(differences)
             + detail + "; review and migrate clients, then rerun once with --accept-interface-change"
         )
-
-
-def _compatible(group: Mapping[str, Any], stage: Mapping[str, Any], capability: str) -> bool:
-    return all(group[key] == stage[key] for key in ("action", "dns", "reject_mode", "extended_matching", "no_resolve")) and group["capability"] == capability
 
 
 def _requires_rule_dns(rules: Iterable[Rule], no_resolve: bool) -> bool:
@@ -1192,7 +1186,7 @@ def _compile_compact(
     dict[str, bytes], dict[str, list[dict[str, Any]]],
     dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]],
 ]:
-    """Build the priority interface while leaving fine stages and resources intact."""
+    """Build the compact priority route interface from normalized profile stages."""
     output_files: dict[str, bytes] = {}
     groups_by_platform: dict[str, list[dict[str, Any]]] = {"mihomo": [], "surge": []}
     stages_by_platform: dict[str, list[dict[str, Any]]] = {"mihomo": [], "surge": []}
@@ -1520,7 +1514,7 @@ def _compile_compact(
                 "reject_mode": fine["reject_mode"], "extended_matching": False,
                 "extended_matching_by_platform": {"mihomo": False, "surge": False},
                 "no_resolve": fine["no_resolve"], "sources": list(fine["sources"]),
-                "rules": platform_rules, "group_by_platform": dict(fine["group_by_platform"]),
+                "rules": platform_rules, "group_by_platform": {"mihomo": None, "surge": None},
             }
             stages_by_platform[platform].append(stage)
             manifest_stages[platform].append({
@@ -1533,20 +1527,6 @@ def _compile_compact(
             })
 
     return output_files, groups_by_platform, stages_by_platform, manifest_stages
-
-
-def _render_group_file(platform: str, group: Mapping[str, Any], rules: list[Rule], legacy_inputs: Mapping[str, bytes], root: Path, converter_path: str | Path | None) -> bytes:
-    capability = group["capability"]
-    if not rules:
-        return b"# JP profile is intentionally empty.\n" if group["id"] == "jp-manual" else b""
-    if capability == "domain":
-        if platform == "surge":
-            return _surge_domain_set(rules)
-        stages = group["stages"]
-        if stages == ["cn-direct-domain"]:
-            return legacy_inputs["rules/mihomo/cn-direct-domain.mrs"]
-        return _convert_mrs(_domain_text(rules), root, converter_path)
-    return ("\n".join(rule.render() for rule in rules) + "\n").encode("utf-8")
 
 
 @dataclass
@@ -1596,7 +1576,6 @@ def compile(
             "extended_matching_by_platform": {},
             "no_resolve": raw_stage.get("no_resolve", False),
             "sources": list(raw_stage["sources"]), "rules": [],
-            "group_by_platform": {"mihomo": None, "surge": None},
         }
         for platform in ("mihomo", "surge"):
             platform_rules = _stage_rules(raw_stage, platform, parsed_sources, legacy_rules, normalized_profile)
@@ -1623,122 +1602,6 @@ def compile(
     for source_id, data in snapshot.items():
         files[SOURCE_SPECS[source_id]["archive_path"]] = data
 
-    groups_by_platform: dict[str, list[dict[str, Any]]] = {"mihomo": [], "surge": []}
-    group_rule_map: dict[tuple[str, str], list[Rule]] = {}
-    for platform in ("mihomo", "surge"):
-        last_mergeable_group: dict[str, Any] | None = None
-        for stage_index, (raw_stage, stage) in enumerate(zip(normalized_profile["stages"], all_stages)):
-            rules = [rule for rule in stage["rules"] if rule.platform == platform]
-            platform_stage = {
-                **stage,
-                "extended_matching": stage["extended_matching_by_platform"][platform],
-            }
-            # GEOIP and MATCH are direct client terminal rules, never rule-set files.
-            if raw_stage.get("rule", {}).get("type") in {"GEOIP", "MATCH"}:
-                # A terminal rule is an ordering barrier. Equal-action groups
-                # on either side must remain separate so clients can emit the
-                # terminal rule between their stable resource references.
-                last_mergeable_group = None
-                continue
-            if not rules and raw_stage.get("members") != "jp_members":
-                continue
-            capability = _capability(rules)
-            if stage["id"] == "jp-manual":
-                # JP is a stable, always-classical route resource. It starts as
-                # a genuine empty file and accepts future members without URL changes.
-                capability = "classical"
-            group = last_mergeable_group
-            compatible = group is not None and _compatible(group, platform_stage, capability)
-            if compatible and platform == "surge":
-                # Surge exposes a set-level DNS requirement. Preserve this
-                # boundary instead of adding resolving IP rules to a process-
-                # or domain-only set and potentially resolving earlier.
-                compatible = _requires_rule_dns(
-                    group_rule_map[(platform, group["id"])], group["no_resolve"]
-                ) == _requires_rule_dns(rules, platform_stage["no_resolve"])
-            if not compatible:
-                group = {
-                    "id": stage["id"], "stages": [], "action": stage["action"], "dns": stage["dns"],
-                    "reject_mode": stage["reject_mode"], "extended_matching": platform_stage["extended_matching"],
-                    "no_resolve": stage["no_resolve"], "capability": capability, "path": "",
-                    "rule_count": 0, "dns_path": None, "dns_kind": None,
-                    "dns_behavior": None, "dns_format": None,
-                }
-                groups_by_platform[platform].append(group)
-                group_rule_map[(platform, group["id"])] = []
-            group["stages"].append(stage["id"])
-            group["rule_count"] += len(rules)
-            group_rule_map[(platform, group["id"])].extend(rules)
-            stage["group_by_platform"][platform] = group["id"]
-            last_mergeable_group = group
-
-    group_hashes: dict[str, dict[str, str]] = {"mihomo": {}, "surge": {}}
-    for platform, groups in groups_by_platform.items():
-        for group in groups:
-            extension = "mrs" if platform == "mihomo" and group["capability"] == "domain" else (
-                "set" if platform == "surge" and group["capability"] == "domain" else "list"
-            )
-            path = f"rules/personal/{platform}/{group['id']}.{extension}"
-            group["path"] = path
-            rules = group_rule_map[(platform, group["id"]) ]
-            content = _render_group_file(platform, group, rules, legacy_inputs, root_path, converter_path) if mrs_converter is None else (
-                mrs_converter(_domain_text(rules)) if platform == "mihomo" and group["capability"] == "domain" and group["stages"] != ["cn-direct-domain"]
-                else _render_group_file(platform, group, rules, legacy_inputs, root_path, converter_path)
-            )
-            if not content and group["id"] != "jp-manual":
-                raise ProfileError(f"generated resource {path} is empty")
-            files[path] = content
-            group["sha256"] = sha256(content)
-            group["bytes"] = len(content)
-            group["kind"] = "route"
-            group["behavior"] = "domain-set" if extension in {"mrs", "set"} else "classical"
-            group["format"] = extension if extension in {"mrs", "set"} else "text"
-            domain_rules = [rule for rule in rules if rule.is_domain]
-            group["dns_path"] = None
-            if group["dns"] == "jp":
-                # A separate domain-only JP DNS selector remains present while
-                # empty and keeps a stable path even if JP later adds IP rules.
-                dns_path = f"rules/personal/{platform}/dns-jp-manual.list"
-                dns_bytes = (
-                    ("\n".join(rule.render() for rule in domain_rules) + "\n").encode("utf-8")
-                    if domain_rules else b"# JP DNS selector is intentionally empty.\n"
-                )
-                files[dns_path] = dns_bytes
-                group["dns_path"] = dns_path
-                group["dns_kind"] = "dns-selector"
-                group["dns_behavior"] = "classical"
-                group["dns_format"] = "text"
-                group["dns_sha256"] = sha256(dns_bytes)
-                group["dns_bytes"] = len(dns_bytes)
-            elif group["dns"] != "none" and domain_rules:
-                if len(domain_rules) == len(rules):
-                    group["dns_path"] = path
-                    group["dns_kind"] = "route"
-                    group["dns_behavior"] = group["behavior"]
-                    group["dns_format"] = group["format"]
-                else:
-                    dns_capability = _capability(domain_rules)
-                    dns_extension = "mrs" if platform == "mihomo" and dns_capability == "domain" else (
-                        "set" if platform == "surge" and dns_capability == "domain" else "list"
-                    )
-                    dns_path = f"rules/personal/{platform}/dns-{group['id']}.{dns_extension}"
-                    if dns_capability == "domain" and platform == "mihomo":
-                        dns_bytes = _convert_mrs(_domain_text(domain_rules), root_path, converter_path) if mrs_converter is None else mrs_converter(_domain_text(domain_rules))
-                    elif dns_capability == "domain" and platform == "surge":
-                        dns_bytes = _surge_domain_set(domain_rules)
-                    else:
-                        dns_bytes = ("\n".join(rule.render() for rule in domain_rules) + "\n").encode("utf-8")
-                    files[dns_path] = dns_bytes
-                    group["dns_path"] = dns_path
-                    group["dns_kind"] = "dns-selector"
-                    group["dns_behavior"] = "domain-set" if dns_extension in {"mrs", "set"} else "classical"
-                    group["dns_format"] = dns_extension if dns_extension in {"mrs", "set"} else "text"
-                    group["dns_sha256"] = sha256(dns_bytes)
-                    group["dns_bytes"] = len(dns_bytes)
-            group_hashes[platform][path] = sha256(content)
-            if group.get("dns_path") and group["dns_path"] != path:
-                group_hashes[platform][group["dns_path"]] = group["dns_sha256"]
-
     compact_files, compact_groups, compact_stages, compact_manifest_stages = _compile_compact(
         normalized_profile, all_stages, root=root_path,
         converter_path=converter_path, mrs_converter=mrs_converter,
@@ -1749,8 +1612,7 @@ def compile(
     files.update(compact_files)
 
     source_hashes = {path: sha256(data) for path, data in sorted(legacy_inputs.items())}
-    output_hashes = {path: digest for platform_hashes in group_hashes.values() for path, digest in platform_hashes.items()}
-    output_hashes.update({path: sha256(data) for path, data in compact_files.items()})
+    output_hashes = {path: sha256(data) for path, data in compact_files.items()}
     profile_hash = sha256(canonical_bytes(normalized_profile))
     manifest = {
         "schema": SCHEMA,
@@ -1768,12 +1630,10 @@ def compile(
                     platform: sum(1 for rule in stage["rules"] if rule.platform == platform)
                     for platform in ("mihomo", "surge")
                 },
-                "group_by_platform": dict(stage["group_by_platform"]),
                 "terminal_rule": next((r.as_dict(include_line=False) for r in stage["rules"] if r.type in {"GEOIP", "MATCH"}), None),
             }
             for stage in all_stages
         ],
-        "groups": groups_by_platform,
         "compact": {"schema": 1, "groups": compact_groups, "stages": compact_manifest_stages},
         "outputs": {path: {"sha256": digest, "bytes": len(files[path])} for path, digest in sorted(output_hashes.items())},
     }
@@ -2554,7 +2414,7 @@ def _load_inputs(root: Path) -> tuple[dict[str, bytes], dict[str, bytes]]:
 def _print_candidate(candidate: PersonalCandidate, *, action: str) -> None:
     total_output = sum(info["bytes"] for info in candidate.manifest["outputs"].values())
     print(f"{action}: {len(candidate.manifest['sources'])} sources, {len(candidate.manifest['stages'])} stages, "
-          f"{sum(len(groups) for groups in candidate.manifest['groups'].values())} route groups, "
+          f"{sum(len(groups) for groups in candidate.manifest['compact']['groups'].values())} route groups, "
           f"{len(candidate.manifest['outputs'])} outputs, {total_output} output bytes")
 
 

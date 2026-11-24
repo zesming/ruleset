@@ -450,11 +450,9 @@ class CompilationAndMatchingTests(unittest.TestCase):
         for platform in ("mihomo", "surge"):
             source[f"{platform}.lan_ip"] = b"IP-CIDR,192.168.0.0/16\n"
         candidate = compile_candidate(source)
-        groups = {stage["id"]: stage["group_by_platform"] for stage in candidate.stages}
-        self.assertNotEqual(groups["cn-direct-process"]["surge"], groups["lan-ip"]["surge"])
-        self.assertEqual(groups["cn-direct-process"]["mihomo"], groups["lan-ip"]["mihomo"])
-        self.assertNotIn(b"IP-CIDR", candidate.files["rules/personal/surge/cn-direct-process.list"])
-        self.assertEqual(candidate.files["rules/personal/surge/lan-ip.list"], b"IP-CIDR,192.168.0.0/16\n")
+        self.assertNotIn("groups", candidate.manifest)
+        self.assertNotIn(b"IP-CIDR", candidate.files["rules/personal/surge/route/cn-direct.list"])
+        self.assertEqual(candidate.files["rules/personal/surge/route/lan-direct-ip.list"], b"IP-CIDR,192.168.0.0/16\n")
 
     def test_stage_priority_terminal_rules_and_domain_only_dns(self) -> None:
         candidate = compile_candidate()
@@ -482,44 +480,32 @@ class CompilationAndMatchingTests(unittest.TestCase):
         self.assertEqual((asn.stage["id"], asn.action, asn.rule.type), ("telegram-ip", "US", "IP-ASN"))
         self.assertFalse(any(
             group["id"] in {"geoip-cn", "default-us"}
-            for platform_groups in candidate.manifest["groups"].values()
+            for platform_groups in candidate.manifest["compact"]["groups"].values()
             for group in platform_groups
         ))
 
-    def test_terminal_stage_is_a_route_group_merge_barrier(self) -> None:
-        profile = profile_value()
-        geoip = next(stage for stage in profile["stages"] if stage["id"] == "geoip-cn")
-        profile["stages"].remove(geoip)
-        telegram_index = next(i for i, stage in enumerate(profile["stages"]) if stage["id"] == "telegram-ip")
-        profile["stages"].insert(telegram_index, geoip)
-        candidate = compile_candidate(profile=profile)
-        stages = {stage["id"]: stage for stage in candidate.stages}
-        self.assertNotEqual(
-            stages["ai-ip"]["group_by_platform"]["mihomo"],
-            stages["telegram-ip"]["group_by_platform"]["mihomo"],
-        )
-        interface = personal_profile._client_interface(candidate.manifest)["mihomo"]
+    def test_terminal_stages_stay_ordered_after_compact_route_groups(self) -> None:
+        candidate = compile_candidate()
+        interface = personal_profile._compact_client_interface(candidate.manifest)["mihomo"]
         ids = [(entry["entry"], entry.get("id") or entry.get("stage_id")) for entry in interface]
-        ai_position = ids.index(("group", stages["ai-ip"]["group_by_platform"]["mihomo"]))
-        geoip_position = ids.index(("terminal", "geoip-cn"))
-        telegram_position = ids.index(("group", stages["telegram-ip"]["group_by_platform"]["mihomo"]))
-        self.assertLess(ai_position, geoip_position)
-        self.assertLess(geoip_position, telegram_position)
+        self.assertEqual(ids[-2:], [("terminal", "geoip-cn"), ("terminal", "default-us")])
+        self.assertTrue(all(entry == "group" for entry, _ in ids[:-2]))
 
     def test_empty_jp_route_and_dns_selector_are_real_and_stable(self) -> None:
         empty = compile_candidate()
-        mihomo = next(group for group in empty.manifest["groups"]["mihomo"] if group["id"] == "jp-manual")
-        surge = next(group for group in empty.manifest["groups"]["surge"] if group["id"] == "jp-manual")
+        self.assertNotIn("groups", empty.manifest)
+        mihomo = next(group for group in empty.manifest["compact"]["groups"]["mihomo"] if group["id"] == "jp-proxy")
+        surge = next(group for group in empty.manifest["compact"]["groups"]["surge"] if group["id"] == "jp-proxy")
         self.assertEqual(mihomo["rule_count"], 0)
         self.assertEqual(surge["rule_count"], 0)
         self.assertEqual((mihomo["path"], mihomo["dns_path"]), (
-            "rules/personal/mihomo/jp-manual.list", "rules/personal/mihomo/dns-jp-manual.list"
+            "rules/personal/mihomo/route/jp-proxy.list", "rules/personal/mihomo/route/jp-proxy.list"
         ))
         self.assertEqual((surge["path"], surge["dns_path"]), (
-            "rules/personal/surge/jp-manual.list", "rules/personal/surge/dns-jp-manual.list"
+            "rules/personal/surge/route/jp-proxy.list", "rules/personal/surge/route/jp-proxy.list"
         ))
         self.assertTrue(empty.files[mihomo["path"]].startswith(b"#"))
-        self.assertTrue(empty.files[mihomo["dns_path"]].startswith(b"#"))
+        self.assertTrue(empty.files[surge["path"]].startswith(b"#"))
 
         with_member = profile_value()
         with_member["jp_members"] = [
@@ -531,7 +517,7 @@ class CompilationAndMatchingTests(unittest.TestCase):
         populated = compile_candidate(profile=with_member)
         jp = personal_profile.RuleIndex(populated.stages, "mihomo").first_match(domain="api.jp.example")
         self.assertEqual((jp.stage["id"], jp.action, jp.dns), ("jp-manual", "JP", "jp"))
-        populated_jp = next(group for group in populated.manifest["groups"]["mihomo"] if group["id"] == "jp-manual")
+        populated_jp = next(group for group in populated.manifest["compact"]["groups"]["mihomo"] if group["id"] == "jp-proxy")
         self.assertEqual(populated_jp["path"], mihomo["path"])
         self.assertEqual(populated_jp["dns_path"], mihomo["dns_path"])
         self.assertIn(b"DOMAIN-SUFFIX,jp.example", populated.files[mihomo["dns_path"]])
@@ -545,8 +531,8 @@ class CompilationAndMatchingTests(unittest.TestCase):
         snapshot = snapshots()
         snapshot["surge.lan"] = b"DOMAIN-KEYWORD,lan,extended-matching\n"
         candidate = compile_candidate(snapshot)
-        surge_group = next(group for group in candidate.manifest["groups"]["surge"] if group["id"] == "infra-lan")
-        mihomo_group = next(group for group in candidate.manifest["groups"]["mihomo"] if group["id"] == "infra-lan")
+        surge_group = next(group for group in candidate.manifest["compact"]["groups"]["surge"] if group["slot"] == "lan")
+        mihomo_group = next(group for group in candidate.manifest["compact"]["groups"]["mihomo"] if group["slot"] == "lan")
         self.assertTrue(surge_group["extended_matching"])
         self.assertFalse(mihomo_group["extended_matching"])
         self.assertNotIn(b"extended-matching", candidate.files[surge_group["path"]])
@@ -564,7 +550,7 @@ class CompilationAndMatchingTests(unittest.TestCase):
         changed = compile_candidate(changed_snapshot)
         self.assertNotEqual(first.manifest["sources"]["mihomo.cdn_domains"]["sha256"],
                             changed.manifest["sources"]["mihomo.cdn_domains"]["sha256"])
-        self.assertNotEqual(first.manifest["groups"]["mihomo"], changed.manifest["groups"]["mihomo"])
+        self.assertNotEqual(first.manifest["compact"]["groups"]["mihomo"], changed.manifest["compact"]["groups"]["mihomo"])
         self.assertNotEqual(first.manifest["profile"]["sha256"], compile_candidate(profile={
             **profile_value(), "jp_members": [{
                 "type": "DOMAIN", "value": "one.jp.example", "source": "manual review", "reason": "verified"
@@ -580,7 +566,7 @@ class CompilationAndMatchingTests(unittest.TestCase):
             personal_profile._require_stable_client_interface(original.manifest, changed_format.manifest)
 
         changed_action = copy.deepcopy(original.manifest)
-        changed_action["groups"]["surge"][0]["action"] = "REJECT"
+        changed_action["compact"]["groups"]["surge"][0]["action"] = "REJECT"
         with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed"):
             personal_profile._require_stable_client_interface(original.manifest, changed_action)
         personal_profile._require_stable_client_interface(original.manifest, changed_action, accept_change=True)
@@ -592,18 +578,27 @@ class CompilationAndMatchingTests(unittest.TestCase):
             personal_profile._require_stable_client_interface(original.manifest, changed_merge.manifest)
 
         moved_terminal = copy.deepcopy(original.manifest)
-        geoip_index = next(i for i, stage in enumerate(moved_terminal["stages"]) if stage["id"] == "geoip-cn")
-        default_index = next(i for i, stage in enumerate(moved_terminal["stages"]) if stage["id"] == "default-us")
-        moved_terminal["stages"][geoip_index], moved_terminal["stages"][default_index] = (
-            moved_terminal["stages"][default_index], moved_terminal["stages"][geoip_index]
+        compact_mihomo = moved_terminal["compact"]["stages"]["mihomo"]
+        geoip_index = next(i for i, stage in enumerate(compact_mihomo) if stage["id"] == "geoip-cn")
+        default_index = next(i for i, stage in enumerate(compact_mihomo) if stage["id"] == "default-us")
+        compact_mihomo[geoip_index], compact_mihomo[default_index] = (
+            compact_mihomo[default_index], compact_mihomo[geoip_index]
         )
         with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed"):
             personal_profile._require_stable_client_interface(original.manifest, moved_terminal)
         changed_terminal = copy.deepcopy(original.manifest)
-        terminal = next(stage for stage in changed_terminal["stages"] if stage["id"] == "geoip-cn")
+        terminal = next(stage for stage in changed_terminal["compact"]["stages"]["mihomo"] if stage["id"] == "geoip-cn")
         terminal["terminal_rule"]["flags"] = []
         with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed"):
             personal_profile._require_stable_client_interface(original.manifest, changed_terminal)
+
+        legacy_with_fine = copy.deepcopy(original.manifest)
+        legacy_with_fine["groups"] = {"mihomo": [], "surge": []}
+        for stage in legacy_with_fine["stages"]:
+            stage["group_by_platform"] = {"mihomo": None, "surge": None}
+        with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed"):
+            personal_profile._require_stable_client_interface(legacy_with_fine, original.manifest)
+        personal_profile._require_stable_client_interface(legacy_with_fine, original.manifest, accept_change=True)
 
     def test_compact_cleanup_handles_two_migrations_and_only_safe_tracked_paths(self) -> None:
         candidate = compile_candidate()
@@ -727,7 +722,7 @@ class CompilationAndMatchingTests(unittest.TestCase):
             personal_profile.write_bundle_transactionally(root, candidate.files)
             with mock.patch.object(personal_profile, "_convert_mrs", side_effect=lambda data, *_args: b"MRS-fixture\n" + data):
                 personal_profile.validate_bundle(root)
-                (root / "rules/personal/mihomo/dns-jp-manual.list").write_bytes(b"tampered\n")
+                (root / "rules/personal/mihomo/route/jp-proxy.list").write_bytes(b"tampered\n")
                 with self.assertRaisesRegex(personal_profile.ProfileError, "replay differs"):
                     personal_profile.validate_bundle(root)
 
@@ -775,13 +770,12 @@ class CompilationAndMatchingTests(unittest.TestCase):
             lan = root / personal_profile.SOURCE_SPECS["mihomo.lan"]["archive_path"]
             lan.write_bytes(b"DOMAIN-WILDCARD,*.lan.example\n")
             before = bundle_bytes(root)
-            with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed for mihomo.*personal-interface-diff"):
+            with self.assertRaisesRegex(personal_profile.ProfileError, "interface changed for mihomo compact.*personal-interface-diff"):
                 personal_profile.update(root, offline=True)
             self.assertEqual(bundle_bytes(root), before)
             report = json.loads((root / personal_profile.INTERFACE_DIFF_REPORT).read_text(encoding="utf-8"))
-            changed = {item["entry"]: item["fields"] for item in report["mihomo"]["changed"]}
-            self.assertEqual(changed["group:infra-lan"]["format"], {"before": "mrs", "after": "text"})
-            self.assertIn("mihomo compact", report)
+            changed = {item["entry"]: item["fields"] for item in report["mihomo compact"]["changed"]}
+            self.assertEqual(changed["group:lan-direct"]["format"], {"before": "mrs", "after": "text"})
 
             with contextlib.redirect_stdout(io.StringIO()):
                 exit_code = personal_profile.main([
@@ -789,8 +783,8 @@ class CompilationAndMatchingTests(unittest.TestCase):
                 ])
             self.assertEqual(exit_code, 0)
             accepted = bundle_bytes(root)
-            self.assertNotIn("rules/personal/mihomo/infra-lan.mrs", accepted)
-            self.assertIn("rules/personal/mihomo/infra-lan.list", accepted)
+            self.assertNotIn("rules/personal/mihomo/route/lan-direct.mrs", accepted)
+            self.assertIn("rules/personal/mihomo/route/lan-direct.list", accepted)
             personal_profile.validate_bundle(root, converter_path=None)
 
 

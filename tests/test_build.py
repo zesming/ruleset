@@ -202,23 +202,22 @@ class RuleParsingTests(unittest.TestCase):
 
 
 class PolicyAndBuildTests(unittest.TestCase):
-    def test_eight_manual_entries_and_regex_adapter_are_emitted(self) -> None:
-        result = candidate()
+    def test_manual_entries_and_regex_adapter_are_emitted(self) -> None:
+        policy = policy_value()
+        self.assertTrue(policy["adds"])
+        self.assertTrue(policy["regex_adapters"])
+        result = candidate(policy=policy)
         global_rules = {(item["type"], item["value"]) for item in result.manifest["outputs"]["global"]["rules"]}
-        self.assertTrue({
-            ("DOMAIN-SUFFIX", "ai.azure.com"),
-            ("DOMAIN", "sydney.bing.com"),
-            ("DOMAIN", "api.together.xyz"),
-            ("DOMAIN", "api.github.com"),
-            ("DOMAIN-SUFFIX", "ai.com"),
-            ("DOMAIN-SUFFIX", "g.ai"),
-            ("DOMAIN-SUFFIX", "cloudcode-pa.googleapis.com"),
-            ("DOMAIN-SUFFIX", "anthropic.services"),
-            ("DOMAIN-WILDCARD", build.REGISTERED_WILDCARD),
-        }.issubset(global_rules))
+        expected_global = {
+            (item["type"], item["value"])
+            for item in policy["adds"]
+            if item["category"] == "global"
+        }
+        expected_global.add(("DOMAIN-WILDCARD", build.REGISTERED_WILDCARD))
+        self.assertTrue(expected_global.issubset(global_rules))
         effects = result.manifest["counts"]["manual_adds"]
-        self.assertEqual(len(effects), 8)
-        self.assertEqual(result.manifest["counts"]["adapted_regex_rules"], 1)
+        self.assertEqual(len(effects), len(policy["adds"]))
+        self.assertEqual(result.manifest["counts"]["adapted_regex_rules"], len(policy["regex_adapters"]))
 
     def test_cn_direct_full_coverage_moves_only_whole_domain_scopes(self) -> None:
         sources = fixture_sources()
@@ -1303,15 +1302,17 @@ class DirectRuleTests(unittest.TestCase):
             for item in policy["direct_rules"]
         ]
         self.assertEqual(surge_text.splitlines(), expected_surge)
-        self.assertEqual(len(direct_lines), 25)
-        self.assertEqual(sum(item["type"] == "DOMAIN" for item in policy["direct_rules"]), 10)
-        self.assertEqual(sum(item["type"] == "DOMAIN-SUFFIX" for item in policy["direct_rules"]), 15)
+        expected_count = len(policy["direct_rules"])
+        expected_review_date = max(item["review_date"] for item in policy["direct_rules"])
+        self.assertEqual(len(direct_lines), expected_count)
+        self.assertGreater(sum(item["type"] == "DOMAIN" for item in policy["direct_rules"]), 0)
+        self.assertGreater(sum(item["type"] == "DOMAIN-SUFFIX" for item in policy["direct_rules"]), 0)
 
         for path in (build.DIRECT_RULES_PATH, build.SURGE_DIRECT_RULES_PATH):
             artifact = result.manifest["manual_artifacts"][path]
             self.assertEqual(artifact["source"], build.DIRECT_RULE_SOURCE)
-            self.assertEqual(artifact["rules"], 25)
-            self.assertEqual(artifact["review_date"], "2026-10-21")
+            self.assertEqual(artifact["rules"], expected_count)
+            self.assertEqual(artifact["review_date"], expected_review_date)
             self.assertEqual(artifact["sha256"], build.sha256(result.manual_files[path]))
 
         changed_policy = copy.deepcopy(policy)

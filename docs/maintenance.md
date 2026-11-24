@@ -74,7 +74,7 @@ python3 scripts/build.py validate --offline
 python3 scripts/build.py validate --offline --allow-cross-platform-replay
 ```
 
-跨平台检查必须先逐字节重现全部七个国内直连输出，再接受重放；当前执行身份写入诊断，原发布记录不被改写。涉及构建逻辑的 PR 在 Ubuntu 执行此检查。
+跨平台检查必须先逐字节重现全部七个国内直连输出，再接受重放；当前执行身份写入诊断，原发布记录不被改写。PR 都会在 Ubuntu 执行此检查。
 
 GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → Run workflow** 手动触发。远端一次发布的全部文件来自同一个 Git 提交；客户端分别刷新多个 URL 时，短时间内可能读到不同发布版本。
 
@@ -86,7 +86,7 @@ GitHub Actions 每天北京时间 08:00 检查，也可在 **Update ruleset → 
 
 ## 个人有序分流策略
 
-`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器保留平台来源和原有细分类输出；另按地区与行为组织 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test` 等客户端聚合，输出到 `rules/personal/mihomo/route/` 与 `rules/personal/surge/route/`。客户端片段引用简名聚合，细分类仍可单独使用。原有 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 接口继续有效。
+`profiles/us-primary.json` 记录业务分类、路由阶段及 DNS 意图。编译器按地区与行为组织 `us-proxy`、`jp-proxy`、`cn-direct`、`reject`、`test` 等客户端聚合，输出到 `rules/personal/mihomo/route/` 与 `rules/personal/surge/route/`（历史平铺个人兼容文件已下线）。原有细分类接口 `rules/ai-*`、`rules/us.list`、`rules/surge/` 与 `cn-direct` 继续有效。
 
 个人策略默认 US，明确直连、JP 与拦截分别使用 DIRECT、JP、REJECT。网络测试保留独立的 TEST 选择器。JP 的 `jp_members` 初始为空；其路由和 DNS 接口使用支持空集合的 classical 文本，未来添加已复核成员不必更换资源地址。节点、公司内网、DNS 端点和真实 IP 兼容例外由客户端维护。
 
@@ -108,7 +108,7 @@ python3 scripts/profile_clients.py render
 
 纯域名的 Mihomo 输出使用同一个已注册的 `MIHOMO_CONVERTER`，Surge 使用 DOMAIN-SET；包含通配符、关键词、进程或 IP 的输出保留对应规则类型。拒绝子类型、Surge extended-matching 与 no-resolve 作为语义边界保留，不按出口名称直接压成四个文件。终结 GEOIP/MATCH/FINAL 规则保留在客户端规则段，不嵌入远端集合。
 
-`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希；`compact` 记录客户端物理聚合顺序，原 `groups` 保留细分类接口。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、完整性或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
+`upstream/personal/` 保留原始 Sukka 输入与紧凑 manifest。manifest 记录来源、旧接口输入和 profile 的哈希、数量、顺序及全部输出哈希；`compact` 记录客户端物理聚合顺序，个人输出统一只保留 `route/` 下的聚合文件。离线校验只使用已归档输入重新生成，验证实际字节；来源下载、类型解析、完整性或转换失败时保留已发布版本。工作流在一次 Git 提交中发布旧接口与个人策略资源。
 
 普通成员变化允许自动更新。输出路径、动作、DNS 意图、格式、标志或阶段组合发生变化时属于客户端接口迁移，应同步生成、对照并验证新配置后显式接受；不得让日常更新静默删除旧客户端正在订阅的资源。
 
