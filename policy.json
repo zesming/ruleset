@@ -527,7 +527,50 @@
       "version": "v1.19.17"
     },
     "first_match_assertions": [],
-    "removes": [],
+    "removes": [
+      {
+        "evidence": "ChinaMax line 33 (app-analytics-services.com); live router probe 2026-11-24: DIRECT timeout vs US 239ms.",
+        "reason": "Remove blocked Google analytics host present only in ChinaMax so it routes to US via us-late/default.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN",
+        "value": "app-analytics-services.com"
+      },
+      {
+        "evidence": "ChinaMax line 43 (cdn.ampproject.org); live router probe 2026-11-24: DIRECT timeout vs US 163ms.",
+        "reason": "Remove blocked Google AMP CDN host present only in ChinaMax so it routes to US via us-late/default.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN",
+        "value": "cdn.ampproject.org"
+      },
+      {
+        "evidence": "ChinaMax line 57 (firebase-settings.crashlytics.com); live router probe 2026-11-24: 223.5.5.5 returned 202.101.48.66 and DIRECT timed out vs US 237ms.",
+        "reason": "Remove blocked Firebase Crashlytics host present only in ChinaMax so it routes to US via us-late/default.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN",
+        "value": "firebase-settings.crashlytics.com"
+      },
+      {
+        "evidence": "ChinaMax line 27108 (.coinall.ltd); live router probe 2026-11-24: static.coinall.ltd failed on DIRECT vs US 395ms.",
+        "reason": "Remove blocked OKX CDN suffix present only in ChinaMax so coinall.ltd and subdomains route to US via us-late/default.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN-SUFFIX",
+        "value": "coinall.ltd"
+      },
+      {
+        "evidence": "ChinaMax line 3279 (.ms); live router probe 2026-11-24: cdn.jotfor.ms timed out on DIRECT vs US 138ms; all 10 Microsoft .ms suffixes remain explicitly covered by Sukka microsoft.txt.",
+        "reason": "Remove overly broad .ms ccTLD present only in ChinaMax so non-Microsoft .ms hosts route to US instead of DIRECT.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN-SUFFIX",
+        "value": "ms"
+      },
+      {
+        "evidence": "ChinaMax line 3352 (.novipnoad.com); live router probe 2026-11-24: 223.5.5.5 returned poisoned IPv6 2001::6ca0:a9b3 and DIRECT failed vs US 148ms.",
+        "reason": "Remove DNS-poisoned suffix present only in ChinaMax so novipnoad.com and subdomains route to US via us-late/default.",
+        "review_date": "2026-11-24",
+        "type": "DOMAIN-SUFFIX",
+        "value": "novipnoad.com"
+      }
+    ],
     "schema": 1,
     "sources": {
       "acl_china_domain": {
@@ -704,6 +747,13 @@
     }
   ],
   "direct_rules": [
+    {
+      "type": "DOMAIN",
+      "value": "api.vore.top",
+      "reason": "Chinese IP geolocation API endpoint polled periodically by local Android/HarmonyOS devices to query caller IP location. Keep this exact host direct without widening to the parent suffix.",
+      "reference": "https://api.vore.top/; live router OpenClash log observation 2026-11-24",
+      "review_date": "2026-11-24"
+    },
     {
       "type": "DOMAIN",
       "value": "ip.istatmenus.app",

@@ -71,6 +71,22 @@ rule-providers:
     path: ./ruleset/personal-cn-direct-extra.text
     interval: 43200
     proxy: 🇺🇸 US
+  us-late-proxy:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-late-proxy.mrs"
+    path: ./ruleset/personal-us-late-proxy.mrs
+    interval: 43200
+    proxy: 🇺🇸 US
+  us-late-proxy-extra:
+    type: http
+    behavior: classical
+    format: text
+    url: "https://raw.githubusercontent.com/zesming/ruleset/main/rules/personal/mihomo/route/us-late-proxy-extra.list"
+    path: ./ruleset/personal-us-late-proxy-extra.text
+    interval: 43200
+    proxy: 🇺🇸 US
   lan-direct-ip:
     type: http
     behavior: classical
@@ -137,6 +153,8 @@ rules:
   - RULE-SET,us-proxy,🇺🇸 US
   - RULE-SET,cn-direct,🚀 Direct
   - RULE-SET,cn-direct-extra,🚀 Direct
+  - RULE-SET,us-late-proxy,🇺🇸 US
+  - RULE-SET,us-late-proxy-extra,🇺🇸 US
   - RULE-SET,lan-direct-ip,🚀 Direct
   - RULE-SET,reject-ip,⛔️ Reject
   - RULE-SET,jp-proxy-ip,🇯🇵 JP

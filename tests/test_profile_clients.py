@@ -218,6 +218,54 @@ class RendererOutputTests(unittest.TestCase):
         self.assertEqual(clients._dns_endpoints(jp_group, "surge"), ("https://1.0.0.1/dns-query",))
         self.assertTrue(clients._surge_endpoint_rules()[-1].endswith(")),⚒️ Test"))
 
+    def test_us_late_slot_with_dns_none_emits_route_rules_without_dns_policy_entries(self):
+        candidate = _compact_candidate()
+        candidate.stages.extend([
+            {
+                "id": "cdn", "action": "US", "dns": "foreign", "reject_mode": None,
+                "extended_matching": False, "no_resolve": False,
+                "group_by_platform": {"mihomo": "us-late-proxy", "surge": "us-late-proxy"},
+                "rules": [_rule("mihomo", "DOMAIN", "late.example"), _rule("surge", "DOMAIN", "late.example")],
+            },
+            {
+                "id": "download-domains", "action": "US", "dns": "foreign", "reject_mode": None,
+                "extended_matching": False, "no_resolve": False,
+                "group_by_platform": {"mihomo": "us-late-proxy", "surge": "us-late-proxy"},
+                "rules": [],
+            },
+        ])
+        for platform in ("mihomo", "surge"):
+            ext = "mrs" if platform == "mihomo" else "list"
+            behavior = "domain-set" if platform == "mihomo" else "classical"
+            fmt = "mrs" if platform == "mihomo" else "text"
+            path = f"rules/personal/{platform}/route/us-late-proxy.{ext}"
+            content = b"late.example\n"
+            candidate.files[path] = content
+            late_group = {
+                "id": "us-late-proxy", "slot": "us-late", "stages": ["cdn", "download-domains"],
+                "action": "US", "dns": "none", "reject_mode": None, "extended_matching": False,
+                "no_resolve": False, "kind": "route", "behavior": behavior, "format": fmt,
+                "path": path, "dns_path": path, "dns_kind": "route", "dns_behavior": behavior,
+                "dns_format": fmt, "sha256": hashlib.sha256(content).hexdigest(), "rule_count": 1,
+            }
+            candidate.manifest["compact"]["groups"][platform].append(late_group)
+            candidate.compact_stages[platform].insert(-2, {
+                "id": "us-late-proxy", "slot": "us-late", "action": "US", "dns": "none",
+                "reject_mode": None, "extended_matching": False, "no_resolve": False,
+                "sources": ["cdn", "download-domains"], "group_by_platform": {platform: "us-late-proxy"},
+                "rules": [_rule(platform, "DOMAIN", "late.example")],
+            })
+
+        mihomo = clients.render_mihomo_snippet(candidate, "https://example.invalid/ref")
+        route_section, dns_section = mihomo.split("\ndns:\n", 1)
+        self.assertIn("RULE-SET,us-late-proxy,🇺🇸 US", route_section)
+        self.assertNotIn("rule-set:us-late-proxy", dns_section)
+
+        surge = clients.render_surge_snippet(candidate, "https://example.invalid/ref")
+        rule_section, host_section = surge.split("\n[Host]", 1)
+        self.assertIn("RULE-SET,https://example.invalid/ref/rules/personal/surge/route/us-late-proxy.list,🇺🇸 US,update-interval=43200", rule_section)
+        self.assertNotIn("us-late-proxy", host_section)
+
 
     @unittest.skipUnless(shutil.which("ruby"), "system Ruby YAML parser is unavailable")
     def test_public_mihomo_snippet_parses_as_yaml(self):

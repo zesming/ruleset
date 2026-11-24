@@ -58,7 +58,7 @@ class PriorityProfileTests(unittest.TestCase):
     def test_compact_stages_follow_priority_order_and_keep_terminals_last(self) -> None:
         candidate = compile_candidate()
         expected = [
-            "lan", "reject", "test", "jp", "us", "cn-direct",
+            "lan", "reject", "test", "jp", "us", "cn-direct", "us-late",
             "lan-ip", "reject-ip", "jp-ip", "us-ip", "direct-ip", "us-ip-late", "cn-ip",
         ]
 
@@ -274,12 +274,27 @@ class PriorityProfileTests(unittest.TestCase):
             if platform == "mihomo":
                 self.assertEqual(len(us_groups), 1)
                 self.assertEqual(us_groups[0]["stages"], [
-                    "att-us", "ai-global", "apple-intelligence", "cdn", "telegram",
+                    "att-us", "ai-global", "apple-intelligence", "telegram",
                 ])
             else:
                 self.assertEqual([group["extended_matching"] for group in us_groups], [False, True])
-                self.assertEqual(us_groups[0]["stages"], ["att-us", "ai-global", "ai-process", "cdn", "telegram"])
+                self.assertEqual(us_groups[0]["stages"], ["att-us", "ai-global", "ai-process", "telegram"])
                 self.assertEqual(us_groups[1]["stages"], ["apple-intelligence"])
+
+            us_late_groups = slot_groups(candidate, platform, "us-late")
+            self.assertTrue(us_late_groups)
+            self.assertTrue(all(group["action"] == "US" for group in us_late_groups))
+            self.assertTrue(all(group["dns"] == "none" for group in us_late_groups))
+            self.assertEqual(
+                {stage for group in us_late_groups for stage in group["stages"]},
+                {"cdn", "download-domains"},
+            )
+
+        game_stage = next(stage for stage in profile_value()["stages"] if stage["id"] == "game-download")
+        self.assertEqual(game_stage["sources"], ["mihomo.game_download", "surge.game_download"])
+        dl_stage = next(stage for stage in profile_value()["stages"] if stage["id"] == "download-domains")
+        self.assertEqual(dl_stage["action"], "US")
+        self.assertEqual(dl_stage["sources"], ["mihomo.download_domains", "surge.download_domains"])
 
     def test_reject_and_us_priority_precede_broad_cn_direct_overlap(self) -> None:
         snapshot = snapshots()
@@ -305,6 +320,30 @@ class PriorityProfileTests(unittest.TestCase):
             self.assertEqual(us_match.action, "US")
             ordered_slots = [stage.get("slot") for stage in candidate.compact_stages[platform] if stage.get("slot")]
             self.assertLess(ordered_slots.index("us"), ordered_slots.index("cn-direct"))
+            self.assertLess(ordered_slots.index("cn-direct"), ordered_slots.index("us-late"))
+            self.assertLess(ordered_slots.index("us-late"), ordered_slots.index("lan-ip"))
+
+    def test_cn_direct_precedes_us_late_cdn_and_download_domains_go_us(self) -> None:
+        snapshot = snapshots()
+        snapshot["mihomo.cdn_domains"] += b"+.cdn.nintendo.net\n+.only-cdn.example\n"
+        snapshot["surge.cdn_domains"] += b".cdn.nintendo.net\n.only-cdn.example\n"
+        snapshot["mihomo.game_download"] += b"+.cdn.nintendo.net\n"
+        snapshot["surge.game_download"] += b".cdn.nintendo.net\n"
+        snapshot["mihomo.download_domains"] += b"+.overseas-dl.example\n"
+        snapshot["surge.download_domains"] += b".overseas-dl.example\n"
+        candidate = compile_candidate(snapshot)
+
+        for platform in ("mihomo", "surge"):
+            index = personal_profile.RuleIndex(candidate.compact_stages[platform], platform)
+            nintendo = index.first_match(domain="cdn.nintendo.net")
+            self.assertIsNotNone(nintendo)
+            self.assertEqual((nintendo.stage["slot"], nintendo.action, nintendo.dns), ("cn-direct", "DIRECT", "domestic"))
+            cdn_only = index.first_match(domain="a.only-cdn.example")
+            self.assertIsNotNone(cdn_only)
+            self.assertEqual((cdn_only.stage["slot"], cdn_only.action, cdn_only.dns), ("us-late", "US", "none"))
+            dl_only = index.first_match(domain="files.overseas-dl.example")
+            self.assertIsNotNone(dl_only)
+            self.assertEqual((dl_only.stage["slot"], dl_only.action, dl_only.dns), ("us-late", "US", "none"))
 
     def test_reject_modes_and_surge_extended_matching_keep_source_subrun_order(self) -> None:
         candidate = compile_candidate()

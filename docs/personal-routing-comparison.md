@@ -12,10 +12,11 @@
 | 4 | 日本业务 | JP；JP DNS |
 | 5 | 明确代理业务 | US；US DNS |
 | 6 | 普通直连白名单 | DIRECT；国内 DNS |
-| 7 | IP 规则 | 保留 LAN、拦截、代理、直连的先后与 no-resolve 标志 |
-| 8 | GEOIP CN、兜底 | CN 直连且不主动解析，其余 US |
+| 7 | 通用 CDN 与海外下载域名（`us-late`） | US；走默认 US DNS（不额外写入 DNS 策略） |
+| 8 | IP 规则 | 保留 LAN、拦截、代理、直连的先后顺序；首个无 `no-resolve` 的 IP 规则会经由默认 US DoH 解析未命中域名，供后续 IP / `GEOIP,CN` 规则复用 |
+| 9 | GEOIP CN、兜底 | CN 直连（复用已解析结果，不单独触发解析），其余 US |
 
-域名与非 IP 匹配先于会触发解析的 IP 规则，依据 [Sukka 排序说明](https://github.com/SukkaW/Surge/#规则组列表)。US 前置规则保护与直连集合重叠的业务；相同出口的 IP 规则也不能跨优先级合并。
+域名与非 IP 匹配先于会触发解析的 IP 规则，依据 [Sukka 排序说明](https://github.com/SukkaW/Surge/#规则组列表)。US 前置规则仅保留与直连集合存在明确重叠的代理业务；通用 CDN 与 Sukka `download_domains` 不再走直连，而是在普通直连白名单之后通过 `us-late` 归入 US，既避免误伤直连白名单中的 NTP / NCSI / 游戏 / 微软 / 国内 CDN，也使约 6.7k 通用 CDN 与海外下载域名在进入 IP 规则层前短路。相同出口的 IP 规则也不能跨优先级合并。
 
 ## 聚合与维护
 

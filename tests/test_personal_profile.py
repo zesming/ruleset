@@ -407,8 +407,8 @@ class CompilationAndMatchingTests(unittest.TestCase):
         slots = profile["compact"]["slots"]
         slot_ids = [slot["id"] for slot in slots]
         self.assertEqual(slot_ids[:3], ["lan", "reject", "test"])
-        self.assertEqual(slot_ids[3:6], ["jp", "us", "cn-direct"])
-        self.assertTrue(all(slot.get("tier") == "ip" for slot in slots[6:]))
+        self.assertEqual(slot_ids[3:7], ["jp", "us", "cn-direct", "us-late"])
+        self.assertTrue(all(slot.get("tier") == "ip" for slot in slots[7:]))
 
         snapshot = snapshots()
         for platform in ("mihomo", "surge"):
