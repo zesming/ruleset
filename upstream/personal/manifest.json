@@ -181,7 +181,7 @@
         {
           "action": "DIRECT",
           "behavior": "domain-set",
-          "bytes": 555113,
+          "bytes": 555073,
           "capability": "domain",
           "dns": "domestic",
           "dns_behavior": "domain-set",
@@ -195,8 +195,8 @@
           "no_resolve": false,
           "path": "rules/personal/mihomo/route/cn-direct.mrs",
           "reject_mode": null,
-          "rule_count": 112982,
-          "sha256": "07ecf71396e5873c4b3d07648f4868ae8cb4094ec666be5c9a75f50e9e7a534b",
+          "rule_count": 112983,
+          "sha256": "0b2875eb137de118214106509fab555f177fff52d594fe74f752b32fd353bafe",
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -651,7 +651,7 @@
         {
           "action": "DIRECT",
           "behavior": "classical",
-          "bytes": 3025021,
+          "bytes": 3025047,
           "capability": "classical",
           "dns": "domestic",
           "dns_behavior": "classical",
@@ -665,8 +665,8 @@
           "no_resolve": false,
           "path": "rules/personal/surge/route/cn-direct.list",
           "reject_mode": null,
-          "rule_count": 113058,
-          "sha256": "1ed9be28fbe02b0ee4a69fdcc6481ec7b54398bbfb6e39528f374ffb5958308e",
+          "rule_count": 113059,
+          "sha256": "28d1aa6cb80a979f8212eb3de44c95373e71d60eb1356cf8d829342c8e9b381a",
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -1030,7 +1030,7 @@
           "id": "cn-direct",
           "no_resolve": false,
           "reject_mode": null,
-          "rule_count": 112982,
+          "rule_count": 112983,
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -1518,7 +1518,7 @@
           "id": "cn-direct",
           "no_resolve": false,
           "reject_mode": null,
-          "rule_count": 113058,
+          "rule_count": 113059,
           "slot": "cn-direct",
           "stages": [
             "ai-cn",
@@ -2219,7 +2219,7 @@
       {
         "action": "DIRECT",
         "behavior": "domain-set",
-        "bytes": 536695,
+        "bytes": 536620,
         "capability": "domain",
         "dns": "domestic",
         "dns_behavior": "domain-set",
@@ -2233,8 +2233,8 @@
         "no_resolve": false,
         "path": "rules/personal/mihomo/cn-direct-domain.mrs",
         "reject_mode": null,
-        "rule_count": 110689,
-        "sha256": "bf00192f0215e6fd7fa2d38f441655469a577de427555540886ac1e1b36d5baf",
+        "rule_count": 110690,
+        "sha256": "c255e4a3422f2cb1821b97234fda9a9fc9a3074f16a25056d62077bc22f31fae",
         "stages": [
           "cn-direct-domain"
         ]
@@ -2883,7 +2883,7 @@
       {
         "action": "DIRECT",
         "behavior": "domain-set",
-        "bytes": 1512819,
+        "bytes": 1512832,
         "capability": "domain",
         "dns": "domestic",
         "dns_behavior": "domain-set",
@@ -2897,8 +2897,8 @@
         "no_resolve": false,
         "path": "rules/personal/surge/cn-direct-domain.set",
         "reject_mode": null,
-        "rule_count": 110689,
-        "sha256": "24c77c9dbf271126ff207437086bba68af3a1a5ca6622a7fb3da200a2c36b9a8",
+        "rule_count": 110690,
+        "sha256": "d25c5733bb4135c2fb4b5c4b74102277f78bdb23f55969979f319cc869573db7",
         "stages": [
           "cn-direct-domain"
         ]
@@ -3101,12 +3101,12 @@
       "sha256": "ffe9dc92316584e3e45f7b67cea2d95cdc8c31222129d7794c7ef68a935ae4eb"
     },
     "rules/mihomo/cn-direct-domain.mrs": {
-      "bytes": 536695,
-      "sha256": "bf00192f0215e6fd7fa2d38f441655469a577de427555540886ac1e1b36d5baf"
+      "bytes": 536620,
+      "sha256": "c255e4a3422f2cb1821b97234fda9a9fc9a3074f16a25056d62077bc22f31fae"
     },
     "rules/mihomo/cn-direct-domain.txt": {
-      "bytes": 1623214,
-      "sha256": "f12802d41d80637b79e688afee5456b712b2db0673f9b11bde3bb95fa7f4157d"
+      "bytes": 1623228,
+      "sha256": "7863a516c58fdf137b62963518ff25cc0390f89b44b27eb259287cab4442debc"
     },
     "rules/mihomo/cn-direct-process.list": {
       "bytes": 944,
@@ -3137,8 +3137,8 @@
       "sha256": "1ea346626c99c4ca7c6beff0b563cad3cc7340a53fb3476d9254f591be7fa71b"
     },
     "rules/surge/cn-direct.set": {
-      "bytes": 1512819,
-      "sha256": "24c77c9dbf271126ff207437086bba68af3a1a5ca6622a7fb3da200a2c36b9a8"
+      "bytes": 1512832,
+      "sha256": "d25c5733bb4135c2fb4b5c4b74102277f78bdb23f55969979f319cc869573db7"
     },
     "rules/surge/network-test.set": {
       "bytes": 28444,
@@ -3191,8 +3191,8 @@
       "sha256": "6e43220489816e27983f5a9e76dbcb6e77c7ad025fe4b992e79aff4d8617a3e7"
     },
     "rules/personal/mihomo/cn-direct-domain.mrs": {
-      "bytes": 536695,
-      "sha256": "bf00192f0215e6fd7fa2d38f441655469a577de427555540886ac1e1b36d5baf"
+      "bytes": 536620,
+      "sha256": "c255e4a3422f2cb1821b97234fda9a9fc9a3074f16a25056d62077bc22f31fae"
     },
     "rules/personal/mihomo/cn-direct-process.list": {
       "bytes": 1147,
@@ -3283,8 +3283,8 @@
       "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8"
     },
     "rules/personal/mihomo/route/cn-direct.mrs": {
-      "bytes": 555113,
-      "sha256": "07ecf71396e5873c4b3d07648f4868ae8cb4094ec666be5c9a75f50e9e7a534b"
+      "bytes": 555073,
+      "sha256": "0b2875eb137de118214106509fab555f177fff52d594fe74f752b32fd353bafe"
     },
     "rules/personal/mihomo/route/direct-ip.list": {
       "bytes": 733,
@@ -3387,8 +3387,8 @@
       "sha256": "6e43220489816e27983f5a9e76dbcb6e77c7ad025fe4b992e79aff4d8617a3e7"
     },
     "rules/personal/surge/cn-direct-domain.set": {
-      "bytes": 1512819,
-      "sha256": "24c77c9dbf271126ff207437086bba68af3a1a5ca6622a7fb3da200a2c36b9a8"
+      "bytes": 1512832,
+      "sha256": "d25c5733bb4135c2fb4b5c4b74102277f78bdb23f55969979f319cc869573db7"
     },
     "rules/personal/surge/cn-direct-process.list": {
       "bytes": 1010,
@@ -3487,8 +3487,8 @@
       "sha256": "53377623a3c17d5cc6b2283a64e7e41316e4e0737719a30e77c2def5240557c8"
     },
     "rules/personal/surge/route/cn-direct.list": {
-      "bytes": 3025021,
-      "sha256": "1ed9be28fbe02b0ee4a69fdcc6481ec7b54398bbfb6e39528f374ffb5958308e"
+      "bytes": 3025047,
+      "sha256": "28d1aa6cb80a979f8212eb3de44c95373e71d60eb1356cf8d829342c8e9b381a"
     },
     "rules/personal/surge/route/direct-ip.list": {
       "bytes": 733,
@@ -4659,10 +4659,10 @@
       "id": "cn-direct-domain",
       "no_resolve": false,
       "reject_mode": null,
-      "rule_count": 221378,
+      "rule_count": 221380,
       "rule_count_by_platform": {
-        "mihomo": 110689,
-        "surge": 110689
+        "mihomo": 110690,
+        "surge": 110690
       },
       "sources": [
         "legacy:cn-direct-domain"

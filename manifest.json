@@ -1,6 +1,6 @@
 {
-  "baseline_release_id": "aa4fe6f7aa5861c167bc010195ad4d5ee5bbd8e43aea8cee90557ab4c04b72b3",
-  "candidate_id": "c9cc2a46804a8d22b1218fd89e918f54eee9c244e031cad86dc0de0ced76246b",
+  "baseline_release_id": "d24863ebb92a394414d272ca4c9682fb76a2916a9f9c3103acc63493ef614038",
+  "candidate_id": "3dc8086ebd4d47638d6411a7e3baa5e103d267ce2bdc318cd858da7555cc9c8a",
   "cn_direct": {
     "acl_review": {
       "accepted": [
@@ -222,8 +222,8 @@
     },
     "counts": {
       "acl_excluded_rules": 25,
-      "compressed_input_rules": 113201,
-      "domain_output_rules": 110689,
+      "compressed_input_rules": 113202,
+      "domain_output_rules": 110690,
       "mihomo_process_rules": 36,
       "mihomo_special_rules": 10,
       "source_rules": {
@@ -239,9 +239,14 @@
     },
     "diffs": {
       "domain_output": {
-        "added": 0,
-        "added_rules": [],
-        "after": 110689,
+        "added": 1,
+        "added_rules": [
+          [
+            "DOMAIN-SUFFIX",
+            "zesming.fun"
+          ]
+        ],
+        "after": 110690,
         "before": 110689,
         "removed": 0,
         "removed_rules": []
@@ -426272,6 +426277,10 @@
       },
       {
         "type": "DOMAIN-SUFFIX",
+        "value": "zesming.fun"
+      },
+      {
+        "type": "DOMAIN-SUFFIX",
         "value": "zesmob.com"
       },
       {
@@ -443061,7 +443070,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "a7bdd9c97c3c4a1d01a7259bba7c23c275794cc7",
-          "fetched_at": "2026-11-24T07:48:03Z",
+          "fetched_at": "2026-11-24T14:33:13Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -443070,7 +443079,7 @@
         "china_max": {
           "branch": "master",
           "commit": "0b6897dc17e0c513d25449c935a9694818e32f0c",
-          "fetched_at": "2026-11-24T07:48:03Z",
+          "fetched_at": "2026-11-24T14:33:13Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "14aa8915ad636bc378f23adb0490e1b9f6dbff9196bb8404e9376b2e10343774",
@@ -443078,7 +443087,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-11-24T07:48:03Z",
+          "fetched_at": "2026-11-24T14:33:13Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -443090,7 +443099,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-11-24T07:48:03Z",
+          "fetched_at": "2026-11-24T14:33:13Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -443102,7 +443111,7 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-11-24T07:48:03Z",
+          "fetched_at": "2026-11-24T14:33:13Z",
           "header": {
             "content_hash": "Ky5E4oRxdTAa_kO7mGfL1dbvAf5Fvjjhg56-03OzGQg",
             "declared_size": "873",
@@ -443114,7 +443123,7 @@
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-11-24T07:48:03Z",
+          "fetched_at": "2026-11-24T14:33:13Z",
           "header": {
             "content_hash": "N_pdVXp8iyfQrUnc5h51pGhpsRxOaznwpIfGTXJ5iAY",
             "declared_size": "876",
@@ -443130,12 +443139,12 @@
     "first_match_evidence_validation": "references_only",
     "outputs": {
       "rules/mihomo/cn-direct-domain.mrs": {
-        "bytes": 536695,
-        "sha256": "bf00192f0215e6fd7fa2d38f441655469a577de427555540886ac1e1b36d5baf"
+        "bytes": 536620,
+        "sha256": "c255e4a3422f2cb1821b97234fda9a9fc9a3074f16a25056d62077bc22f31fae"
       },
       "rules/mihomo/cn-direct-domain.txt": {
-        "bytes": 1623214,
-        "sha256": "f12802d41d80637b79e688afee5456b712b2db0673f9b11bde3bb95fa7f4157d"
+        "bytes": 1623228,
+        "sha256": "7863a516c58fdf137b62963518ff25cc0390f89b44b27eb259287cab4442debc"
       },
       "rules/mihomo/cn-direct-process.list": {
         "bytes": 944,
@@ -443154,8 +443163,8 @@
         "sha256": "1ea346626c99c4ca7c6beff0b563cad3cc7340a53fb3476d9254f591be7fa71b"
       },
       "rules/surge/cn-direct.set": {
-        "bytes": 1512819,
-        "sha256": "24c77c9dbf271126ff207437086bba68af3a1a5ca6622a7fb3da200a2c36b9a8"
+        "bytes": 1512832,
+        "sha256": "d25c5733bb4135c2fb4b5c4b74102277f78bdb23f55969979f319cc869573db7"
       }
     },
     "platform_differences": {
@@ -1297246,6 +1297255,14 @@
       {
         "covered_input_rule_count": 1,
         "source_rule_counts": {
+          "policy.adds": 1
+        },
+        "type": "DOMAIN-SUFFIX",
+        "value": "zesming.fun"
+      },
+      {
+        "covered_input_rule_count": 1,
+        "source_rule_counts": {
           "china_max": 1
         },
         "type": "DOMAIN-SUFFIX",
@@ -1784264,12 +1784281,7 @@
         "removed": []
       },
       "global": {
-        "added": [
-          {
-            "type": "DOMAIN-SUFFIX",
-            "value": "gemma.ai"
-          }
-        ],
+        "added": [],
         "removed": []
       },
       "network-test": {
@@ -1784283,12 +1784295,7 @@
         "removed": []
       },
       "global": {
-        "added": [
-          {
-            "type": "DOMAIN-SUFFIX",
-            "value": "gemma.ai"
-          }
-        ],
+        "added": [],
         "removed": []
       },
       "network-test": {
@@ -1803715,7 +1803722,7 @@
       "sha256": "0207138b57c009a891303dffa38e97e8a32c3448707fa13adbfd78899772b5c7"
     }
   },
-  "release_id": "d24863ebb92a394414d272ca4c9682fb76a2916a9f9c3103acc63493ef614038",
+  "release_id": "58218c515100730fc31802e1a0cdbbeac8be429b992217272c06e156861c0ea9",
   "routing_ownership": {
     "automatic_moves": [
       {
@@ -1803812,7 +1803819,7 @@
       }
     ],
     "basis": "accepted_unremoved_cn_direct_domain_inputs_before_compression",
-    "eligible_scope_count": 110809,
+    "eligible_scope_count": 110810,
     "excluded_scope_count": 80,
     "public_suffix_list_sha256": "e0fe072d26b0536525badea237953ff451c9f8e64c9d02c6daa81a4491d2fc66",
     "rules": [
@@ -1841586,5 +1841593,5 @@
       "sha256": "49fbd79df795c7f77156637c2687893152120df313129363d25a76f7695e0839"
     }
   },
-  "tool_sha256": "d47265cab4b5798385d1274e9b9b7c827498115e0e5e1b0dfe2abcfe78503e61"
+  "tool_sha256": "7f89aab0b421aa85dd82abab89af8ff88d85041976417a0dfa2f4d7f7305cb35"
 }
