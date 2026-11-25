@@ -1,6 +1,6 @@
 {
-  "baseline_release_id": "3ad25782d8eac1d12407da9d2febf78905605dbf5f37ce2b3938dc4e4c28e901",
-  "candidate_id": "880da3ab83456bafd959742f331617ab587f3a1b376e34133c0d1cd8f618534d",
+  "baseline_release_id": "7c04853ed558d3bd1fbdd672e57ddcfe392d72cae983702b1e28b5e377960993",
+  "candidate_id": "5b5f0ac8890954bad0d0b1e2e215780bcee594aa01b292f58044bf1dd312f415",
   "cn_direct": {
     "acl_review": {
       "accepted": [
@@ -222,7 +222,7 @@
     },
     "counts": {
       "acl_excluded_rules": 25,
-      "compressed_input_rules": 113197,
+      "compressed_input_rules": 113198,
       "domain_output_rules": 110685,
       "mihomo_process_rules": 36,
       "mihomo_special_rules": 10,
@@ -239,12 +239,22 @@
     },
     "diffs": {
       "domain_output": {
-        "added": 0,
-        "added_rules": [],
+        "added": 1,
+        "added_rules": [
+          [
+            "DOMAIN-SUFFIX",
+            "pool.ntp.org"
+          ]
+        ],
         "after": 110685,
         "before": 110685,
-        "removed": 0,
-        "removed_rules": []
+        "removed": 1,
+        "removed_rules": [
+          [
+            "DOMAIN-SUFFIX",
+            "cn.pool.ntp.org"
+          ]
+        ]
       },
       "sources": {
         "acl_china_domain": {
@@ -93105,10 +93115,6 @@
       {
         "type": "DOMAIN-SUFFIX",
         "value": "cn.net"
-      },
-      {
-        "type": "DOMAIN-SUFFIX",
-        "value": "cn.pool.ntp.org"
       },
       {
         "type": "DOMAIN-SUFFIX",
@@ -289668,6 +289674,10 @@
       },
       {
         "type": "DOMAIN-SUFFIX",
+        "value": "pool.ntp.org"
+      },
+      {
+        "type": "DOMAIN-SUFFIX",
         "value": "poorren.com"
       },
       {
@@ -443045,7 +443055,7 @@
         "acl_china_domain": {
           "branch": "master",
           "commit": "a7bdd9c97c3c4a1d01a7259bba7c23c275794cc7",
-          "fetched_at": "2026-11-25T06:21:11Z",
+          "fetched_at": "2026-11-25T14:22:29Z",
           "path": "Clash/ChinaDomain.list",
           "repository": "ACL4SSR/ACL4SSR",
           "sha256": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
@@ -443054,7 +443064,7 @@
         "china_max": {
           "branch": "master",
           "commit": "0b6897dc17e0c513d25449c935a9694818e32f0c",
-          "fetched_at": "2026-11-25T06:21:11Z",
+          "fetched_at": "2026-11-25T14:22:29Z",
           "path": "rule/Clash/ChinaMax/ChinaMax_Domain.txt",
           "repository": "blackmatrix7/ios_rule_script",
           "sha256": "14aa8915ad636bc378f23adb0490e1b9f6dbff9196bb8404e9376b2e10343774",
@@ -443062,7 +443072,7 @@
         },
         "sukka_direct_clash": {
           "artifact": "sukka_direct_clash",
-          "fetched_at": "2026-11-25T06:21:11Z",
+          "fetched_at": "2026-11-25T14:22:29Z",
           "header": {
             "content_hash": "tf1xHr3j1X7khG0YLNeE4X3erBf3l-OxrAfWVqj-qRM",
             "declared_size": "219",
@@ -443074,7 +443084,7 @@
         },
         "sukka_direct_surge": {
           "artifact": "sukka_direct_surge",
-          "fetched_at": "2026-11-25T06:21:11Z",
+          "fetched_at": "2026-11-25T14:22:29Z",
           "header": {
             "content_hash": "cHGPw28cUlHeJPPagi8Xu_fFZ8zOSPij9yiiZy5La3M",
             "declared_size": "224",
@@ -443086,7 +443096,7 @@
         },
         "sukka_domestic_clash": {
           "artifact": "sukka_domestic_clash",
-          "fetched_at": "2026-11-25T06:21:11Z",
+          "fetched_at": "2026-11-25T14:22:29Z",
           "header": {
             "content_hash": "Ky5E4oRxdTAa_kO7mGfL1dbvAf5Fvjjhg56-03OzGQg",
             "declared_size": "873",
@@ -443098,7 +443108,7 @@
         },
         "sukka_domestic_surge": {
           "artifact": "sukka_domestic_surge",
-          "fetched_at": "2026-11-25T06:21:11Z",
+          "fetched_at": "2026-11-25T14:22:29Z",
           "header": {
             "content_hash": "N_pdVXp8iyfQrUnc5h51pGhpsRxOaznwpIfGTXJ5iAY",
             "declared_size": "876",
@@ -443114,12 +443124,12 @@
     "first_match_evidence_validation": "references_only",
     "outputs": {
       "rules/mihomo/cn-direct-domain.mrs": {
-        "bytes": 536706,
-        "sha256": "42ab26daa71dd5147fc61970ebe2eaa295e5e0fbfd4d126ce96d88c0cd1ebe8f"
+        "bytes": 536708,
+        "sha256": "4821961ba176c80a9068a9ac561e1987d02bf78bee30a290b562c25373ecc436"
       },
       "rules/mihomo/cn-direct-domain.txt": {
-        "bytes": 1623126,
-        "sha256": "df164974ec141ee177a69031a401a8ea82e037368f0e51a2260f29fcc802cd5b"
+        "bytes": 1623123,
+        "sha256": "514f44f1ce9cfa3c172e8da71c81cdbc566731d80f6a8f6f55cf04716f9da112"
       },
       "rules/mihomo/cn-direct-process.list": {
         "bytes": 944,
@@ -443138,8 +443148,8 @@
         "sha256": "1ea346626c99c4ca7c6beff0b563cad3cc7340a53fb3476d9254f591be7fa71b"
       },
       "rules/surge/cn-direct.set": {
-        "bytes": 1512733,
-        "sha256": "fe3123b5a857e2645dff87398d5bb8fc54a3015d06d0aa3803721fd4c4d87734"
+        "bytes": 1512730,
+        "sha256": "4db94c3f5055db3a4a9013912aea3b8077d42e9d02d0f7e3a9321bfab24712df"
       }
     },
     "platform_differences": {
@@ -629411,14 +629421,6 @@
         },
         "type": "DOMAIN-SUFFIX",
         "value": "cn.net"
-      },
-      {
-        "covered_input_rule_count": 1,
-        "source_rule_counts": {
-          "china_max": 1
-        },
-        "type": "DOMAIN-SUFFIX",
-        "value": "cn.pool.ntp.org"
       },
       {
         "covered_input_rule_count": 1,
@@ -1023440,6 +1023442,15 @@
         },
         "type": "DOMAIN-SUFFIX",
         "value": "pooketools.com"
+      },
+      {
+        "covered_input_rule_count": 2,
+        "source_rule_counts": {
+          "china_max": 1,
+          "policy.direct_rules": 1
+        },
+        "type": "DOMAIN-SUFFIX",
+        "value": "pool.ntp.org"
       },
       {
         "covered_input_rule_count": 1,
@@ -1784815,9 +1784826,9 @@
   "manual_artifacts": {
     "rules/direct.list": {
       "path": "rules/direct.list",
-      "review_date": "2026-11-24",
-      "rules": 26,
-      "sha256": "9e8f95ab9966fde81add3ed4c57243b93bb90d5a8319f1043bbb2d4ade35db3b",
+      "review_date": "2026-11-25",
+      "rules": 27,
+      "sha256": "eee2eb5e9bbec9c876b4d515f829114e083736f080c80a656417a9ac8e9f570f",
       "source": "manual:policy.direct_rules"
     },
     "rules/surge/ai-process.list": {
@@ -1784829,9 +1784840,9 @@
     },
     "rules/surge/direct.set": {
       "path": "rules/surge/direct.set",
-      "review_date": "2026-11-24",
-      "rules": 26,
-      "sha256": "b986e7b55525e6068628aaa13741b6a35fdeefe3d9387c59f3921619c3d91779",
+      "review_date": "2026-11-25",
+      "rules": 27,
+      "sha256": "d325a668581010afbb7d2753026d6a938a631872c4b6c6f46d06890cfd941dd3",
       "source": "manual:policy.direct_rules"
     },
     "rules/surge/us.set": {
@@ -1803682,7 +1803693,7 @@
       "sha256": "0207138b57c009a891303dffa38e97e8a32c3448707fa13adbfd78899772b5c7"
     }
   },
-  "release_id": "7c04853ed558d3bd1fbdd672e57ddcfe392d72cae983702b1e28b5e377960993",
+  "release_id": "6ef90d29865c7c61ecabf706100ac420247037b4677e12a4fd2448393c1fc703",
   "routing_ownership": {
     "automatic_moves": [
       {
@@ -1803779,7 +1803790,7 @@
       }
     ],
     "basis": "accepted_unremoved_cn_direct_domain_inputs_before_compression",
-    "eligible_scope_count": 110806,
+    "eligible_scope_count": 110807,
     "excluded_scope_count": 79,
     "public_suffix_list_sha256": "e0fe072d26b0536525badea237953ff451c9f8e64c9d02c6daa81a4491d2fc66",
     "rules": [
@@ -1841479,7 +1841490,7 @@
     }
   ],
   "schema": 1,
-  "semantic_policy_sha256": "0655c494d312a4d509411492bdf80adbed92b35b49b706566c477cd5733f8012",
+  "semantic_policy_sha256": "e47618053aa3d751790608bfd2d50bc5d0bcdd3f546ec76af1ede2103da9e8de",
   "sources": {
     "cn": {
       "paths": [

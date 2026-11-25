@@ -23709,7 +23709,6 @@ DOMAIN-SUFFIX,cn.bing.net
 DOMAIN-SUFFIX,cn.eset.com
 DOMAIN-SUFFIX,cn.mm.bing.net
 DOMAIN-SUFFIX,cn.net
-DOMAIN-SUFFIX,cn.pool.ntp.org
 DOMAIN-SUFFIX,cn.sc.com
 DOMAIN-SUFFIX,cn0-6.com
 DOMAIN-SUFFIX,cn006.com
@@ -72777,6 +72776,7 @@ DOMAIN-SUFFIX,pook.com
 DOMAIN-SUFFIX,pookcdn.com
 DOMAIN-SUFFIX,pookcdn.net
 DOMAIN-SUFFIX,pooketools.com
+DOMAIN-SUFFIX,pool.ntp.org
 DOMAIN-SUFFIX,poorren.com
 DOMAIN-SUFFIX,pop-bags.com
 DOMAIN-SUFFIX,pop-fashion.com
