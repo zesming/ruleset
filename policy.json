@@ -924,6 +924,13 @@
     },
     {
       "type": "DOMAIN-SUFFIX",
+      "value": "pool.ntp.org",
+      "reason": "Public NTP pool uses GeoDNS to return local low-RTT time servers when resolved via domestic DoH (verified 43-67ms domestic peers from China). Routing UDP/123 NTP through an overseas proxy adds asymmetric jitter and degrades clock sync; keep the entire pool.ntp.org suffix DIRECT.",
+      "reference": "https://www.ntppool.org/en/use.html",
+      "review_date": "2026-11-25"
+    },
+    {
+      "type": "DOMAIN-SUFFIX",
       "value": "todetect.cn",
       "reason": "Root provides IP/DNS/WebRTC plus Canvas/WebGL/device fingerprint diagnostics. Official about page positions the business as security services for enterprises and developers; official article advertises API integration (JavaScript/Python/PHP). Concrete API host/endpoint and actual production callers are unverified. Keep the existing DIRECT behavior for the whole suffix because its mixed, API, database, or unresolved scope should not be routed through the Test selector. This does not assert that every host is an IP checker.",
       "reference": "https://todetect.cn; https://www.todetect.cn/aboutus/; https://www.todetect.cn/article/industry-trends/todetect-browser-fingerprint-tool/; .devflow/actions-network-test/audit-direct-suffix.json",
